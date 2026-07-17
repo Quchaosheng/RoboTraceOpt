@@ -8,6 +8,8 @@ from optimizer.integration.runtime_profiles import (
     candidate_cli_arguments,
     runtime_profile,
 )
+from optimizer.validation.candidate_validator import validate_reports
+from optimizer.validation.rollback import rollback_decision
 
 
 def validate_baseline_profile(
@@ -70,4 +72,77 @@ def build_execution_schedule(
         "seed": plan["seed"],
         "budget": plan["budget"],
         "trials": trials,
+    }
+
+
+def evaluate_candidate(
+    baseline_report: dict[str, Any],
+    candidate_report: dict[str, Any],
+    *,
+    cause_id: str,
+    trial_index: int,
+    candidate_config: dict[str, Any],
+    quantile: str,
+    minimum_improvement_ratio: float,
+    minimum_complete_trace_rate_delta: float,
+) -> dict[str, Any]:
+    profile = runtime_profile(cause_id)
+    validation = validate_reports(
+        baseline_report,
+        candidate_report,
+        metric=profile["metric"],
+        quantile=quantile,
+        minimum_improvement_ratio=minimum_improvement_ratio,
+        minimum_complete_trace_rate_delta=minimum_complete_trace_rate_delta,
+    )
+    return {
+        "trial_index": trial_index,
+        "status": "validated",
+        "candidate_config": dict(candidate_config),
+        "objective_value_ns": validation["candidate_objective"][
+            "objective_value_ns"
+        ],
+        "validation": validation,
+    }
+
+
+def select_closed_loop_decision(
+    cause_id: str,
+    baseline_config: dict[str, Any],
+    candidates: list[dict[str, Any]],
+) -> dict[str, Any]:
+    measured = [row for row in candidates if row.get("status") == "validated"]
+    if not measured:
+        return {
+            "schema_version": "optimization-closed-loop-decision/v1",
+            "cause_id": cause_id,
+            "action": "restore_baseline",
+            "reason_code": "no_valid_candidate",
+            "baseline_config": dict(baseline_config),
+            "candidate_config": None,
+            "selected_config": dict(baseline_config),
+            "selected_trial_index": None,
+            "live_mutation_performed": False,
+        }
+    accepted = [
+        row for row in measured if row["validation"]["decision"] == "accept"
+    ]
+    selected = min(
+        accepted or measured,
+        key=lambda row: (
+            float(row["objective_value_ns"]),
+            int(row["trial_index"]),
+        ),
+    )
+    rollback = rollback_decision(
+        selected["validation"],
+        cause_id=cause_id,
+        baseline_config=baseline_config,
+        candidate_config=selected["candidate_config"],
+    )
+    return {
+        **rollback,
+        "schema_version": "optimization-closed-loop-decision/v1",
+        "selected_trial_index": int(selected["trial_index"]),
+        "validation": selected["validation"],
     }
