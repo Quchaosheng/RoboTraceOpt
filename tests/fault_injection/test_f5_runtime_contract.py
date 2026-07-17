@@ -34,6 +34,8 @@ class F5RuntimeContractTest(unittest.TestCase):
             self.assertIn(parameter, planner)
         self.assertIn("frame.payload", camera)
         self.assertIn("QoSProfile", planner)
+        self.assertIn('"frame_qos_depth": self._frame_qos_depth', planner)
+        self.assertIn('"frame_qos_reliability": self._frame_qos_reliability', planner)
 
     def test_bringup_preserves_existing_transport_defaults(self) -> None:
         launch = (
