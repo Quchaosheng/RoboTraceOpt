@@ -41,7 +41,7 @@ core workspace can be built from WSL or native Ubuntu:
 
 ```bash
 bash scripts/build_core.sh
-source ~/.cache/robotracert_fusion_build/install/setup.bash
+source ~/.cache/robotraceopt_build/install/setup.bash
 ```
 
 Run the migrated workloads:
