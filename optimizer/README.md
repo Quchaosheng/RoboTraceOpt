@@ -83,3 +83,20 @@ with SHA-256
 This cross-workload repetition supports pipeline generality only. It remains
 development evidence and does not turn the injected delay parameter into a
 real production tuning recommendation.
+
+The first real QoS action sweep used a 100 Hz camera stream, 256 KiB payloads,
+reliable delivery, and `frame_qos_depth=1,2,4,6,8,10` at commit `a000347`.
+The corresponding publish-to-receive p95 values were 1.041, 1.096, 1.015,
+1.310, 0.984, and 0.829 ms. Complete-trace rates were 0.9542, 0.9495,
+0.9600, 0.9358, 0.9477, and 0.9488. The depth-10 baseline had the lowest
+p95. Depth 8 was the closest nonbaseline setting, but its p95 was 18.7%
+higher and its complete-trace rate was lower by 0.0011. The validator rejected
+that candidate and emitted `restore_baseline`. Depth 4 had the highest
+complete-trace rate, but its p95 was 22.4% higher than the baseline. The
+retained summary is
+`data/processed/optimization/development/qos_depth_20260717_01/summary.json`
+with SHA-256
+`6a94e037b5a73b93638280f4b93d937c2b9930d3dbc13e63047bc48a68b04947`.
+This single WSL development sweep does not support a general QoS depth
+recommendation. Repeated runs with randomized order and native Linux are
+still required.
