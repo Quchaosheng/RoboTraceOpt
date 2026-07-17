@@ -332,6 +332,8 @@ class VlmPlannerNode(Node):
             "confidence": decision.confidence if decision else None,
             "reason": decision.reason if decision else None,
             "executor_threads": self.executor_threads,
+            "frame_qos_depth": self._frame_qos_depth,
+            "frame_qos_reliability": self._frame_qos_reliability,
         }
         if self._llm_model:
             event_extra["llm_model"] = self._llm_model
