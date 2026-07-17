@@ -1,4 +1,4 @@
-"""Build and evaluate development-only F1 optimization runtime trials."""
+"""Build and evaluate development-only runtime optimization trials."""
 
 from __future__ import annotations
 
@@ -19,6 +19,7 @@ SERVICE_STAGES = (
     "response_received",
 )
 SERVICE_SERVER_STAGES = {"service_process_start", "service_process_end"}
+QOS_STAGES = ("camera_frame_published", "planner_receive")
 
 
 def build_trial_manifest(
@@ -76,6 +77,24 @@ def build_trial_command(
             "request_rate_hz:=5",
             f"server_delay_ms:={value}",
             "runtime_events_enabled:=true",
+            f"output_path:={events_path.as_posix()}",
+        ]
+    if cause_id == "dds_communication_delay" and action_id == "frame_qos_depth":
+        return [
+            "ros2",
+            "launch",
+            "runtime_bringup",
+            "ai_runtime.launch.py",
+            "profile:=enhanced",
+            "camera_rate_hz:=100",
+            "frame_payload_bytes:=262144",
+            f"frame_qos_depth:={value}",
+            "frame_qos_reliability:=reliable",
+            "planner_backend:=mock",
+            "planner_delay_ms:=0",
+            "action_manager_enabled:=false",
+            "executor_contention_enabled:=false",
+            "runtime_event_enabled:=true",
             f"output_path:={events_path.as_posix()}",
         ]
     raise ValueError("unsupported runtime optimization trial")
@@ -261,6 +280,93 @@ def derive_f4_trial_report(
         "invalid_trace_reason_counts": dict(sorted(invalid.items())),
         "complete_trace_rate": complete / observed if observed else 0.0,
         "metrics_ns": {name: _describe(metric_values) for name, metric_values in values.items()},
+    }
+
+
+def derive_f5_trial_report(
+    runtime_records: Iterable[dict[str, Any]], candidate_config: dict[str, Any]
+) -> dict[str, Any]:
+    action_id, depth = _single_config("dds_communication_delay", candidate_config)
+    if action_id != "frame_qos_depth":
+        raise ValueError("F5 trial requires frame_qos_depth")
+    by_trace: dict[str, list[dict[str, Any]]] = {}
+    for record in runtime_records:
+        trace_id = record.get("trace_id")
+        if isinstance(trace_id, str) and trace_id and record.get("event_name") in QOS_STAGES:
+            by_trace.setdefault(trace_id, []).append(record)
+
+    incomplete = 0
+    invalid: Counter[str] = Counter()
+    elapsed: list[int] = []
+    received_sequences: list[int] = []
+    for rows in by_trace.values():
+        counts = Counter(str(row.get("event_name", "")) for row in rows)
+        if any(counts[name] > 1 for name in QOS_STAGES):
+            invalid["duplicate_stage"] += 1
+            continue
+        if counts["camera_frame_published"] == 0:
+            invalid["receive_without_publish"] += 1
+            continue
+        if counts["planner_receive"] == 0:
+            incomplete += 1
+            continue
+        by_name = {str(row["event_name"]): row for row in rows}
+        published = by_name["camera_frame_published"]
+        received = by_name["planner_receive"]
+        if any(not _integer(row.get("timestamp_ns")) for row in (published, received)):
+            invalid["invalid_timestamp"] += 1
+            continue
+        if any(
+            published.get(field) != received.get(field)
+            for field in ("sequence_id", "host_id", "clock_id")
+        ) or published.get("clock_id") != "monotonic":
+            invalid["identity_mismatch"] += 1
+            continue
+        try:
+            metadata = json.loads(received.get("extra_json", ""))
+        except (json.JSONDecodeError, TypeError):
+            invalid["invalid_extra_json"] += 1
+            continue
+        if (
+            not isinstance(metadata, dict)
+            or metadata.get("frame_qos_depth") != depth
+            or metadata.get("frame_qos_reliability") != "reliable"
+        ):
+            raise ValueError("runtime event does not match candidate profile")
+        value = int(received["timestamp_ns"]) - int(published["timestamp_ns"])
+        if value < 0:
+            invalid["negative_interval"] += 1
+            continue
+        elapsed.append(value)
+        received_sequences.append(int(received["sequence_id"]))
+
+    ordered_sequences = sorted(set(received_sequences))
+    sequence_gaps = sum(
+        max(0, current - previous - 1)
+        for previous, current in zip(ordered_sequences, ordered_sequences[1:])
+    )
+    observed = sum(
+        1
+        for rows in by_trace.values()
+        if any(row.get("event_name") == "camera_frame_published" for row in rows)
+    )
+    complete = len(elapsed)
+    return {
+        "schema_version": "optimization-runtime-trial/v1",
+        "cause_id": "dds_communication_delay",
+        "candidate_config": dict(candidate_config),
+        "measurement_semantics": "runtime_event_publish_to_receive_upper_bound",
+        "development_only": True,
+        "formal_inference_allowed": False,
+        "formal_optimization_allowed": False,
+        "observed_trace_count": observed,
+        "complete_trace_count": complete,
+        "incomplete_trace_count": incomplete,
+        "invalid_trace_count": sum(invalid.values()),
+        "invalid_trace_reason_counts": dict(sorted(invalid.items())),
+        "complete_trace_rate": complete / observed if observed else 0.0,
+        "received_sequence_gap_count": sequence_gaps,
+        "metrics_ns": {"camera_to_planner_upper_bound_ns": _describe(elapsed)},
     }
 
 
