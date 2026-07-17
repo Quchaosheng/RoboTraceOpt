@@ -16,6 +16,7 @@ if str(ROOT) not in sys.path:
 
 from experiments.fault_injection.runner import build_execution_script  # noqa: E402
 from optimizer.trials.runtime_trial import (  # noqa: E402
+    TRIAL_STRATEGIES,
     build_trial_command,
     build_trial_manifest,
     derive_f1_trial_report,
@@ -36,7 +37,7 @@ def _sha256(path: Path) -> str:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--trial-id", required=True)
-    parser.add_argument("--strategy", choices=("guided", "random"), required=True)
+    parser.add_argument("--strategy", choices=TRIAL_STRATEGIES, required=True)
     parser.add_argument("--seed", type=int, required=True)
     candidate = parser.add_mutually_exclusive_group(required=True)
     candidate.add_argument("--planner-delay-ms", type=int)
