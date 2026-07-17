@@ -51,6 +51,28 @@ class RuntimeTrialTest(unittest.TestCase):
         self.assertFalse(manifest["formal_optimization_allowed"])
         self.assertEqual(manifest["candidate_config"], {"planner_delay_ms": 25})
 
+    def test_manifest_accepts_unguided_and_rejects_unknown_strategy(self) -> None:
+        manifest = build_trial_manifest(
+            cause_id="dds_communication_delay",
+            candidate_config={"frame_qos_depth": 4},
+            trial_id="trial-unguided",
+            strategy="unguided_random",
+            seed=7,
+            git_commit="a" * 40,
+            command=["ros2"],
+        )
+        self.assertEqual(manifest["strategy"], "unguided_random")
+        with self.assertRaisesRegex(ValueError, "strategy"):
+            build_trial_manifest(
+                cause_id="dds_communication_delay",
+                candidate_config={"frame_qos_depth": 4},
+                trial_id="trial-grid",
+                strategy="grid",
+                seed=7,
+                git_commit="a" * 40,
+                command=["ros2"],
+            )
+
     def test_builds_arbitrary_f4_candidate_command(self) -> None:
         command = build_trial_command(
             "blocking_syscall_io", {"server_delay_ms": 50}, Path("events.jsonl")
