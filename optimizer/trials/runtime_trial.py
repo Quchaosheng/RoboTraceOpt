@@ -21,6 +21,7 @@ SERVICE_STAGES = (
 SERVICE_SERVER_STAGES = {"service_process_start", "service_process_end"}
 DISPATCH_STAGES = ("camera_frame_published", "planner_receive")
 QOS_STAGES = ("camera_frame_published", "planner_receive")
+TRIAL_STRATEGIES = ("guided", "random", "unguided_random")
 
 
 def build_trial_manifest(
@@ -36,6 +37,8 @@ def build_trial_manifest(
     _single_config(cause_id, candidate_config)
     if not trial_id or not strategy or len(git_commit) != 40 or not command:
         raise ValueError("complete trial identity is required")
+    if strategy not in TRIAL_STRATEGIES:
+        raise ValueError("unsupported trial strategy")
     return {
         "schema_version": "optimization-runtime-trial-manifest/v1",
         "dataset_role": "development",
