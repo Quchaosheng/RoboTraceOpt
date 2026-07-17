@@ -1,0 +1,8 @@
+camera_mock_node:
+  ros__parameters:
+    camera_rate_hz: 1.0
+    source_id: "camera_a"
+    runtime_events_enabled: true
+    width: 640
+    height: 480
+    encoding: "mock"

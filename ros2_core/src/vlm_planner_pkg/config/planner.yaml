@@ -1,0 +1,13 @@
+vlm_planner_node:
+  ros__parameters:
+    planner_backend: "mock"
+    planner_mode: "mock"
+    planner_delay_ms: 50
+    planner_delay_mode: "sleep"
+    executor_contention_enabled: false
+    executor_contention_period_ms: 25
+    executor_contention_load_ms: 0
+    llm_provider: "openai_compatible"
+    llm_api_key_env: "LLM_API_KEY"
+    llm_timeout_s: 3.0
+    fallback_to_mock: true

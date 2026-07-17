@@ -1,0 +1,1 @@
+"""Auditable diagnosis report generation."""

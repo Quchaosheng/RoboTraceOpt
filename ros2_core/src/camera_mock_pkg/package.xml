@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>camera_mock_pkg</name>
+  <version>0.0.1</version>
+  <description>Mock camera input node for the AI Robotics Runtime.</description>
+  <maintainer email="todo@example.com">todo</maintainer>
+  <license>TODO</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>rclcpp</depend>
+  <depend>ai_robot_runtime_interfaces</depend>
+
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

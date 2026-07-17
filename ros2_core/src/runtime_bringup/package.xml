@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>runtime_bringup</name>
+  <version>0.0.1</version>
+  <description>System launch bringup for the AI Robotics Runtime MVP chain.</description>
+  <maintainer email="todo@example.com">todo</maintainer>
+  <license>TODO</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+  <exec_depend>minimal_runtime_demo</exec_depend>
+  <exec_depend>camera_mock_pkg</exec_depend>
+  <exec_depend>vlm_planner_pkg</exec_depend>
+  <exec_depend>robot_action_pkg</exec_depend>
+  <exec_depend>can_bridge_pkg</exec_depend>
+  <exec_depend>runtime_logger_pkg</exec_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

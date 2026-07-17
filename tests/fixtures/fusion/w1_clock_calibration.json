@@ -1,0 +1,15 @@
+{
+  "estimated_offset_ns": 24,
+  "max_error_ns": 2381,
+  "measured_at_utc": "2026-07-15T09:53:18.065482Z",
+  "method": "bracketed_clock_gettime",
+  "reason_code": "",
+  "sample_count": 1000,
+  "schema_version": "clock-calibration/v1",
+  "source_clock_id": "monotonic",
+  "source_host": "chaosheng",
+  "status": "comparable",
+  "target_clock_id": "monotonic",
+  "target_host": "chaosheng",
+  "tolerance_ns": 100000
+}

@@ -1,0 +1,12 @@
+robot_action_node:
+  ros__parameters:
+    action_delay_ms: 100
+
+action_manager_node:
+  ros__parameters:
+    command_topic: "/planner/command"
+    result_topic: "/action_manager/command_result"
+    action_name: "/robot_command"
+    action_delay_ms: 100
+    feedback_period_ms: 50
+    goal_timeout_ms: 0
