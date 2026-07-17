@@ -83,3 +83,19 @@ with SHA-256
 This cross-workload repetition supports pipeline generality only. It remains
 development evidence and does not turn the injected delay parameter into a
 real production tuning recommendation.
+
+The first real Executor action uses `executor_threads=1..4` while retaining the
+same 100 Hz input and 20 ms CPU-bound contention callback. The planner assigns
+the frame subscription and contention timer to separate callback groups and
+uses a `MultiThreadedExecutor` above one thread. In the retained development
+run, one thread had the lowest dispatch-upper-bound p95 at 19.500 ms; two,
+three, and four threads measured 90.620, 97.002, and 94.441 ms. This negative
+result is consistent with Python GIL contention for CPU-bound callbacks. The
+validator rejects the two-thread candidate with improvement ratio -3.647 and
+emits `restore_baseline` for the one-thread configuration. The summary is kept
+at `data/processed/optimization/development/f2_executor_threads_20260717_03/summary.json`
+with SHA-256
+`2746dbeec7f960155e483baa5389d72e46329da9a095a602fc41cb3c16300674`.
+It does not support a general claim that single-thread executors outperform
+multi-thread executors; the result is specific to this Python CPU-bound
+workload and motivates a later C++ or process-isolated comparison.

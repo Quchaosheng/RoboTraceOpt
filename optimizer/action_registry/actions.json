@@ -2,7 +2,7 @@
   "schema_version": "optimizer-action-registry/v1",
   "actions": [
     {"action_id": "planner_delay_ms", "kind": "integer", "bounds": {"min": 0, "max": 100}, "causes": ["application_compute_delay"]},
-    {"action_id": "executor_contention_enabled", "kind": "boolean", "causes": ["executor_queueing"]},
+    {"action_id": "executor_threads", "kind": "integer", "bounds": {"min": 1, "max": 4}, "causes": ["executor_queueing"]},
     {"action_id": "frame_qos_depth", "kind": "integer", "bounds": {"min": 1, "max": 10}, "causes": ["dds_communication_delay"]},
     {"action_id": "server_delay_ms", "kind": "integer", "bounds": {"min": 0, "max": 100}, "causes": ["blocking_syscall_io"]},
     {"action_id": "target_cpu", "kind": "integer", "bounds": {"min": 0, "max": 255}, "causes": ["scheduling_delay"]},

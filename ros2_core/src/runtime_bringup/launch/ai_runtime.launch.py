@@ -32,6 +32,7 @@ def generate_launch_description():
     executor_contention_enabled = LaunchConfiguration("executor_contention_enabled")
     executor_contention_period_ms = LaunchConfiguration("executor_contention_period_ms")
     executor_contention_load_ms = LaunchConfiguration("executor_contention_load_ms")
+    executor_threads = LaunchConfiguration("executor_threads")
     action_delay_ms = LaunchConfiguration("action_delay_ms")
     action_manager_enabled = LaunchConfiguration("action_manager_enabled")
     action_feedback_period_ms = LaunchConfiguration("action_feedback_period_ms")
@@ -120,6 +121,11 @@ def generate_launch_description():
             "executor_contention_load_ms",
             default_value="0",
             description="Busy-compute load per contention callback in milliseconds.",
+        ),
+        DeclareLaunchArgument(
+            "executor_threads",
+            default_value="1",
+            description="Planner executor thread count from 1 to 4.",
         ),
         DeclareLaunchArgument(
             "action_delay_ms",
@@ -343,6 +349,7 @@ def generate_launch_description():
                     "executor_contention_load_ms": ParameterValue(
                         executor_contention_load_ms, value_type=int
                     ),
+                    "executor_threads": ParameterValue(executor_threads, value_type=int),
                     "runtime_event_enabled": ParameterValue(runtime_event_enabled, value_type=bool),
                 },
             ],
