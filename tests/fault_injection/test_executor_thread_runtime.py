@@ -30,6 +30,10 @@ class ExecutorThreadRuntimeTest(unittest.TestCase):
         )[1].split("),", 1)[0]
         self.assertIn('default_value="1"', declaration)
         self.assertGreaterEqual(launch.count('"executor_threads"'), 2)
+        config = (
+            ROOT / "ros2_core/src/vlm_planner_pkg/config/planner.yaml"
+        ).read_text(encoding="utf-8")
+        self.assertNotIn("executor_threads:", config)
 
 
 if __name__ == "__main__":
