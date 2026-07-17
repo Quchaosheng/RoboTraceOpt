@@ -1,0 +1,114 @@
+{
+  "schema_version": "fault-catalog/v1",
+  "faults": [
+    {
+      "fault_id": "F1",
+      "cause_id": "application_compute_delay",
+      "workload": "w1",
+      "implementation_status": "ready",
+      "oracle_mechanism": "planner busy-compute mode and launch manifest",
+      "required_capabilities": ["ros2_runtime", "runtime_event"],
+      "injection": {
+        "planner_delay_mode": "busy_compute",
+        "planner_delay_ms": 100,
+        "control_delay_ms": 0,
+        "input_rate_hz": 4,
+        "planner_backend": "mock",
+        "action_manager_enabled": true
+      }
+    },
+    {
+      "fault_id": "F2",
+      "cause_id": "executor_queueing",
+      "workload": "w1",
+      "implementation_status": "ready",
+      "oracle_mechanism": "callback load, executor configuration, and input-rate manifest",
+      "required_capabilities": ["ros2_runtime", "ros2_tracing"],
+      "injection": {"executor_threads": 1, "input_rate_hz": 100, "callback_load_ms": 20, "callback_period_ms": 25}
+    },
+    {
+      "fault_id": "F3",
+      "cause_id": "scheduling_delay",
+      "workload": "w1",
+      "implementation_status": "ready",
+      "oracle_mechanism": "stress-ng command, CPU affinity, and scheduler manifest",
+      "required_capabilities": [
+        "ros2_runtime",
+        "ros2_tracing",
+        "stress_ng",
+        "taskset",
+        "identity_comparable_ebpf"
+      ],
+      "injection": {
+        "stressors": 1,
+        "cpu_load_percent": 90,
+        "cpu_method": "matrixprod",
+        "input_rate_hz": 100,
+        "affinity": "same_cpu",
+        "scheduler_policy": "SCHED_OTHER",
+        "scheduler_priority": 0
+      }
+    },
+    {
+      "fault_id": "F4",
+      "cause_id": "blocking_syscall_io",
+      "workload": "w2",
+      "implementation_status": "ready",
+      "oracle_mechanism": "service blocking-delay parameter and syscall evidence",
+      "required_capabilities": ["ros2_runtime", "identity_comparable_ebpf"],
+      "injection": {
+        "server_delay_ms": 100,
+        "control_delay_ms": 0,
+        "request_rate_hz": 5,
+        "blocking_primitive": "clock_nanosleep"
+      }
+    },
+    {
+      "fault_id": "F5",
+      "cause_id": "dds_communication_delay",
+      "workload": "w1",
+      "implementation_status": "ready",
+      "oracle_mechanism": "publisher/subscriber QoS and message-rate manifest",
+      "required_capabilities": ["ros2_runtime", "ros2_tracing"],
+      "injection": {
+        "reliability": "reliable",
+        "history": "keep_last",
+        "durability": "volatile",
+        "publisher_depth": 1,
+        "subscriber_depth": 1,
+        "control_depth": 10,
+        "payload_bytes": 262144,
+        "input_rate_hz": 100
+      }
+    },
+    {
+      "fault_id": "F6",
+      "cause_id": "can_ack_failure",
+      "workload": "w1",
+      "implementation_status": "ready",
+      "oracle_mechanism": "CAN mock ACK policy and retry terminal manifest",
+      "required_capabilities": ["ros2_runtime", "runtime_event"],
+      "injection": {
+        "mock_ack_policy": "drop",
+        "control_ack_policy": "success",
+        "ack_timeout_ms": 20,
+        "max_retries": 2,
+        "ack_mode": "mock",
+        "mock_mode": true,
+        "input_rate_hz": 4,
+        "planner_backend": "mock",
+        "action_manager_enabled": true,
+        "vcan_profile": {
+          "transport_profile": "vcan",
+          "ack_mode": "socketcan",
+          "mock_mode": false,
+          "can_interface": "vcan0",
+          "ack_can_id_offset": 128,
+          "responder_delay_ms": 5,
+          "injected_responder_policy": "drop",
+          "control_responder_policy": "echo"
+        }
+      }
+    }
+  ]
+}

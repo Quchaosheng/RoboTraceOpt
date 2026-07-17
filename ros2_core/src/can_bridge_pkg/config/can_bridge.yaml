@@ -1,0 +1,14 @@
+can_bridge_node:
+  ros__parameters:
+    command_topic: "/planner/command"
+    can_interface: "vcan0"
+    mock_mode: true
+    can_send_delay_ms: 5
+    ack_enabled: true
+    ack_mode: "mock"
+    ack_timeout_ms: 50
+    max_retries: 2
+    retry_backoff_ms: 10
+    mock_ack_delay_ms: 5
+    mock_ack_policy: "success"
+    ack_can_id_offset: 128

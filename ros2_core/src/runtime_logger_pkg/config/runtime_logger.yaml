@@ -1,0 +1,4 @@
+runtime_event_logger_node:
+  ros__parameters:
+    output_path: "logs/runtime_events.jsonl"
+    flush_every_event: false
