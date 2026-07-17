@@ -158,7 +158,8 @@ class VlmPlannerNode(Node):
 
         self.get_logger().info(
             f"vlm_planner_node running with planner_backend={self._planner_backend}, "
-            f"active_backend={self._active_backend}, publishing /planner/command"
+            f"active_backend={self._active_backend}, executor_threads={self.executor_threads}, "
+            "publishing /planner/command"
         )
 
     def _on_camera_frame(self, frame: CameraFrame) -> None:
