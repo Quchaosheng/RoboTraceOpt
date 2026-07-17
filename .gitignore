@@ -1,0 +1,33 @@
+# ROS 2 build outputs
+build/
+install/
+log/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+
+# Generated experiment outputs
+data/raw/
+data/processed/
+data/reports/
+
+# Local configuration and credentials
+.env
+*.local
+
+# Private manuscripts and internal planning
+*.doc
+*.docx
+*.pdf
+*.qmd
+*.zip
+*thesis*
+*manuscript*
+*论文*
+docs/plans/
+docs/provenance/
+docs/superpowers/
+

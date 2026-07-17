@@ -1,0 +1,101 @@
+{
+  "captured_at_utc": "2026-07-15T09:53:27.339254Z",
+  "git_commit": "d79b59154ad74ec0c6066d91591a72f2f5340577",
+  "git_dirty": false,
+  "host_id": "chaosheng",
+  "processes": [
+    {
+      "executable": "/root/.cache/robotracert_fusion_build/install/robot_action_pkg/lib/robot_action_pkg/action_manager_node",
+      "host_id": "chaosheng",
+      "node": "action_manager_node",
+      "pid": 554,
+      "start_time_monotonic_ns": 994340000000,
+      "start_time_utc": "2026-07-15T09:53:18.340000Z",
+      "tids": [
+        554,
+        561,
+        563,
+        590,
+        591,
+        592,
+        593,
+        594,
+        595,
+        596,
+        597,
+        598,
+        599
+      ]
+    },
+    {
+      "executable": "/root/.cache/robotracert_fusion_build/install/camera_mock_pkg/lib/camera_mock_pkg/camera_mock_node",
+      "host_id": "chaosheng",
+      "node": "camera_mock_node",
+      "pid": 549,
+      "start_time_monotonic_ns": 994330000000,
+      "start_time_utc": "2026-07-15T09:53:18.330000Z",
+      "tids": [
+        549,
+        566,
+        567,
+        600,
+        601,
+        602,
+        603,
+        604,
+        605,
+        606,
+        607,
+        608,
+        609
+      ]
+    },
+    {
+      "executable": "/root/.cache/robotracert_fusion_build/install/can_bridge_pkg/lib/can_bridge_pkg/can_bridge_node",
+      "host_id": "chaosheng",
+      "node": "can_bridge_node",
+      "pid": 556,
+      "start_time_monotonic_ns": 994340000000,
+      "start_time_utc": "2026-07-15T09:53:18.340000Z",
+      "tids": [
+        556,
+        564,
+        565,
+        568,
+        569,
+        570,
+        571,
+        572,
+        573,
+        574,
+        575,
+        578,
+        579
+      ]
+    },
+    {
+      "executable": "/usr/bin/python3.10",
+      "host_id": "chaosheng",
+      "node": "vlm_planner_node",
+      "pid": 551,
+      "start_time_monotonic_ns": 994330000000,
+      "start_time_utc": "2026-07-15T09:53:18.330000Z",
+      "tids": [
+        551,
+        576,
+        577,
+        611,
+        612,
+        613,
+        614,
+        615,
+        616,
+        617,
+        618,
+        619,
+        620
+      ]
+    }
+  ],
+  "schema_version": "process-manifest/v1"
+}

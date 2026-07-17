@@ -1,0 +1,51 @@
+{
+  "schema_version": "root-cause-catalog/v1",
+  "causes": [
+    {
+      "cause_id": "application_compute_delay",
+      "layer": "application",
+      "conflicts_with": ["blocking_syscall_io", "scheduling_delay"],
+      "metrics": [
+        {"metric_id": "planner_compute_ns", "node_type": "StageWindow", "extractor": "window_duration_ns", "stages": ["planner_process_start"]},
+        {"metric_id": "action_compute_ns", "node_type": "StageWindow", "extractor": "window_duration_ns", "stages": ["action_execute_start"]}
+      ]
+    },
+    {
+      "cause_id": "executor_queueing",
+      "layer": "executor",
+      "metrics": [
+        {"metric_id": "callback_dispatch_upper_bound_ns", "node_type": "RosCallback", "extractor": "attribute", "attribute": "queue_delay_ns"}
+      ]
+    },
+    {
+      "cause_id": "dds_communication_delay",
+      "layer": "dds_communication",
+      "metrics": [
+        {"metric_id": "dds_transfer_ns", "node_type": "DdsCommunication", "extractor": "attribute", "attribute": "duration_ns"}
+      ]
+    },
+    {
+      "cause_id": "blocking_syscall_io",
+      "layer": "syscall_io",
+      "metrics": [
+        {"metric_id": "syscall_block_ns", "node_type": "SyscallInterval", "extractor": "attribute", "attribute": "duration_ns"}
+      ]
+    },
+    {
+      "cause_id": "scheduling_delay",
+      "layer": "scheduler",
+      "metrics": [
+        {"metric_id": "wakeup_to_run_ns", "node_type": "SchedulingInterval", "extractor": "attribute", "attribute": "wakeup_to_run_ns"},
+        {"metric_id": "off_cpu_ns", "node_type": "SchedulingInterval", "extractor": "attribute", "attribute": "off_cpu_ns"}
+      ]
+    },
+    {
+      "cause_id": "can_ack_failure",
+      "layer": "can_ack",
+      "metrics": [
+        {"metric_id": "ack_latency_ns", "node_type": "AckTerminal", "extractor": "attribute", "attribute": "duration_ns", "event_types": ["can_ack_received"]},
+        {"metric_id": "ack_terminal_failure", "node_type": "AckTerminal", "extractor": "terminal_failure", "event_types": ["can_retry_exhausted", "can_frame_send_failed"]}
+      ]
+    }
+  ]
+}

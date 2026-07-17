@@ -1,0 +1,15 @@
+input_node:
+  ros__parameters:
+    input_rate_hz: 1.0
+
+planner_node:
+  ros__parameters:
+    planner_delay_ms: 50
+
+action_node:
+  ros__parameters:
+    action_delay_ms: 100
+
+control_node:
+  ros__parameters:
+    control_delay_ms: 20

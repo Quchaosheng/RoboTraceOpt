@@ -1,0 +1,12 @@
+runtime_bringup:
+  defaults:
+    camera_rate_hz: 1.0
+    planner_delay_ms: 50
+    planner_delay_mode: "sleep"
+    executor_contention_enabled: false
+    executor_contention_period_ms: 25
+    executor_contention_load_ms: 0
+    action_delay_ms: 100
+    can_send_delay_ms: 5
+    output_path: "logs/runtime_events.jsonl"
+    mock_mode: true

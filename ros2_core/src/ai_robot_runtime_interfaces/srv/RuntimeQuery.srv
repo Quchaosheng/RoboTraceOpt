@@ -1,0 +1,9 @@
+TraceHeader header
+string payload_id
+int64 requested_delay_ms
+---
+TraceHeader header
+string payload_id
+bool success
+int64 server_start_timestamp_ns
+int64 server_end_timestamp_ns

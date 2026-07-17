@@ -1,0 +1,12 @@
+TraceHeader header
+string action
+string target
+float32 speed
+---
+bool success
+string message
+int64 start_timestamp_ns
+int64 end_timestamp_ns
+---
+string status
+int64 timestamp_ns

@@ -1,0 +1,11 @@
+TraceHeader header
+string event_name
+string event_type
+uint32 pid
+uint32 tid
+string host_id
+string clock_id
+int64 duration_ns
+string status
+string reason_code
+string extra_json

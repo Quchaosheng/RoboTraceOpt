@@ -1,0 +1,33 @@
+{
+  "clock_classes": [
+    {
+      "frequency": 1000000000,
+      "name": "monotonic",
+      "offset_cycles": 99042523,
+      "offset_seconds": 1784104655
+    }
+  ],
+  "event_count": 98,
+  "event_counts": {
+    "ros2:callback_end": 8,
+    "ros2:callback_start": 8,
+    "ros2:rcl_init": 5,
+    "ros2:rcl_node_init": 5,
+    "ros2:rcl_publish": 8,
+    "ros2:rcl_publisher_init": 8,
+    "ros2:rcl_subscription_init": 8,
+    "ros2:rcl_take": 8,
+    "ros2:rclcpp_executor_execute": 8,
+    "ros2:rclcpp_executor_wait_for_work": 8,
+    "ros2:rclcpp_publish": 8,
+    "ros2:rclcpp_take": 8,
+    "ros2:rmw_take": 8
+  },
+  "generated_at_utc": "2026-07-15T09:08:42.009028+00:00",
+  "host_id": "chaosheng",
+  "schema_version": 1,
+  "source": "real_w1_ros2_tracing_smoke",
+  "source_trace": "/root/.cache/robotracert_fusion_traces/robotracert_w1_fixture_enabled_20260715",
+  "source_trace_sha256": "a72b0a1203c3530f6efb7544051a4e9ba59fea8ade8d6726b3621ef33088c637",
+  "tracetools_source_commit": "3c159b382d2d565e26eaa91e39c9ec06a5c6fe88"
+}

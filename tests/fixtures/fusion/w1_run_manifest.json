@@ -1,0 +1,21 @@
+{
+  "schema_version": "fusion-run/v1",
+  "session_id": "robotracert_w1_20260715T095318Z_467",
+  "workload": "w1",
+  "host_id": "chaosheng",
+  "git_commit": "d79b59154ad74ec0c6066d91591a72f2f5340577",
+  "git_dirty": false,
+  "runtime_event_count": 622,
+  "runtime_trace_count": 30,
+  "runtime_process_count": 4,
+  "runtime_thread_count": 34,
+  "runtime_clock_id": "monotonic",
+  "runtime_pid_set_matches_process_manifest": true,
+  "ctf_event_count": 147877,
+  "ctf_core_event_type_count": 13,
+  "ctf_trace_sha256": "f8594d44104b11108a03acabf857bf978a2d051a9caf30444e7ba7df72054b3f",
+  "tracetools_source_commit": "3c159b382d2d565e26eaa91e39c9ec06a5c6fe88",
+  "clock_calibration_sha256": "0bde090397f1436c071b95a0db080dae00c7206376b6ec0886f149bc6191291e",
+  "process_manifest_sha256": "e4f74be690a5ee6fa98b02046a1daadc093d5a49a1c010343c3f6c4adc318427",
+  "raw_ctf_location": "/root/.cache/robotracert_fusion_traces/robotracert_w1_20260715T095318Z_467"
+}
