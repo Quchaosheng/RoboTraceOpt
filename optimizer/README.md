@@ -49,6 +49,14 @@ The six-trial unguided plans contain one applicable action and five unrelated
 actions; this is a protocol-level budget observation, not an optimization
 performance result.
 
+`optimizer.integration.diagnosis_gate` is the boundary between diagnosis and
+search. It accepts only a valid `diagnosis-report/v1` with status `diagnosed`,
+valid evidence, sufficient confidence and completeness, and a registered
+action for `top_1`. Abstained, partial, ambiguous, low-confidence, and
+unsupported diagnoses produce an auditable deny result with no trial plan.
+Oracle and hidden-label fields are rejected recursively and are never consumed
+by the optimizer.
+
 The first real F1 search smoke was executed serially from commit `9af4488` with
 five six-second trials per strategy. Guided evaluated 0/25/50/75/100 ms;
 random evaluated the frozen 45/36/23/64/27 ms sequence. Measured

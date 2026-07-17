@@ -62,7 +62,8 @@ python3 -m unittest \
   tests.optimizer.test_rollback \
   tests.optimizer.test_trial_planner \
   tests.optimizer.test_runtime_trial \
-  tests.optimizer.test_search_summary -q
+  tests.optimizer.test_search_summary \
+  tests.optimizer.test_diagnosis_gate -q
 ```
 
 ## Evidence boundaries
