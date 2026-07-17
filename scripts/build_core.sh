@@ -5,7 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 WORKSPACE_ROOT="${PROJECT_ROOT}/ros2_core"
 
-SAFE_ROOT="${ROS2_RUNTIME_SAFE_ROOT:-${HOME}/.cache/robotracert_fusion_build}"
+SAFE_ROOT="${ROS2_RUNTIME_SAFE_ROOT:-${HOME}/.cache/robotraceopt_build}"
 SAFE_WS="${SAFE_ROOT}/ws"
 BUILD_BASE="${SAFE_ROOT}/build"
 INSTALL_BASE="${SAFE_ROOT}/install"

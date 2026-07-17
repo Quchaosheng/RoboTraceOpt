@@ -3,7 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-SAFE_ROOT="${ROS2_RUNTIME_SAFE_ROOT:-${HOME}/.cache/robotracert_fusion_build}"
+SAFE_ROOT="${ROS2_RUNTIME_SAFE_ROOT:-${HOME}/.cache/robotraceopt_build}"
 INSTALL_SETUP="${SAFE_ROOT}/install/setup.bash"
 
 usage() {
