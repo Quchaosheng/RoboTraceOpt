@@ -3,7 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
-BUILD_ROOT="${ROS2_RUNTIME_SAFE_ROOT:-${HOME}/.cache/robotracert_fusion_build}"
+BUILD_ROOT="${ROS2_RUNTIME_SAFE_ROOT:-${HOME}/.cache/robotraceopt_build}"
 OVERLAY_ROOT="${TRACETOOLS_OVERLAY_ROOT:-${HOME}/.cache/robotracert_tracing_overlay}"
 TRACE_ROOT="${TRACETOOLS_TRACE_ROOT:-${HOME}/.cache/robotracert_fusion_traces}"
 

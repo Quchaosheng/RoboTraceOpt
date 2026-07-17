@@ -17,7 +17,7 @@ class ActionRegistryTest(unittest.TestCase):
         catalog = available_actions()
         ids = [item["action_id"] for item in catalog]
         self.assertEqual(len(ids), len(set(ids)))
-        self.assertIn("executor_contention_enabled", ids)
+        self.assertIn("executor_threads", ids)
         self.assertIn("frame_qos_depth", ids)
 
     def test_rejects_action_outside_diagnosed_cause_or_bounds(self) -> None:
@@ -30,6 +30,14 @@ class ActionRegistryTest(unittest.TestCase):
     def test_unknown_cause_is_rejected(self) -> None:
         with self.assertRaisesRegex(ValueError, "unknown cause"):
             actions_for_cause("made_up_cause")
+
+    def test_executor_queueing_maps_to_thread_count(self) -> None:
+        actions = actions_for_cause("executor_queueing")
+        self.assertEqual([item["action_id"] for item in actions], ["executor_threads"])
+        self.assertEqual(actions[0]["bounds"], {"min": 1, "max": 4})
+        validate_action("executor_queueing", "executor_threads", 2)
+        with self.assertRaisesRegex(ValueError, "bounds"):
+            validate_action("executor_queueing", "executor_threads", 0)
 
 
 if __name__ == "__main__":

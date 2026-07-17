@@ -19,6 +19,7 @@ from optimizer.trials.runtime_trial import (  # noqa: E402
     build_trial_command,
     build_trial_manifest,
     derive_f1_trial_report,
+    derive_f2_trial_report,
     derive_f4_trial_report,
 )
 
@@ -39,12 +40,13 @@ def main() -> int:
     candidate = parser.add_mutually_exclusive_group(required=True)
     candidate.add_argument("--planner-delay-ms", type=int)
     candidate.add_argument("--server-delay-ms", type=int)
+    candidate.add_argument("--executor-threads", type=int)
     parser.add_argument("--duration-seconds", type=int, default=8)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument(
         "--safe-root",
         type=Path,
-        default=Path.home() / ".cache" / "robotracert_fusion_build",
+        default=Path.home() / ".cache" / "robotraceopt_build",
     )
     args = parser.parse_args()
     if args.output_dir.exists():
@@ -57,10 +59,14 @@ def main() -> int:
         cause_id = "application_compute_delay"
         config = {"planner_delay_ms": args.planner_delay_ms}
         derive_report = derive_f1_trial_report
-    else:
+    elif args.server_delay_ms is not None:
         cause_id = "blocking_syscall_io"
         config = {"server_delay_ms": args.server_delay_ms}
         derive_report = derive_f4_trial_report
+    else:
+        cause_id = "executor_queueing"
+        config = {"executor_threads": args.executor_threads}
+        derive_report = derive_f2_trial_report
     command = build_trial_command(cause_id, config, events_path)
     git_commit = subprocess.run(
         ["git", "rev-parse", "HEAD"],

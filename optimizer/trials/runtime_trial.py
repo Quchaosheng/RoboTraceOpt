@@ -19,6 +19,7 @@ SERVICE_STAGES = (
     "response_received",
 )
 SERVICE_SERVER_STAGES = {"service_process_start", "service_process_end"}
+DISPATCH_STAGES = ("camera_frame_published", "planner_receive")
 
 
 def build_trial_manifest(
@@ -76,6 +77,24 @@ def build_trial_command(
             "request_rate_hz:=5",
             f"server_delay_ms:={value}",
             "runtime_events_enabled:=true",
+            f"output_path:={events_path.as_posix()}",
+        ]
+    if cause_id == "executor_queueing" and action_id == "executor_threads":
+        return [
+            "ros2",
+            "launch",
+            "runtime_bringup",
+            "ai_runtime.launch.py",
+            "profile:=enhanced",
+            "camera_rate_hz:=100",
+            "planner_backend:=mock",
+            "planner_delay_ms:=0",
+            "action_manager_enabled:=false",
+            "executor_contention_enabled:=true",
+            "executor_contention_period_ms:=25",
+            "executor_contention_load_ms:=20",
+            f"executor_threads:={value}",
+            "runtime_event_enabled:=true",
             f"output_path:={events_path.as_posix()}",
         ]
     raise ValueError("unsupported runtime optimization trial")
@@ -261,6 +280,78 @@ def derive_f4_trial_report(
         "invalid_trace_reason_counts": dict(sorted(invalid.items())),
         "complete_trace_rate": complete / observed if observed else 0.0,
         "metrics_ns": {name: _describe(metric_values) for name, metric_values in values.items()},
+    }
+
+
+def derive_f2_trial_report(
+    runtime_records: Iterable[dict[str, Any]], candidate_config: dict[str, Any]
+) -> dict[str, Any]:
+    action_id, executor_threads = _single_config("executor_queueing", candidate_config)
+    if action_id != "executor_threads":
+        raise ValueError("F2 trial requires executor_threads")
+    by_trace: dict[str, list[dict[str, Any]]] = {}
+    for record in runtime_records:
+        trace_id = record.get("trace_id")
+        if (
+            isinstance(trace_id, str)
+            and trace_id
+            and record.get("event_name") in DISPATCH_STAGES
+        ):
+            by_trace.setdefault(trace_id, []).append(record)
+
+    incomplete = 0
+    invalid: Counter[str] = Counter()
+    elapsed: list[int] = []
+    for rows in by_trace.values():
+        counts = Counter(str(row.get("event_name", "")) for row in rows)
+        if any(counts[name] > 1 for name in DISPATCH_STAGES):
+            invalid["duplicate_stage"] += 1
+            continue
+        if any(counts[name] == 0 for name in DISPATCH_STAGES):
+            incomplete += 1
+            continue
+        by_name = {str(row["event_name"]): row for row in rows}
+        published = by_name["camera_frame_published"]
+        received = by_name["planner_receive"]
+        if any(not _integer(row.get("timestamp_ns")) for row in (published, received)):
+            invalid["invalid_timestamp"] += 1
+            continue
+        if any(
+            published.get(field) != received.get(field)
+            for field in ("sequence_id", "host_id", "clock_id")
+        ) or published.get("clock_id") != "monotonic":
+            invalid["identity_mismatch"] += 1
+            continue
+        try:
+            metadata = json.loads(received.get("extra_json", ""))
+        except (json.JSONDecodeError, TypeError):
+            invalid["invalid_extra_json"] += 1
+            continue
+        if not isinstance(metadata, dict) or metadata.get("executor_threads") != executor_threads:
+            raise ValueError("runtime event does not match candidate profile")
+        value = int(received["timestamp_ns"]) - int(published["timestamp_ns"])
+        if value < 0:
+            invalid["negative_interval"] += 1
+            continue
+        elapsed.append(value)
+
+    observed = len(by_trace)
+    complete = len(elapsed)
+    return {
+        "schema_version": "optimization-runtime-trial/v1",
+        "cause_id": "executor_queueing",
+        "candidate_config": dict(candidate_config),
+        "measurement_semantics": "runtime_event_dispatch_upper_bound",
+        "development_only": True,
+        "formal_inference_allowed": False,
+        "formal_optimization_allowed": False,
+        "observed_trace_count": observed,
+        "complete_trace_count": complete,
+        "incomplete_trace_count": incomplete,
+        "invalid_trace_count": sum(invalid.values()),
+        "invalid_trace_reason_counts": dict(sorted(invalid.items())),
+        "complete_trace_rate": complete / observed if observed else 0.0,
+        "metrics_ns": {"callback_dispatch_upper_bound_ns": _describe(elapsed)},
     }
 
 

@@ -21,6 +21,7 @@ def generate_launch_description():
     executor_contention_enabled = LaunchConfiguration("executor_contention_enabled")
     executor_contention_period_ms = LaunchConfiguration("executor_contention_period_ms")
     executor_contention_load_ms = LaunchConfiguration("executor_contention_load_ms")
+    executor_threads = LaunchConfiguration("executor_threads")
     llm_provider = LaunchConfiguration("llm_provider")
     llm_api_base = LaunchConfiguration("llm_api_base")
     llm_api_key_env = LaunchConfiguration("llm_api_key_env")
@@ -47,6 +48,7 @@ def generate_launch_description():
         DeclareLaunchArgument("executor_contention_enabled", default_value="false"),
         DeclareLaunchArgument("executor_contention_period_ms", default_value="25"),
         DeclareLaunchArgument("executor_contention_load_ms", default_value="0"),
+        DeclareLaunchArgument("executor_threads", default_value="1"),
         DeclareLaunchArgument(
             "llm_provider",
             default_value="openai_compatible",
@@ -97,6 +99,7 @@ def generate_launch_description():
                     "executor_contention_load_ms": ParameterValue(
                         executor_contention_load_ms, value_type=int
                     ),
+                    "executor_threads": ParameterValue(executor_threads, value_type=int),
                     "llm_provider": ParameterValue(llm_provider, value_type=str),
                     "llm_api_base": ParameterValue(llm_api_base, value_type=str),
                     "llm_api_key_env": ParameterValue(llm_api_key_env, value_type=str),
