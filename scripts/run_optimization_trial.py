@@ -46,7 +46,7 @@ def main() -> int:
     parser.add_argument(
         "--safe-root",
         type=Path,
-        default=Path.home() / ".cache" / "robotracert_fusion_build",
+        default=Path.home() / ".cache" / "robotraceopt_build",
     )
     args = parser.parse_args()
     if args.output_dir.exists():
