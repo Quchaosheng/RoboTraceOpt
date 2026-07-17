@@ -6,6 +6,7 @@ from optimizer.trials.runtime_trial import (
     build_trial_command,
     build_trial_manifest,
     derive_f1_trial_report,
+    derive_f2_trial_report,
     derive_f4_trial_report,
 )
 
@@ -56,6 +57,14 @@ class RuntimeTrialTest(unittest.TestCase):
         self.assertIn("server_delay_ms:=50", command)
         self.assertIn("request_rate_hz:=5", command)
 
+    def test_builds_executor_thread_candidate_command(self) -> None:
+        command = build_trial_command(
+            "executor_queueing", {"executor_threads": 2}, Path("events.jsonl")
+        )
+        self.assertIn("executor_threads:=2", command)
+        self.assertIn("executor_contention_enabled:=true", command)
+        self.assertIn("executor_contention_load_ms:=20", command)
+
     def test_derives_f1_candidate_objective_report(self) -> None:
         records = [
             event("planner_process_start", 1_000),
@@ -96,6 +105,18 @@ class RuntimeTrialTest(unittest.TestCase):
             50_002_000.0,
         )
 
+    def test_derives_f2_dispatch_upper_bound(self) -> None:
+        records = [
+            dispatch_event("camera_frame_published", 1_000, executor_threads=2),
+            dispatch_event("planner_receive", 2_500, executor_threads=2),
+        ]
+        report = derive_f2_trial_report(records, {"executor_threads": 2})
+        self.assertEqual(report["complete_trace_count"], 1)
+        self.assertEqual(
+            report["metrics_ns"]["callback_dispatch_upper_bound_ns"]["median"],
+            1_500.0,
+        )
+
     def test_f4_selects_one_of_two_distinct_server_pids(self) -> None:
         rows = [
             service_event("query_sent", 1_000, pid=20),
@@ -120,6 +141,21 @@ def service_event(name: str, timestamp_ns: int, *, pid: int, delay_ms: int = 50)
         "timestamp_ns": timestamp_ns,
         "pid": pid,
         "tid": pid,
+        "host_id": "host-a",
+        "clock_id": "monotonic",
+        "extra_json": json.dumps(extra),
+    }
+
+
+def dispatch_event(name: str, timestamp_ns: int, *, executor_threads: int):
+    extra = {"executor_threads": executor_threads} if name == "planner_receive" else {}
+    return {
+        "trace_id": "trace-dispatch-1",
+        "sequence_id": 1,
+        "event_name": name,
+        "timestamp_ns": timestamp_ns,
+        "pid": 10,
+        "tid": 10,
         "host_id": "host-a",
         "clock_id": "monotonic",
         "extra_json": json.dumps(extra),

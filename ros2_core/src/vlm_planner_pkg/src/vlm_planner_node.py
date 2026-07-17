@@ -7,6 +7,8 @@ from typing import Any, Dict, Optional, Tuple
 
 import rclpy
 from ai_robot_runtime_interfaces.msg import CameraFrame, PlannerCommand, RuntimeEvent
+from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
+from rclpy.executors import MultiThreadedExecutor, SingleThreadedExecutor
 from rclpy.node import Node
 from rclpy.qos import DurabilityPolicy, HistoryPolicy, QoSProfile, ReliabilityPolicy
 
@@ -49,6 +51,13 @@ class VlmPlannerNode(Node):
             .get_parameter_value()
             .integer_value
         )
+        self.executor_threads = int(
+            self.declare_parameter("executor_threads", 1)
+            .get_parameter_value()
+            .integer_value
+        )
+        if not 1 <= self.executor_threads <= 4:
+            raise ValueError("executor_threads must be between 1 and 4")
         self._runtime_events_enabled = (
             self.declare_parameter("runtime_events_enabled", True)
             .get_parameter_value()
@@ -105,6 +114,8 @@ class VlmPlannerNode(Node):
         self._llm_client: Optional[OpenAICompatiblePlannerClient] = None
         self._startup_fallback_reason = ""
         self._active_backend = self._configure_backend()
+        self._frame_callback_group = MutuallyExclusiveCallbackGroup()
+        self._contention_callback_group = MutuallyExclusiveCallbackGroup()
 
         self._command_publisher = self.create_publisher(
             PlannerCommand,
@@ -131,6 +142,7 @@ class VlmPlannerNode(Node):
             "/camera/frame",
             self._on_camera_frame,
             frame_qos,
+            callback_group=self._frame_callback_group,
         )
         self._contention_timer = None
         if self._executor_contention_enabled:
@@ -141,6 +153,7 @@ class VlmPlannerNode(Node):
             self._contention_timer = self.create_timer(
                 self._executor_contention_period_ms / 1000.0,
                 self._run_executor_contention,
+                callback_group=self._contention_callback_group,
             )
 
         self.get_logger().info(
@@ -317,6 +330,7 @@ class VlmPlannerNode(Node):
             "speed": decision.speed if decision else None,
             "confidence": decision.confidence if decision else None,
             "reason": decision.reason if decision else None,
+            "executor_threads": self.executor_threads,
         }
         if self._llm_model:
             event_extra["llm_model"] = self._llm_model
@@ -360,11 +374,18 @@ class VlmPlannerNode(Node):
 def main(args=None) -> None:
     rclpy.init(args=args)
     node = VlmPlannerNode()
+    executor = (
+        SingleThreadedExecutor()
+        if node.executor_threads == 1
+        else MultiThreadedExecutor(num_threads=node.executor_threads)
+    )
+    executor.add_node(node)
     try:
-        rclpy.spin(node)
+        executor.spin()
     except KeyboardInterrupt:
         pass
     finally:
+        executor.shutdown()
         node.destroy_node()
         if rclpy.ok():
             rclpy.shutdown()
