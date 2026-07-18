@@ -3,7 +3,10 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scripts.run_repeated_optimization_campaign import _git_commit, run_repeated_campaign
+from scripts.run_repeated_optimization_campaign import (
+    _git_commit,
+    run_repeated_campaign,
+)
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -83,13 +86,11 @@ def write_report(output, config, objective, rate=1.0, dataset_role="pilot"):
                 "candidate_config": config,
                 "dataset_role": dataset_role,
                 "development_only": dataset_role in {"development", "pilot"},
-                "formal_inference_allowed": False,
+                "formal_inference_allowed": dataset_role == "test",
                 "formal_optimization_allowed": dataset_role == "test",
                 "complete_trace_rate": rate,
                 "complete_trace_count": 10,
-                "metrics_ns": {
-                    "callback_dispatch_upper_bound_ns": {"p95": objective}
-                },
+                "metrics_ns": {"callback_dispatch_upper_bound_ns": {"p95": objective}},
             }
         ),
         encoding="utf-8",
@@ -176,14 +177,18 @@ class RepeatedCampaignCliTest(unittest.TestCase):
                 *test_args["output_dir"].glob("candidate_validations/*.json"),
                 *test_args["output_dir"].glob("trials/**/trial_report.json"),
             ]
-            artifacts = [
-                json.loads(path.read_text(encoding="utf-8")) for path in paths
+            artifacts = [json.loads(path.read_text(encoding="utf-8")) for path in paths]
+            trial_reports = [
+                json.loads(path.read_text(encoding="utf-8"))
+                for path in test_args["output_dir"].glob("trials/**/trial_report.json")
             ]
 
             calibration_args = campaign_args(directory)
             calibration_args["output_dir"] = Path(directory) / "calibration"
             calibration_qualification = qualification("calibration")
-            calibration_qualification_path = Path(directory) / "calibration_qualification.json"
+            calibration_qualification_path = (
+                Path(directory) / "calibration_qualification.json"
+            )
             calibration_qualification_path.write_text(
                 json.dumps(calibration_qualification), encoding="utf-8"
             )
@@ -203,6 +208,9 @@ class RepeatedCampaignCliTest(unittest.TestCase):
             all(row["formal_optimization_allowed"] is True for row in artifacts)
         )
         self.assertTrue(all(row["development_only"] is False for row in artifacts))
+        self.assertTrue(
+            all(row["formal_inference_allowed"] is True for row in trial_reports)
+        )
         self.assertEqual(calibration["dataset_role"], "calibration")
         self.assertFalse(calibration["formal_optimization_allowed"])
         self.assertFalse(calibration["development_only"])
@@ -214,9 +222,7 @@ class RepeatedCampaignCliTest(unittest.TestCase):
         )
 
     def test_public_docs_freeze_pilot_command_and_ignore_boundaries(self):
-        optimizer_readme = (ROOT / "optimizer/README.md").read_text(
-            encoding="utf-8"
-        )
+        optimizer_readme = (ROOT / "optimizer/README.md").read_text(encoding="utf-8")
         ignore = (ROOT / ".gitignore").read_text(encoding="utf-8")
 
         self.assertIn("--repetitions 5", optimizer_readme)
@@ -286,7 +292,9 @@ class RepeatedCampaignCliTest(unittest.TestCase):
             summary = run_repeated_campaign(
                 diagnosis(), baseline(), **args, execute_trial=execute
             )
-            failed_results = list(args["output_dir"].glob("trials/**/trial_result.json"))
+            failed_results = list(
+                args["output_dir"].glob("trials/**/trial_result.json")
+            )
 
         self.assertEqual(len(calls), 20)
         self.assertEqual(summary["failed_trial_count"], 1)
@@ -324,7 +332,10 @@ class RepeatedCampaignCliTest(unittest.TestCase):
         self.assertEqual(summary["action"], "restore_baseline")
         self.assertTrue(validations)
         self.assertTrue(
-            all(row["reason_code"] == "incomplete_repeated_evidence" for row in validations)
+            all(
+                row["reason_code"] == "incomplete_repeated_evidence"
+                for row in validations
+            )
         )
         self.assertTrue(all(row["failed_pair_count"] == 1 for row in validations))
 
@@ -393,8 +404,12 @@ class RepeatedCampaignCliTest(unittest.TestCase):
             run_repeated_campaign(
                 diagnosis(), baseline(), **args, execute_trial=execute
             )
-            result_paths = sorted(args["output_dir"].glob("trials/**/trial_result.json"))
-            results = [json.loads(path.read_text(encoding="utf-8")) for path in result_paths]
+            result_paths = sorted(
+                args["output_dir"].glob("trials/**/trial_result.json")
+            )
+            results = [
+                json.loads(path.read_text(encoding="utf-8")) for path in result_paths
+            ]
 
         self.assertEqual(len(results), 20)
         self.assertTrue(all(len(row["trial_report_sha256"]) == 64 for row in results))

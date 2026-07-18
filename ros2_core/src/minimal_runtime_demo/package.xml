@@ -4,7 +4,7 @@
   <name>minimal_runtime_demo</name>
   <version>0.0.1</version>
   <description>C++ minimal ROS2 runtime chain for observability and latency experiments.</description>
-  <maintainer email="todo@example.com">runtime-team</maintainer>
+  <maintainer email="Quchaosheng@users.noreply.github.com">Quchaosheng</maintainer>
   <license>Apache-2.0</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>

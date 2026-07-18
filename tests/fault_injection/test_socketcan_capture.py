@@ -77,7 +77,10 @@ class SocketCanCaptureTest(unittest.TestCase):
         )
 
         self.assertEqual(build_candump_command("vcan0"), ["candump", "-L", "vcan0"])
-        self.assertEqual(responder[:3], ["python3", "-m", "experiments.fault_injection.socketcan_responder"])
+        self.assertEqual(
+            responder[:3],
+            ["python3", "-m", "experiments.fault_injection.socketcan_responder"],
+        )
         self.assertIn("--policy", responder)
         self.assertIn("drop", responder)
         self.assertIn("--delay-ms", responder)

@@ -12,9 +12,7 @@ from optimizer.validation.candidate_validator import validate_reports
 from optimizer.validation.rollback import rollback_decision
 
 
-def validate_baseline_profile(
-    record: dict[str, Any], cause_id: str
-) -> dict[str, Any]:
+def validate_baseline_profile(record: dict[str, Any], cause_id: str) -> dict[str, Any]:
     if record.get("schema_version") != "optimization-baseline-profile/v1":
         raise ValueError("invalid baseline profile schema")
     if record.get("cause_id") != cause_id:
@@ -99,9 +97,7 @@ def evaluate_candidate(
         "trial_index": trial_index,
         "status": "validated",
         "candidate_config": dict(candidate_config),
-        "objective_value_ns": validation["candidate_objective"][
-            "objective_value_ns"
-        ],
+        "objective_value_ns": validation["candidate_objective"]["objective_value_ns"],
         "validation": validation,
     }
 
@@ -124,9 +120,7 @@ def select_closed_loop_decision(
             "selected_trial_index": None,
             "live_mutation_performed": False,
         }
-    accepted = [
-        row for row in measured if row["validation"]["decision"] == "accept"
-    ]
+    accepted = [row for row in measured if row["validation"]["decision"] == "accept"]
     selected = min(
         accepted or measured,
         key=lambda row: (

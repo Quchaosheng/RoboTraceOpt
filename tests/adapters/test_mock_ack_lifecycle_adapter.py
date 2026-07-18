@@ -123,7 +123,16 @@ class MockAckLifecycleAdapterTest(unittest.TestCase):
 
     def test_accepts_success_control_and_reports_missing_terminal(self) -> None:
         records = success_trace()
-        records.append(event("trace-missing", "can_ack_wait_start", 1000, 0, variant="control", sequence_id=2))
+        records.append(
+            event(
+                "trace-missing",
+                "can_ack_wait_start",
+                1000,
+                0,
+                variant="control",
+                sequence_id=2,
+            )
+        )
 
         events, report = derive(records, "control")
 
@@ -136,7 +145,9 @@ class MockAckLifecycleAdapterTest(unittest.TestCase):
 
     def test_rejects_conflicting_terminal_and_event_after_terminal(self) -> None:
         conflict = success_trace("conflict")
-        conflict.append(event("conflict", "can_retry_exhausted", 6_001_000, 2, variant="control"))
+        conflict.append(
+            event("conflict", "can_retry_exhausted", 6_001_000, 2, variant="control")
+        )
         after = success_trace("after")
         after.append(event("after", "can_ack_timeout", 6_001_000, 0, variant="control"))
 
@@ -155,7 +166,9 @@ class MockAckLifecycleAdapterTest(unittest.TestCase):
         )
         events, report = derive(records)
         self.assertEqual(events, [])
-        self.assertEqual(report["invalid_pair_reason_counts"], {"retry_sequence_mismatch": 1})
+        self.assertEqual(
+            report["invalid_pair_reason_counts"], {"retry_sequence_mismatch": 1}
+        )
 
         oracle = oracle_manifest()
         oracle["injection"]["ack_timeout_ms"] = 30

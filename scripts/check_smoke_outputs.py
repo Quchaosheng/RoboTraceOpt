@@ -73,7 +73,9 @@ def read_jsonl(path: Path) -> list[dict[str, Any]]:
             try:
                 row = json.loads(line)
             except json.JSONDecodeError as error:
-                raise ValueError(f"invalid JSON at line {line_number}: {error.msg}") from error
+                raise ValueError(
+                    f"invalid JSON at line {line_number}: {error.msg}"
+                ) from error
             if not isinstance(row, dict):
                 raise ValueError(f"JSON value at line {line_number} is not an object")
             rows.append(row)
@@ -112,9 +114,7 @@ def check_smoke_output(
     event_names = {
         str(row.get("event_name", "")) for row in rows if row.get("event_name")
     }
-    trace_ids = {
-        str(row.get("trace_id", "")) for row in rows if row.get("trace_id")
-    }
+    trace_ids = {str(row.get("trace_id", "")) for row in rows if row.get("trace_id")}
     missing_events = sorted(REQUIRED_EVENTS[workload] - event_names)
     if missing_events:
         raise ValueError(
@@ -126,9 +126,7 @@ def check_smoke_output(
         )
 
     timestamps = [
-        int(row["timestamp_ns"])
-        for row in rows
-        if row.get("timestamp_ns") is not None
+        int(row["timestamp_ns"]) for row in rows if row.get("timestamp_ns") is not None
     ]
     host_ids = sorted({str(row["host_id"]) for row in rows})
     clock_ids = sorted({str(row["clock_id"]) for row in rows})

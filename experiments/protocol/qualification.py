@@ -86,14 +86,18 @@ def qualify_experiment_session(
             for requirement in case["requirements"]
             if readiness.get(requirement, {}).get("status") != "ready"
         )
+        role_errors = _role_errors(case, dataset_role)
         if missing:
             reasons.add("capability_not_ready")
+        if role_errors:
+            reasons.add("case_not_allowed_for_dataset_role")
         case_rows.append(
             {
                 "case_id": case_id,
                 "requirements": list(case["requirements"]),
                 "missing_requirements": missing,
-                "status": "blocked" if missing else "ready",
+                "role_errors": role_errors,
+                "status": "blocked" if missing or role_errors else "ready",
             }
         )
 
@@ -104,8 +108,7 @@ def qualify_experiment_session(
         "reason_codes": sorted(reasons),
         "dataset_role": dataset_role,
         "development_only": dataset_role in {"development", "pilot"},
-        "formal_experiment_allowed": status == "allowed"
-        and dataset_role == "test",
+        "formal_experiment_allowed": status == "allowed" and dataset_role == "test",
         "platform_label": platform_label,
         "host": {
             "hostname": host["hostname"],
@@ -134,8 +137,29 @@ def _validate_capability_report(value: Any) -> None:
         raise ValueError("capability report host is incomplete")
     if not isinstance(host["is_wsl"], bool):
         raise ValueError("capability report is_wsl must be boolean")
-    if not isinstance(value.get("readiness"), dict):
+    readiness = value.get("readiness")
+    if not isinstance(readiness, dict):
         raise ValueError("capability report readiness must be an object")
+    for name, entry in readiness.items():
+        if (
+            not isinstance(name, str)
+            or not isinstance(entry, dict)
+            or entry.get("status") not in {"ready", "partial", "blocked"}
+        ):
+            raise ValueError("capability report readiness entry is invalid")
+
+
+def _role_errors(case: dict[str, Any], dataset_role: str) -> list[str]:
+    """Reject matrix cases that the child runner intentionally cannot execute."""
+    if dataset_role not in FORMAL_ROLES or case["runner_id"] != "fault_condition":
+        return []
+    parameters = case["parameters"]
+    errors = []
+    if parameters["condition_variant"] == "control":
+        errors.append("control_variant_development_only")
+    if parameters["fault_id"] == "F5":
+        errors.append("f5_development_only")
+    return errors
 
 
 def _digest(value: Any, field: str) -> None:

@@ -27,7 +27,11 @@ from optimizer.trials.runtime_trial import (  # noqa: E402
 
 
 def _read_jsonl(path: Path) -> list[dict[str, object]]:
-    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    return [
+        json.loads(line)
+        for line in path.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
 
 
 def _sha256(path: Path) -> str:
@@ -70,8 +74,28 @@ def _trial_evidence(
     return {
         "dataset_role": dataset_role,
         "development_only": dataset_role in {"development", "pilot"},
+        "formal_inference_allowed": dataset_role == "test",
         "formal_optimization_allowed": dataset_role == "test",
     }
+
+
+def apply_trial_evidence(
+    report: dict[str, object], evidence: dict[str, object]
+) -> dict[str, object]:
+    role = evidence.get("dataset_role")
+    if role not in {"development", "pilot", "calibration", "test"}:
+        raise ValueError("unsupported trial dataset role")
+    expected_development = role in {"development", "pilot"}
+    expected_formal = role == "test"
+    if (
+        evidence.get("development_only") is not expected_development
+        or evidence.get("formal_inference_allowed") is not expected_formal
+        or evidence.get("formal_optimization_allowed") is not expected_formal
+    ):
+        raise ValueError("inconsistent trial evidence role")
+    enriched = dict(report)
+    enriched.update(evidence)
+    return enriched
 
 
 def _read_json(path: Path) -> dict[str, object]:
@@ -79,6 +103,7 @@ def _read_json(path: Path) -> dict[str, object]:
     if not isinstance(value, dict):
         raise ValueError(f"JSON object required: {path}")
     return value
+
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
@@ -156,7 +181,9 @@ def main() -> int:
             "sha256": _sha256(args.qualification_report),
         }
     manifest_path = args.output_dir / "trial_manifest.json"
-    manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    manifest_path.write_text(
+        json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
     setup_path = args.safe_root / "install" / "setup.bash"
     if not setup_path.is_file():
         raise FileNotFoundError(f"ROS 2 build setup is missing: {setup_path}")
@@ -170,11 +197,15 @@ def main() -> int:
     )
     launch_log = args.output_dir / "launch.log"
     with launch_log.open("w", encoding="utf-8") as handle:
-        completed = subprocess.run(["bash", "-lc", shell], cwd=ROOT, stdout=handle, stderr=subprocess.STDOUT)
+        completed = subprocess.run(
+            ["bash", "-lc", shell], cwd=ROOT, stdout=handle, stderr=subprocess.STDOUT
+        )
     if completed.returncode not in {124, 130}:
-        raise RuntimeError(f"optimization trial failed with status {completed.returncode}")
+        raise RuntimeError(
+            f"optimization trial failed with status {completed.returncode}"
+        )
     report = derive_report(_read_jsonl(events_path), config)
-    report.update(evidence)
+    report = apply_trial_evidence(report, evidence)
     if report["complete_trace_count"] < 2:
         raise RuntimeError("optimization trial produced fewer than two complete traces")
     report["trial_manifest"] = str(manifest_path)
@@ -183,8 +214,14 @@ def main() -> int:
         "trial_manifest": _sha256(manifest_path),
     }
     report_path = args.output_dir / "trial_report.json"
-    report_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    print(json.dumps({"manifest": str(manifest_path), "report": str(report_path)}, indent=2))
+    report_path.write_text(
+        json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+    print(
+        json.dumps(
+            {"manifest": str(manifest_path), "report": str(report_path)}, indent=2
+        )
+    )
     return 0
 
 

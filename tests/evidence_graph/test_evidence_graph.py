@@ -92,9 +92,7 @@ class EvidenceGraphModelTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             graph.add_node(trace)
         with self.assertRaises(ValueError):
-            graph.add_edge(
-                EvidenceEdge("trace:1", "missing", EdgeType.BELONGS_TO)
-            )
+            graph.add_edge(EvidenceEdge("trace:1", "missing", EdgeType.BELONGS_TO))
 
 
 class EvidenceGraphBuilderTest(unittest.TestCase):
@@ -213,7 +211,9 @@ class EvidenceGraphBuilderTest(unittest.TestCase):
                 )
 
                 node = next(
-                    item for item in graph.nodes if item.node_id == f"evidence:{event_id}"
+                    item
+                    for item in graph.nodes
+                    if item.node_id == f"evidence:{event_id}"
                 )
                 self.assertEqual(node.node_type, expected_type)
 
@@ -229,7 +229,8 @@ class EvidenceGraphBuilderTest(unittest.TestCase):
         missing = next(
             node
             for node in graph.nodes
-            if node.stage == "service_process_start" and node.evidence_state == "missing"
+            if node.stage == "service_process_start"
+            and node.evidence_state == "missing"
         )
         self.assertEqual(missing.provenance, {})
         self.assertTrue(
@@ -261,7 +262,9 @@ class EvidenceGraphBuilderTest(unittest.TestCase):
         conflict = next(
             edge for edge in graph.edges if edge.edge_type == EdgeType.CONTRADICTS
         )
-        self.assertEqual((conflict.source_id, conflict.target_id), ("window:3", "window:4"))
+        self.assertEqual(
+            (conflict.source_id, conflict.target_id), ("window:3", "window:4")
+        )
         self.assertEqual(conflict.reason_code, "topology_order_violation")
 
     def test_rejects_trace_id_reused_with_a_different_sequence(self) -> None:
@@ -291,7 +294,9 @@ class EvidenceGraphBuilderTest(unittest.TestCase):
                 get_topology_contract("w2"),
             )
 
-    def test_structured_identity_cannot_be_overwritten_by_source_attributes(self) -> None:
+    def test_structured_identity_cannot_be_overwritten_by_source_attributes(
+        self,
+    ) -> None:
         event = replace(
             system_event("callback"),
             attributes={"timestamp_ns": 999, "pid": 999, "custom": "kept"},
@@ -334,7 +339,9 @@ class EvidenceGraphBuilderTest(unittest.TestCase):
                 get_topology_contract("w2"),
             )
 
-    def test_materializes_every_terminal_conflict_without_unpacking_failure(self) -> None:
+    def test_materializes_every_terminal_conflict_without_unpacking_failure(
+        self,
+    ) -> None:
         stages = (
             "camera_publish",
             "planner_receive",
@@ -441,7 +448,9 @@ class TopologyContractTest(unittest.TestCase):
 
         self.assertEqual(result.status, "invalid")
         self.assertIn("topology_order_violation", result.reason_codes)
-        self.assertEqual(result.conflicting_stages, ("service_process_end", "service_process_start"))
+        self.assertEqual(
+            result.conflicting_stages, ("service_process_end", "service_process_start")
+        )
 
     def test_unknown_workload_has_no_implicit_contract(self) -> None:
         with self.assertRaises(KeyError):

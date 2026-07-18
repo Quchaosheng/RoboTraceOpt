@@ -234,13 +234,17 @@ class ProcessManifestTest(unittest.TestCase):
             process_root = proc_root / "321"
             (process_root / "task" / "321").mkdir(parents=True)
             (process_root / "task" / "325").mkdir()
-            (proc_root / "stat").write_text("cpu 1 2 3 4\nbtime 1700000000\n", encoding="utf-8")
+            (proc_root / "stat").write_text(
+                "cpu 1 2 3 4\nbtime 1700000000\n", encoding="utf-8"
+            )
             fields_after_name = ["S"] + ["0"] * 18 + ["250"] + ["0"] * 20
             (process_root / "stat").write_text(
                 "321 (camera node) " + " ".join(fields_after_name) + "\n",
                 encoding="utf-8",
             )
-            (process_root / "cmdline").write_bytes(b"/opt/ros/camera_node\0--ros-args\0")
+            (process_root / "cmdline").write_bytes(
+                b"/opt/ros/camera_node\0--ros-args\0"
+            )
             (process_root / "status").write_text(
                 "Name:\tcamera node\nNSpid:\t9000\t321\n", encoding="utf-8"
             )

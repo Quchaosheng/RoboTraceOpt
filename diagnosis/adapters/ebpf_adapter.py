@@ -48,15 +48,21 @@ def load_process_identities(manifest: dict[str, Any]) -> dict[int, TaskIdentity]
         )
     processes = manifest.get("processes")
     if not isinstance(processes, list) or not processes:
-        raise AdapterReject("missing_required_field", "processes must be a non-empty list")
+        raise AdapterReject(
+            "missing_required_field", "processes must be a non-empty list"
+        )
     identities: dict[int, TaskIdentity] = {}
     for process in processes:
         if not isinstance(process, dict):
-            raise AdapterReject("invalid_field_type", "process record must be an object")
+            raise AdapterReject(
+                "invalid_field_type", "process record must be an object"
+            )
         pid = _integer(process, "pid", minimum=1)
         tids = process.get("tids")
         if not isinstance(tids, list) or not tids:
-            raise AdapterReject("missing_required_field", "tids must be a non-empty list")
+            raise AdapterReject(
+                "missing_required_field", "tids must be a non-empty list"
+            )
         if schema_version == "process-manifest/v2":
             kernel_pid = _integer(process, "kernel_pid", minimum=1)
             threads = process.get("threads")
@@ -71,7 +77,9 @@ def load_process_identities(manifest: dict[str, Any]) -> dict[int, TaskIdentity]
         observed_runtime_tids: set[int] = set()
         for thread in threads:
             if not isinstance(thread, dict):
-                raise AdapterReject("invalid_field_type", "thread record must be an object")
+                raise AdapterReject(
+                    "invalid_field_type", "thread record must be an object"
+                )
             tid = _integer(thread, "tid", minimum=1)
             kernel_tid = _integer(thread, "kernel_tid", minimum=1)
             observed_runtime_tids.add(tid)
@@ -157,7 +165,9 @@ def adapt_ebpf_record(
             "missing_required_field", "missing fields: " + ", ".join(missing)
         )
     if not source_file or record_index < 0:
-        raise AdapterReject("invalid_provenance", "source_file and record_index are required")
+        raise AdapterReject(
+            "invalid_provenance", "source_file and record_index are required"
+        )
     if record["schema_version"] != SCHEMA_VERSION:
         raise AdapterReject("unsupported_schema", f"expected {SCHEMA_VERSION}")
     if record["clock_id"] != "monotonic":
@@ -294,7 +304,9 @@ def adapt_ebpf_record(
             )
         ]
 
-    raise AdapterReject("unsupported_event", f"unsupported event_source={event_source!r}")
+    raise AdapterReject(
+        "unsupported_event", f"unsupported event_source={event_source!r}"
+    )
 
 
 def adapt_ebpf_jsonl(
@@ -310,9 +322,13 @@ def adapt_ebpf_jsonl(
         try:
             record = json.loads(raw_line)
         except json.JSONDecodeError as error:
-            raise AdapterReject("invalid_json", f"line {line_number}: {error.msg}") from error
+            raise AdapterReject(
+                "invalid_json", f"line {line_number}: {error.msg}"
+            ) from error
         if not isinstance(record, dict):
-            raise AdapterReject("invalid_json", f"line {line_number}: record must be an object")
+            raise AdapterReject(
+                "invalid_json", f"line {line_number}: record must be an object"
+            )
         try:
             events.extend(
                 adapt_ebpf_record(
@@ -323,7 +339,9 @@ def adapt_ebpf_jsonl(
                 )
             )
         except AdapterReject as error:
-            raise AdapterReject(error.reason_code, f"line {line_number}: {error}") from error
+            raise AdapterReject(
+                error.reason_code, f"line {line_number}: {error}"
+            ) from error
     return events
 
 

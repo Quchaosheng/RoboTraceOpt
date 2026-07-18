@@ -39,7 +39,8 @@ class ExportRos2TraceTest(unittest.TestCase):
         )
 
         exported = [
-            json.loads(line) for line in self.output.read_text(encoding="utf-8").splitlines()
+            json.loads(line)
+            for line in self.output.read_text(encoding="utf-8").splitlines()
         ]
         self.assertEqual(exported, records)
         self.assertTrue(self.output.read_bytes().endswith(b"\n"))
@@ -93,7 +94,9 @@ class ExportRos2TraceTest(unittest.TestCase):
             )
 
     def test_direct_script_entrypoint_loads_repository_modules(self) -> None:
-        script = Path(__file__).resolve().parents[2] / "scripts" / "export_ros2_trace.py"
+        script = (
+            Path(__file__).resolve().parents[2] / "scripts" / "export_ros2_trace.py"
+        )
         completed = subprocess.run(
             [sys.executable, str(script), "--help"],
             cwd=self.root,

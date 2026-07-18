@@ -134,7 +134,9 @@ class AssociationTest(unittest.TestCase):
                 "".join(json.dumps(item.to_dict()) + "\n" for item in runtime),
                 encoding="utf-8",
             )
-            system_path.write_text(json.dumps(system.to_dict()) + "\n", encoding="utf-8")
+            system_path.write_text(
+                json.dumps(system.to_dict()) + "\n", encoding="utf-8"
+            )
 
             subprocess.run(
                 [
@@ -300,15 +302,21 @@ class AssociationTest(unittest.TestCase):
     def test_report_counts_all_decision_states_and_reasons(self) -> None:
         decisions = [
             associate_system_event(
-                event("accepted", source="ros2_tracing", timestamp_ns=150, pid=10, tid=11),
+                event(
+                    "accepted", source="ros2_tracing", timestamp_ns=150, pid=10, tid=11
+                ),
                 self.windows,
             ),
             associate_system_event(
-                event("ambiguous", source="ros2_tracing", timestamp_ns=150, pid=10, tid=99),
+                event(
+                    "ambiguous", source="ros2_tracing", timestamp_ns=150, pid=10, tid=99
+                ),
                 self.windows,
             ),
             associate_system_event(
-                event("unmatched", source="ros2_tracing", timestamp_ns=150, pid=99, tid=99),
+                event(
+                    "unmatched", source="ros2_tracing", timestamp_ns=150, pid=99, tid=99
+                ),
                 self.windows,
             ),
         ]
@@ -321,9 +329,7 @@ class AssociationTest(unittest.TestCase):
             {"accepted": 1, "ambiguous": 1, "unmatched": 1},
         )
         self.assertEqual(report["accepted_rate"], 1 / 3)
-        self.assertEqual(
-            report["counts_by_event_type"], {"callback_start": 3}
-        )
+        self.assertEqual(report["counts_by_event_type"], {"callback_start": 3})
         self.assertEqual(
             report["counts_by_status_and_event_type"],
             {

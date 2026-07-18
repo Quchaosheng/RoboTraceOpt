@@ -22,11 +22,18 @@ def config_id(config: dict[str, Any]) -> str:
 def validate_campaign_parameters(
     *, repetitions: int, seed: int, campaign_name: str
 ) -> None:
-    if isinstance(repetitions, bool) or not isinstance(repetitions, int) or repetitions < 2:
+    if (
+        isinstance(repetitions, bool)
+        or not isinstance(repetitions, int)
+        or repetitions < 2
+    ):
         raise ValueError("repetitions must be an integer of at least two")
     if isinstance(seed, bool) or not isinstance(seed, int):
         raise ValueError("seed must be an integer")
-    if not isinstance(campaign_name, str) or _CAMPAIGN_NAME.fullmatch(campaign_name) is None:
+    if (
+        not isinstance(campaign_name, str)
+        or _CAMPAIGN_NAME.fullmatch(campaign_name) is None
+    ):
         raise ValueError("invalid campaign name")
 
 

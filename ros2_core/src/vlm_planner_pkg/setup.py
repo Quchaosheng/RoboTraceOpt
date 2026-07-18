@@ -19,11 +19,12 @@ setup(
         (os.path.join("share", package_name, "config"), glob("config/*.yaml")),
     ],
     install_requires=["setuptools"],
+    test_suite="test",
     zip_safe=True,
-    maintainer="todo",
-    maintainer_email="todo@example.com",
+    maintainer="Quchaosheng",
+    maintainer_email="Quchaosheng@users.noreply.github.com",
     description="Multi-backend VLM planner node for the AI Robotics Runtime.",
-    license="TODO",
+    license="Apache-2.0",
     entry_points={
         "console_scripts": [
             "vlm_planner_node = vlm_planner_node:main",

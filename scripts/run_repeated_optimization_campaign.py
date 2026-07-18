@@ -147,9 +147,7 @@ def run_repeated_campaign(
             "minimum_completeness": minimum_completeness,
             "quantile": selected_quantile,
             "minimum_improvement_ratio": minimum_improvement_ratio,
-            "minimum_complete_trace_rate_delta": (
-                minimum_complete_trace_rate_delta
-            ),
+            "minimum_complete_trace_rate_delta": (minimum_complete_trace_rate_delta),
             "confidence_level": confidence_level,
             "bootstrap_resamples": bootstrap_resamples,
         },
@@ -159,7 +157,7 @@ def run_repeated_campaign(
         },
     }
     if qualification_report is not None:
-        manifest["inputs"]['qualification'] = _input_record(
+        manifest["inputs"]["qualification"] = _input_record(
             qualification_report, qualification_source
         )
     manifest_path = output_dir / "campaign_manifest.json"
@@ -212,8 +210,9 @@ def run_repeated_campaign(
                     raise CandidateConfigMismatch
                 if (
                     report.get("dataset_role") != dataset_role
-                    or report.get("development_only")
-                    != evidence["development_only"]
+                    or report.get("development_only") != evidence["development_only"]
+                    or report.get("formal_inference_allowed")
+                    != evidence["formal_inference_allowed"]
                     or report.get("formal_optimization_allowed")
                     != evidence["formal_optimization_allowed"]
                 ):
@@ -354,16 +353,38 @@ def _validate_parameters(
     minimum_improvement_ratio: float,
     minimum_complete_trace_rate_delta: float,
 ) -> None:
-    if isinstance(duration_seconds, bool) or not isinstance(duration_seconds, int) or duration_seconds < 1:
+    if (
+        isinstance(duration_seconds, bool)
+        or not isinstance(duration_seconds, int)
+        or duration_seconds < 1
+    ):
         raise ValueError("duration-seconds must be positive")
-    if isinstance(confidence_level, bool) or not isinstance(confidence_level, (int, float)) or not 0 < confidence_level < 1:
+    if (
+        isinstance(confidence_level, bool)
+        or not isinstance(confidence_level, (int, float))
+        or not 0 < confidence_level < 1
+    ):
         raise ValueError("confidence-level must be between zero and one")
-    if isinstance(bootstrap_resamples, bool) or not isinstance(bootstrap_resamples, int) or bootstrap_resamples < 100:
+    if (
+        isinstance(bootstrap_resamples, bool)
+        or not isinstance(bootstrap_resamples, int)
+        or bootstrap_resamples < 100
+    ):
         raise ValueError("bootstrap-resamples must be at least 100")
-    if isinstance(minimum_improvement_ratio, bool) or not isinstance(minimum_improvement_ratio, (int, float)) or not 0 <= minimum_improvement_ratio <= 1:
+    if (
+        isinstance(minimum_improvement_ratio, bool)
+        or not isinstance(minimum_improvement_ratio, (int, float))
+        or not 0 <= minimum_improvement_ratio <= 1
+    ):
         raise ValueError("minimum-improvement-ratio must be between zero and one")
-    if isinstance(minimum_complete_trace_rate_delta, bool) or not isinstance(minimum_complete_trace_rate_delta, (int, float)) or not -1 <= minimum_complete_trace_rate_delta <= 0:
-        raise ValueError("minimum-complete-trace-rate-delta must be between minus one and zero")
+    if (
+        isinstance(minimum_complete_trace_rate_delta, bool)
+        or not isinstance(minimum_complete_trace_rate_delta, (int, float))
+        or not -1 <= minimum_complete_trace_rate_delta <= 0
+    ):
+        raise ValueError(
+            "minimum-complete-trace-rate-delta must be between minus one and zero"
+        )
 
 
 def _execute_trial(command: list[str]) -> int:
@@ -417,6 +438,7 @@ def _validate_qualification_source(
     if _read_json(source) != qualification:
         raise ValueError("qualification source does not match report")
 
+
 def _evidence_fields(
     dataset_role: str, qualification: dict[str, Any] | None
 ) -> dict[str, Any]:
@@ -429,9 +451,7 @@ def _evidence_fields(
             or qualification.get("schema_version")
             != "formal-experiment-qualification/v1"
         ):
-            raise ValueError(
-                "qualified campaign role requires a qualification report"
-            )
+            raise ValueError("qualified campaign role requires a qualification report")
         if (
             qualification.get("status") != "allowed"
             or qualification.get("dataset_role") != dataset_role
@@ -452,6 +472,7 @@ def _evidence_fields(
     return {
         "dataset_role": dataset_role,
         "development_only": dataset_role in {"development", "pilot"},
+        "formal_inference_allowed": dataset_role == "test",
         "formal_optimization_allowed": dataset_role == "test",
         "live_mutation_performed": False,
     }
@@ -463,6 +484,7 @@ def _is_lower_hex(value: Any, length: int) -> bool:
         and len(value) == length
         and all(character in "0123456789abcdef" for character in value)
     )
+
 
 def _finish_summary(
     output_dir: Path,
@@ -492,9 +514,7 @@ def main() -> int:
     parser.add_argument("--minimum-completeness", type=float, default=1.0)
     parser.add_argument("--quantile")
     parser.add_argument("--minimum-improvement-ratio", type=float, default=0.0)
-    parser.add_argument(
-        "--minimum-complete-trace-rate-delta", type=float, default=0.0
-    )
+    parser.add_argument("--minimum-complete-trace-rate-delta", type=float, default=0.0)
     parser.add_argument("--confidence-level", type=float, default=0.95)
     parser.add_argument("--bootstrap-resamples", type=int, default=10000)
     parser.add_argument(

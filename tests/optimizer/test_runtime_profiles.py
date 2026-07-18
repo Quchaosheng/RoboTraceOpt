@@ -17,15 +17,11 @@ class RuntimeProfileTest(unittest.TestCase):
 
     def test_builds_one_argument_for_the_registered_action(self) -> None:
         self.assertEqual(
-            candidate_cli_arguments(
-                "executor_queueing", {"executor_threads": 2}
-            ),
+            candidate_cli_arguments("executor_queueing", {"executor_threads": 2}),
             ["--executor-threads", "2"],
         )
         self.assertEqual(
-            candidate_cli_arguments(
-                "dds_communication_delay", {"frame_qos_depth": 4}
-            ),
+            candidate_cli_arguments("dds_communication_delay", {"frame_qos_depth": 4}),
             ["--frame-qos-depth", "4"],
         )
 
@@ -33,9 +29,7 @@ class RuntimeProfileTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "unsupported runtime cause"):
             runtime_profile("scheduling_delay")
         with self.assertRaisesRegex(ValueError, "expected action"):
-            candidate_cli_arguments(
-                "executor_queueing", {"frame_qos_depth": 2}
-            )
+            candidate_cli_arguments("executor_queueing", {"frame_qos_depth": 2})
 
 
 if __name__ == "__main__":

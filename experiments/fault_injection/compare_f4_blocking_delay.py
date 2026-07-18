@@ -15,11 +15,19 @@ METRICS = (
     "pre_server_elapsed_ns",
     "post_server_elapsed_ns",
 )
-MATCHED_FIELDS = ("git_commit", "workload", "host_id", "request_rate_hz", "blocking_primitive")
+MATCHED_FIELDS = (
+    "git_commit",
+    "workload",
+    "host_id",
+    "request_rate_hz",
+    "blocking_primitive",
+)
 QUANTILES = ("median", "p90", "p95", "p99")
 
 
-def compare_reports(injected: dict[str, Any], control: dict[str, Any]) -> dict[str, Any]:
+def compare_reports(
+    injected: dict[str, Any], control: dict[str, Any]
+) -> dict[str, Any]:
     _validate(injected, "injected")
     _validate(control, "control")
     for field in MATCHED_FIELDS:
@@ -46,7 +54,9 @@ def compare_reports(injected: dict[str, Any], control: dict[str, Any]) -> dict[s
         "measurement_semantics": "application_service_blocking_elapsed",
         "development_only": True,
         "formal_inference_allowed": False,
-        "matched_profile": {field: injected["profile"][field] for field in MATCHED_FIELDS},
+        "matched_profile": {
+            field: injected["profile"][field] for field in MATCHED_FIELDS
+        },
         "delay_profiles_ms": {
             "injected": int(injected["profile"]["server_delay_ms"]),
             "control": int(control["profile"]["server_delay_ms"]),
@@ -73,7 +83,9 @@ def _compare_quantile(injected: Any, control: Any) -> dict[str, float | None]:
 
 def _rate(report: dict[str, Any]) -> float:
     observed = int(report["observed_trace_count"])
-    return float(report.get("complete_trace_rate", report["complete_trace_count"] / observed))
+    return float(
+        report.get("complete_trace_rate", report["complete_trace_count"] / observed)
+    )
 
 
 def _validate(report: dict[str, Any], variant: str) -> None:
@@ -87,12 +99,22 @@ def _validate(report: dict[str, Any], variant: str) -> None:
         raise ValueError("formal syscall attribution must be false")
     if report.get("ebpf_evidence") is not False:
         raise ValueError("eBPF evidence must be false")
-    if report.get("development_only") is not True or report.get("formal_inference_allowed") is not False:
+    if (
+        report.get("development_only") is not True
+        or report.get("formal_inference_allowed") is not False
+    ):
         raise ValueError("F4 report must be development-only")
     profile = report.get("profile")
     if not isinstance(profile, dict):
         raise ValueError("F4 profile is required")
-    for field in ("git_commit", "workload", "host_id", "request_rate_hz", "blocking_primitive", "server_delay_ms"):
+    for field in (
+        "git_commit",
+        "workload",
+        "host_id",
+        "request_rate_hz",
+        "blocking_primitive",
+        "server_delay_ms",
+    ):
         if field not in profile:
             raise ValueError(f"missing profile field {field}")
     if profile.get("workload") != "w2":
@@ -104,7 +126,11 @@ def _validate(report: dict[str, Any], variant: str) -> None:
     if complete < 0 or complete > observed:
         raise ValueError("invalid trace counts")
     rate = report.get("complete_trace_rate", complete / observed if observed else 0.0)
-    if not isinstance(rate, (int, float)) or isinstance(rate, bool) or not 0 <= rate <= 1:
+    if (
+        not isinstance(rate, (int, float))
+        or isinstance(rate, bool)
+        or not 0 <= rate <= 1
+    ):
         raise ValueError("invalid complete_trace_rate")
     metrics = report.get("metrics_ns")
     if not isinstance(metrics, dict):
@@ -140,7 +166,9 @@ def main() -> int:
         "control_report_sha256": _sha256(args.control_report),
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(comparison, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    args.output.write_text(
+        json.dumps(comparison, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
     return 0
 
 

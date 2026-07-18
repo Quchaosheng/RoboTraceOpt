@@ -38,7 +38,11 @@ def build_stress_command(
 ) -> list[str]:
     if spec.fault_id != "F3" or spec.implementation_status != "ready":
         raise ValueError("a ready F3 specification is required")
-    if isinstance(target_cpu, bool) or not isinstance(target_cpu, int) or target_cpu < 0:
+    if (
+        isinstance(target_cpu, bool)
+        or not isinstance(target_cpu, int)
+        or target_cpu < 0
+    ):
         raise ValueError("target_cpu must be a non-negative integer")
     if duration_seconds < 1:
         raise ValueError("duration_seconds must be positive")
@@ -101,7 +105,9 @@ def snapshot_scheduler_processes(
             policy = os.sched_getscheduler(pid)
             priority = os.sched_getparam(pid).sched_priority
         except ProcessLookupError as error:
-            raise ProcessLookupError(f"live process not found: {name} PID {pid}") from error
+            raise ProcessLookupError(
+                f"live process not found: {name} PID {pid}"
+            ) from error
         if allowed_cpus != [target_cpu]:
             raise ValueError(
                 f"process {name} PID {pid} affinity {allowed_cpus} does not match "
@@ -150,9 +156,7 @@ def capture_scheduler_manifest(
     if not stress_enabled and (stress_process_pid is not None or stress_command):
         raise ValueError("control F3 must not include a stress process")
     if ros_process_snapshots is None:
-        ros_process_snapshots = snapshot_scheduler_processes(
-            ros_processes, target_cpu
-        )
+        ros_process_snapshots = snapshot_scheduler_processes(ros_processes, target_cpu)
     if stress_process_pids is None:
         stress_process_pids = (
             sorted(process_tree_pids(stress_process_pid))
@@ -206,7 +210,13 @@ def stop_process(process: subprocess.Popen, grace_seconds: float) -> str:
 def _policy_name(policy: int) -> str:
     names = {
         getattr(os, name): name
-        for name in ("SCHED_OTHER", "SCHED_FIFO", "SCHED_RR", "SCHED_BATCH", "SCHED_IDLE")
+        for name in (
+            "SCHED_OTHER",
+            "SCHED_FIFO",
+            "SCHED_RR",
+            "SCHED_BATCH",
+            "SCHED_IDLE",
+        )
         if hasattr(os, name)
     }
     return names.get(policy, f"UNKNOWN_{policy}")

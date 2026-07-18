@@ -28,7 +28,9 @@ class BuildCacheIsolationTest(unittest.TestCase):
         self.assertIn('CACHED_WORKSPACE="$(cat "${WORKSPACE_MARKER}")"', script)
         self.assertIn('[[ "${CACHED_WORKSPACE}" != "${CURRENT_WORKSPACE}" ]]', script)
         self.assertIn('rm -rf -- "${BUILD_BASE}" "${INSTALL_BASE}"', script)
-        self.assertIn('printf \'%s\\n\' "${CURRENT_WORKSPACE}" > "${WORKSPACE_MARKER}"', script)
+        self.assertIn(
+            'printf \'%s\\n\' "${CURRENT_WORKSPACE}" > "${WORKSPACE_MARKER}"', script
+        )
 
 
 if __name__ == "__main__":

@@ -22,7 +22,9 @@ class CanBridgeTimerLifecycleTest(unittest.TestCase):
         for timer_body in (mock_ack, timeout):
             self.assertIn("!rclcpp::ok() || shutting_down_.load()", timer_body)
             self.assertIn("timer->cancel()", timer_body)
-            self.assertIn("catch (const rclcpp::exceptions::RCLError & error)", timer_body)
+            self.assertIn(
+                "catch (const rclcpp::exceptions::RCLError & error)", timer_body
+            )
             self.assertIn("throw;", timer_body)
 
 

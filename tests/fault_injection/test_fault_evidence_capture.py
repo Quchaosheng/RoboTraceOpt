@@ -46,9 +46,7 @@ class FaultEvidenceCaptureTest(unittest.TestCase):
             {"process_manifest": True, "ebpf": True, "ros2_export": True},
         )
         self.assertEqual(
-            fault_capture_plan(
-                "F4", {"ros2_runtime", "identity_comparable_ebpf"}
-            ),
+            fault_capture_plan("F4", {"ros2_runtime", "identity_comparable_ebpf"}),
             {"process_manifest": True, "ebpf": True, "ros2_export": False},
         )
 

@@ -1,6 +1,9 @@
 import unittest
 
-from optimizer.validation.candidate_validator import validate_candidate, validate_reports
+from optimizer.validation.candidate_validator import (
+    validate_candidate,
+    validate_reports,
+)
 
 
 def objective(value: float, rate: float = 1.0, formal: bool = True):
@@ -16,20 +19,28 @@ def objective(value: float, rate: float = 1.0, formal: bool = True):
 
 class CandidateValidatorTest(unittest.TestCase):
     def test_accepts_improvement_without_coverage_regression(self) -> None:
-        result = validate_candidate(objective(100), objective(80), minimum_improvement_ratio=0.1)
+        result = validate_candidate(
+            objective(100), objective(80), minimum_improvement_ratio=0.1
+        )
         self.assertEqual(result["decision"], "accept")
         self.assertEqual(result["improvement_ratio"], 0.2)
         self.assertFalse(result["rollback_required"])
 
     def test_rejects_latency_or_coverage_regression(self) -> None:
-        latency = validate_candidate(objective(100), objective(95), minimum_improvement_ratio=0.1)
+        latency = validate_candidate(
+            objective(100), objective(95), minimum_improvement_ratio=0.1
+        )
         self.assertEqual(latency["reason_code"], "insufficient_improvement")
-        coverage = validate_candidate(objective(100, 1.0), objective(70, 0.8), minimum_improvement_ratio=0.1)
+        coverage = validate_candidate(
+            objective(100, 1.0), objective(70, 0.8), minimum_improvement_ratio=0.1
+        )
         self.assertEqual(coverage["reason_code"], "complete_trace_rate_regression")
         self.assertTrue(coverage["rollback_required"])
 
     def test_formal_validation_rejects_development_evidence(self) -> None:
-        result = validate_candidate(objective(100, formal=False), objective(70, formal=False), formal=True)
+        result = validate_candidate(
+            objective(100, formal=False), objective(70, formal=False), formal=True
+        )
         self.assertEqual(result["decision"], "reject")
         self.assertEqual(result["reason_code"], "formal_evidence_required")
 

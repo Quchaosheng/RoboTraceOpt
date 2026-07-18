@@ -181,9 +181,7 @@ class DdsPressureAdapterTest(unittest.TestCase):
         events, report = derive(
             [
                 runtime_event("clock", "camera_frame_published", 100, 1),
-                runtime_event(
-                    "clock", "planner_receive", 120, 1, clock_id="realtime"
-                ),
+                runtime_event("clock", "planner_receive", 120, 1, clock_id="realtime"),
                 runtime_event("negative", "camera_frame_published", 300, 2),
                 runtime_event("negative", "planner_receive", 200, 2),
             ]

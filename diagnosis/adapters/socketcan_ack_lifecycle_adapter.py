@@ -18,6 +18,7 @@ from diagnosis.adapters.mock_ack_lifecycle_adapter import (
     _valid_success,
 )
 from diagnosis.schema import NormalizedEvent
+from experiments.physical_can.interfaces import validate_physical_can_pair
 
 
 EVENTS = {
@@ -29,7 +30,8 @@ EVENTS = {
     "can_retry_exhausted",
 }
 TERMINALS = {"can_ack_received", "can_retry_exhausted"}
-MEASUREMENT_SEMANTICS = "application_socketcan_vcan_ack_lifecycle"
+VCAN_MEASUREMENT_SEMANTICS = "application_socketcan_vcan_ack_lifecycle"
+PHYSICAL_MEASUREMENT_SEMANTICS = "application_socketcan_physical_ack_lifecycle"
 ORDER_TOLERANCE_NS = 10_000_000
 CANDUMP_PATTERN = re.compile(
     r"^\((?P<timestamp>\d+\.\d+)\)\s+(?P<interface>[A-Za-z0-9_.:-]+)\s+"
@@ -88,12 +90,19 @@ def derive_socketcan_ack_lifecycle_evidence(
     variant, injection, reason = _validate_manifests(
         run_manifest, oracle_manifest, capture_manifest
     )
+    physical = injection.get("transport_profile") == "physical"
+    measurement_semantics = (
+        PHYSICAL_MEASUREMENT_SEMANTICS if physical else VCAN_MEASUREMENT_SEMANTICS
+    )
+    capture_interface = str(
+        injection.get("responder_interface", injection.get("can_interface", ""))
+    )
     report: dict[str, Any] = {
         "schema_version": "socketcan-ack-lifecycle-evidence/v1",
-        "measurement_semantics": MEASUREMENT_SEMANTICS,
+        "measurement_semantics": measurement_semantics,
         "socketcan_evidence": True,
-        "virtual_can_bus": True,
-        "physical_can_evidence": False,
+        "virtual_can_bus": not physical,
+        "physical_can_evidence": physical,
         "development_only": True,
         "formal_inference_allowed": False,
         "condition_variant": variant,
@@ -125,7 +134,11 @@ def derive_socketcan_ack_lifecycle_evidence(
     malformed: set[str] = set()
     for index, record in enumerate(runtime, start=1):
         trace_id = record.get("trace_id")
-        if not isinstance(trace_id, str) or not trace_id or record.get("event_name") not in EVENTS:
+        if (
+            not isinstance(trace_id, str)
+            or not trace_id
+            or record.get("event_name") not in EVENTS
+        ):
             continue
         try:
             extra = json.loads(record.get("extra_json", ""))
@@ -187,7 +200,9 @@ def derive_socketcan_ack_lifecycle_evidence(
             continue
         sends = [row for row in ordered if row[1]["event_name"] == "can_frame_sent"]
         timeouts = [row for row in ordered if row[1]["event_name"] == "can_ack_timeout"]
-        retries = [row for row in ordered if row[1]["event_name"] == "can_retry_scheduled"]
+        retries = [
+            row for row in ordered if row[1]["event_name"] == "can_retry_scheduled"
+        ]
         terminal_name = str(terminal[1]["event_name"])
         expected_terminal = (
             "can_retry_exhausted" if variant == "injected" else "can_ack_received"
@@ -196,7 +211,9 @@ def derive_socketcan_ack_lifecycle_evidence(
             invalid["terminal_variant_mismatch"] += 1
             continue
         lifecycle_valid = (
-            _valid_exhausted(waits, timeouts, retries, terminal, int(injection["max_retries"]))
+            _valid_exhausted(
+                waits, timeouts, retries, terminal, int(injection["max_retries"])
+            )
             if terminal_name == "can_retry_exhausted"
             else _valid_success(waits, timeouts, retries, terminal)
         )
@@ -221,7 +238,7 @@ def derive_socketcan_ack_lifecycle_evidence(
                 candump,
                 used_candump,
                 lambda record: (
-                    record.get("interface") == injection["can_interface"]
+                    record.get("interface") == capture_interface
                     and record.get("can_id") == command_can_id
                     and str(record.get("payload_hex", "")).upper() == payload_hex
                 ),
@@ -259,7 +276,7 @@ def derive_socketcan_ack_lifecycle_evidence(
                     candump,
                     used_candump,
                     lambda record: (
-                        record.get("interface") == injection["can_interface"]
+                        record.get("interface") == capture_interface
                         and record.get("can_id") == ack_can_id
                         and str(record.get("payload_hex", "")).upper() == payload_hex
                     ),
@@ -273,7 +290,7 @@ def derive_socketcan_ack_lifecycle_evidence(
                 trace_failure = "unexpected_drop_send_result"
                 break
             elif any(
-                record.get("interface") == injection["can_interface"]
+                record.get("interface") == capture_interface
                 and record.get("can_id") == ack_can_id
                 and str(record.get("payload_hex", "")).upper() == payload_hex
                 for record in candump
@@ -290,7 +307,9 @@ def derive_socketcan_ack_lifecycle_evidence(
         if latency < 0:
             invalid["negative_terminal_interval"] += 1
             continue
-        state = "ack_received" if terminal_name == "can_ack_received" else "retry_exhausted"
+        state = (
+            "ack_received" if terminal_name == "can_ack_received" else "retry_exhausted"
+        )
         counts = {
             "attempt_count": len(waits),
             "timeout_count": len(timeouts),
@@ -320,10 +339,11 @@ def derive_socketcan_ack_lifecycle_evidence(
                 "matched_command_frame_count": trace_command_matches,
                 "matched_responder_count": trace_responder_matches,
                 "matched_ack_frame_count": trace_ack_matches,
-                "measurement_semantics": MEASUREMENT_SEMANTICS,
+                "measurement_semantics": measurement_semantics,
                 "socketcan_evidence": True,
-                "virtual_can_bus": True,
-                "physical_can_evidence": False,
+                "virtual_can_bus": not physical,
+                "physical_can_evidence": physical,
+                "capture_interface": capture_interface,
             },
             provenance={
                 "adapter": "socketcan_ack_lifecycle_v1",
@@ -348,11 +368,21 @@ def derive_socketcan_ack_lifecycle_evidence(
             "ack_received_count": terminal_counts["ack_received"],
             "retry_exhausted_count": terminal_counts["retry_exhausted"],
             "terminal_coverage": valid_count / len(by_trace) if by_trace else 0.0,
-            "command_frame_match_coverage": matched_commands / expected_attempts if expected_attempts else 0.0,
-            "responder_match_coverage": matched_responders / expected_attempts if expected_attempts else 0.0,
-            "ack_frame_match_coverage": matched_acks / expected_acks if expected_acks else None,
-            "ack_success_rate": terminal_counts["ack_received"] / valid_count if valid_count else 0.0,
-            "retry_exhausted_rate": terminal_counts["retry_exhausted"] / valid_count if valid_count else 0.0,
+            "command_frame_match_coverage": matched_commands / expected_attempts
+            if expected_attempts
+            else 0.0,
+            "responder_match_coverage": matched_responders / expected_attempts
+            if expected_attempts
+            else 0.0,
+            "ack_frame_match_coverage": matched_acks / expected_acks
+            if expected_acks
+            else None,
+            "ack_success_rate": terminal_counts["ack_received"] / valid_count
+            if valid_count
+            else 0.0,
+            "retry_exhausted_rate": terminal_counts["retry_exhausted"] / valid_count
+            if valid_count
+            else 0.0,
             "count_distributions": {
                 name: _describe(values) for name, values in distributions.items()
             },
@@ -378,7 +408,10 @@ def _validate_manifests(
         return variant, {}, "invalid_run_manifest"
     if oracle.get("schema_version") != "fault-oracle/v1":
         return variant, {}, "invalid_f6_oracle"
-    if any(run.get(field) != oracle.get(field) for field in ("condition_id", "session_id", "dataset_role")):
+    if any(
+        run.get(field) != oracle.get(field)
+        for field in ("condition_id", "session_id", "dataset_role")
+    ):
         return variant, {}, "run_oracle_identity_mismatch"
     if run.get("dataset_role") != "development":
         return variant, {}, "development_partition_required"
@@ -390,11 +423,10 @@ def _validate_manifests(
         or not isinstance(injection, dict)
     ):
         return variant, {}, "invalid_f6_profile"
+    transport = injection.get("transport_profile")
     expected = {
-        "transport_profile": "vcan",
         "ack_mode": "socketcan",
         "mock_mode": False,
-        "can_interface": "vcan0",
         "ack_can_id_offset": 128,
         "responder_delay_ms": 5,
         "responder_policy": "drop" if variant == "injected" else "echo",
@@ -407,19 +439,68 @@ def _validate_manifests(
     expected_cause = "can_ack_failure" if variant == "injected" else "none"
     if oracle.get("cause_id") != expected_cause:
         return variant, dict(injection), "oracle_variant_mismatch"
+    if transport == "vcan":
+        expected["transport_profile"] = "vcan"
+        expected["can_interface"] = "vcan0"
+    elif transport == "physical":
+        expected["transport_profile"] = "physical"
+        if (
+            not isinstance(injection.get("can_interface"), str)
+            or not isinstance(injection.get("responder_interface"), str)
+            or injection.get("can_interface") == injection.get("responder_interface")
+            or not _integer(injection.get("bitrate"))
+            or int(injection["bitrate"]) <= 0
+        ):
+            return variant, dict(injection), "oracle_profile_mismatch"
+    else:
+        return variant, dict(injection), "oracle_profile_mismatch"
     if any(injection.get(key) != value for key, value in expected.items()):
         return variant, dict(injection), "oracle_profile_mismatch"
-    if (
-        capture.get("schema_version") != "socketcan-capture/v1"
-        or capture.get("session_id") != run.get("session_id")
+    common_capture_invalid = (
+        capture.get("session_id") != run.get("session_id")
         or capture.get("condition_variant") != variant
         or capture.get("capture_profile") != injection
         or capture.get("socketcan_evidence") is not True
+    )
+    if common_capture_invalid:
+        return variant, dict(injection), "invalid_capture_manifest"
+    if transport == "vcan" and (
+        capture.get("schema_version") != "socketcan-capture/v1"
         or capture.get("virtual_can_bus") is not True
         or capture.get("physical_can_evidence") is not False
     ):
         return variant, dict(injection), "invalid_capture_manifest"
+    if transport == "physical" and (
+        capture.get("schema_version") != "socketcan-capture/v2"
+        or capture.get("virtual_can_bus") is not False
+        or capture.get("physical_can_evidence") is not True
+        or not _physical_pair_identity_matches(capture.get("interface_pair"), injection)
+    ):
+        return variant, dict(injection), "invalid_capture_manifest"
     return variant, dict(injection), ""
+
+
+def _physical_pair_identity_matches(value: Any, injection: dict[str, Any]) -> bool:
+    if not isinstance(value, dict):
+        return False
+    for phase in ("before", "after"):
+        pair = value.get(phase)
+        if (
+            not isinstance(pair, dict)
+            or pair.get("runtime", {}).get("ifname") != injection["can_interface"]
+            or pair.get("peer", {}).get("ifname") != injection["responder_interface"]
+        ):
+            return False
+        try:
+            validate_physical_can_pair(
+                [pair.get("runtime"), pair.get("peer")],
+                runtime_interface=str(injection["can_interface"]),
+                peer_interface=str(injection["responder_interface"]),
+                bitrate=int(injection["bitrate"]),
+            )
+        except ValueError:
+            return False
+    return True
 
 
 def _validate_runtime_rows(
@@ -437,10 +518,19 @@ def _validate_runtime_rows(
     for _, _, extra in rows:
         if any(
             extra.get(key) != injection[key]
-            for key in ("ack_mode", "mock_mode", "can_interface", "ack_timeout_ms", "max_retries")
+            for key in (
+                "ack_mode",
+                "mock_mode",
+                "can_interface",
+                "ack_timeout_ms",
+                "max_retries",
+            )
         ) or not _integer(extra.get("retry_count")):
             return "event_profile_mismatch"
-        if _parse_can_id(extra.get("ack_can_id")) - _parse_can_id(extra.get("can_id")) != injection["ack_can_id_offset"]:
+        if (
+            _parse_can_id(extra.get("ack_can_id")) - _parse_can_id(extra.get("can_id"))
+            != injection["ack_can_id_offset"]
+        ):
             return "event_frame_identity_mismatch"
     return ""
 
@@ -458,7 +548,8 @@ def _responder_matches(
     return (
         record.get("record_type") == "command_observed"
         and record.get("session_id") == session_id
-        and record.get("interface") == injection["can_interface"]
+        and record.get("interface")
+        == injection.get("responder_interface", injection["can_interface"])
         and record.get("policy") == injection["responder_policy"]
         and record.get("decision") == injection["responder_policy"]
         and _parse_can_id(record.get("command_can_id")) == command_can_id

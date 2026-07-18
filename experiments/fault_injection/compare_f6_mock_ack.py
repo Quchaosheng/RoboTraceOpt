@@ -10,8 +10,15 @@ from typing import Any
 
 
 MATCHED_FIELDS = (
-    "git_commit", "workload", "host_id", "ack_timeout_ms", "max_retries",
-    "ack_mode", "mock_mode", "input_rate_hz", "planner_backend",
+    "git_commit",
+    "workload",
+    "host_id",
+    "ack_timeout_ms",
+    "max_retries",
+    "ack_mode",
+    "mock_mode",
+    "input_rate_hz",
+    "planner_backend",
     "action_manager_enabled",
 )
 COUNTS = ("attempt_count", "timeout_count", "retry_scheduled_count")
@@ -19,7 +26,9 @@ TERMINALS = ("ack_received", "retry_exhausted")
 QUANTILES = ("median", "p90", "p95", "p99")
 
 
-def compare_reports(injected: dict[str, Any], control: dict[str, Any]) -> dict[str, Any]:
+def compare_reports(
+    injected: dict[str, Any], control: dict[str, Any]
+) -> dict[str, Any]:
     _validate(injected, "injected")
     _validate(control, "control")
     for field in MATCHED_FIELDS:
@@ -38,7 +47,9 @@ def compare_reports(injected: dict[str, Any], control: dict[str, Any]) -> dict[s
         "physical_can_evidence": False,
         "development_only": True,
         "formal_inference_allowed": False,
-        "matched_profile": {field: injected["profile"][field] for field in MATCHED_FIELDS},
+        "matched_profile": {
+            field: injected["profile"][field] for field in MATCHED_FIELDS
+        },
         "ack_policies": {"injected": "drop", "control": "success"},
         "sample_counts": {
             "injected": int(injected["valid_terminal_count"]),
@@ -48,15 +59,25 @@ def compare_reports(injected: dict[str, Any], control: dict[str, Any]) -> dict[s
             "injected": float(injected["terminal_coverage"]),
             "control": float(control["terminal_coverage"]),
         },
-        "terminal_coverage_delta": float(injected["terminal_coverage"]) - float(control["terminal_coverage"]),
-        "ack_success_rate_delta": float(injected["ack_success_rate"]) - float(control["ack_success_rate"]),
-        "retry_exhausted_rate_delta": float(injected["retry_exhausted_rate"]) - float(control["retry_exhausted_rate"]),
+        "terminal_coverage_delta": float(injected["terminal_coverage"])
+        - float(control["terminal_coverage"]),
+        "ack_success_rate_delta": float(injected["ack_success_rate"])
+        - float(control["ack_success_rate"]),
+        "retry_exhausted_rate_delta": float(injected["retry_exhausted_rate"])
+        - float(control["retry_exhausted_rate"]),
         "rates": {
-            "ack_success": {"injected": float(injected["ack_success_rate"]), "control": float(control["ack_success_rate"])},
-            "retry_exhausted": {"injected": float(injected["retry_exhausted_rate"]), "control": float(control["retry_exhausted_rate"])},
+            "ack_success": {
+                "injected": float(injected["ack_success_rate"]),
+                "control": float(control["ack_success_rate"]),
+            },
+            "retry_exhausted": {
+                "injected": float(injected["retry_exhausted_rate"]),
+                "control": float(control["retry_exhausted_rate"]),
+            },
         },
         "mean_count_deltas": {
-            name: float(injected["count_distributions"][name]["mean"]) - float(control["count_distributions"][name]["mean"])
+            name: float(injected["count_distributions"][name]["mean"])
+            - float(control["count_distributions"][name]["mean"])
             for name in COUNTS
         },
         "terminal_latency_ns": latency,
@@ -72,7 +93,10 @@ def _validate(report: dict[str, Any], variant: str) -> None:
         raise ValueError("incompatible measurement semantics")
     if report.get("physical_can_evidence") is not False:
         raise ValueError("physical CAN evidence must be disabled")
-    if report.get("development_only") is not True or report.get("formal_inference_allowed") is not False:
+    if (
+        report.get("development_only") is not True
+        or report.get("formal_inference_allowed") is not False
+    ):
         raise ValueError("F6 report must be development-only")
     profile = report.get("profile")
     if not isinstance(profile, dict):
@@ -84,13 +108,22 @@ def _validate(report: dict[str, Any], variant: str) -> None:
         raise ValueError("valid_terminal_count must be positive")
     for name in ("terminal_coverage", "ack_success_rate", "retry_exhausted_rate"):
         value = report.get(name)
-        if not isinstance(value, (int, float)) or isinstance(value, bool) or not 0 <= value <= 1:
+        if (
+            not isinstance(value, (int, float))
+            or isinstance(value, bool)
+            or not 0 <= value <= 1
+        ):
             raise ValueError(f"invalid {name}")
     counts = report.get("count_distributions")
-    if not isinstance(counts, dict) or any(not isinstance(counts.get(name), dict) or "mean" not in counts[name] for name in COUNTS):
+    if not isinstance(counts, dict) or any(
+        not isinstance(counts.get(name), dict) or "mean" not in counts[name]
+        for name in COUNTS
+    ):
         raise ValueError("missing count distributions")
     latency = report.get("terminal_latency_ns")
-    if not isinstance(latency, dict) or any(terminal not in latency for terminal in TERMINALS):
+    if not isinstance(latency, dict) or any(
+        terminal not in latency for terminal in TERMINALS
+    ):
         raise ValueError("missing terminal latency distributions")
 
 
@@ -103,7 +136,12 @@ def _compare_latency(injected: Any, control: Any) -> dict[str, dict[str, float]]
         control_value = float(control[quantile])
         if control_value <= 0:
             raise ValueError(f"control terminal latency {quantile} must be positive")
-        result[quantile] = {"injected": injected_value, "control": control_value, "absolute_delta": injected_value - control_value, "ratio": injected_value / control_value}
+        result[quantile] = {
+            "injected": injected_value,
+            "control": control_value,
+            "absolute_delta": injected_value - control_value,
+            "ratio": injected_value / control_value,
+        }
     return result
 
 
@@ -125,11 +163,15 @@ def main() -> int:
     control = json.loads(args.control_report.read_text(encoding="utf-8"))
     comparison = compare_reports(injected, control)
     comparison["inputs"] = {
-        "injected_report": str(args.injected_report), "injected_report_sha256": _sha256(args.injected_report),
-        "control_report": str(args.control_report), "control_report_sha256": _sha256(args.control_report),
+        "injected_report": str(args.injected_report),
+        "injected_report_sha256": _sha256(args.injected_report),
+        "control_report": str(args.control_report),
+        "control_report_sha256": _sha256(args.control_report),
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(comparison, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    args.output.write_text(
+        json.dumps(comparison, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
     return 0
 
 

@@ -9,10 +9,7 @@ SOURCE_ROOT = REPOSITORY_ROOT / "ros2_core" / "src"
 class RuntimeEventSchemaTest(unittest.TestCase):
     def test_runtime_event_declares_cross_layer_identity_fields(self) -> None:
         schema = (
-            SOURCE_ROOT
-            / "ai_robot_runtime_interfaces"
-            / "msg"
-            / "RuntimeEvent.msg"
+            SOURCE_ROOT / "ai_robot_runtime_interfaces" / "msg" / "RuntimeEvent.msg"
         ).read_text(encoding="utf-8")
 
         for field in (
@@ -61,10 +58,7 @@ class RuntimeEventSchemaTest(unittest.TestCase):
             SOURCE_ROOT / "vlm_planner_pkg" / "src" / "vlm_planner_node.py"
         ).read_text(encoding="utf-8")
         logger = (
-            SOURCE_ROOT
-            / "runtime_logger_pkg"
-            / "src"
-            / "runtime_event_logger_node.cpp"
+            SOURCE_ROOT / "runtime_logger_pkg" / "src" / "runtime_event_logger_node.cpp"
         ).read_text(encoding="utf-8")
 
         for field in (
