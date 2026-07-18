@@ -7,6 +7,10 @@ import json
 from pathlib import Path
 from typing import Any
 
+from experiments.evidence_capture.artifact_manifest import (
+    ArtifactValidationError,
+    validate_artifact_manifest,
+)
 
 INTEGRITY_SCHEMA = "formal-experiment-session-integrity/v1"
 RESULT_SCHEMA = "formal-experiment-case-result/v1"
@@ -213,6 +217,49 @@ def _validate_result(
             != row.get("expected_child_dataset_role")
         ):
             errors.add("child_dataset_role_mismatch")
+        _validate_nested_artifacts(row, root=root, seen=seen, errors=errors)
+
+
+def _validate_nested_artifacts(
+    row: dict[str, Any],
+    *,
+    root: Path,
+    seen: set[str],
+    errors: set[str],
+) -> None:
+    relative = row.get("expected_artifact_manifest")
+    if relative is None:
+        return
+    if relative not in seen:
+        errors.add("expected_artifact_manifest_not_recorded")
+    try:
+        path = _inside(root, relative)
+    except ValueError:
+        errors.add("nested_artifact_path_escape")
+        return
+    value = _read_object(path, errors, "nested_artifact_manifest_invalid")
+    identity = row.get("expected_artifact_identity")
+    if value is None:
+        return
+    if not isinstance(identity, dict) or set(identity) != {
+        "fault_id",
+        "condition_variant",
+        "dataset_role",
+    }:
+        errors.add("nested_artifact_manifest_invalid")
+        return
+    try:
+        validate_artifact_manifest(
+            value,
+            case_root=path.parent,
+            expected_fault_id=identity["fault_id"],
+            expected_condition_variant=identity["condition_variant"],
+            expected_dataset_role=identity["dataset_role"],
+        )
+    except ArtifactValidationError as error:
+        errors.add(f"nested_{error.reason_code}")
+    except (OSError, ValueError, KeyError, TypeError):
+        errors.add("nested_artifact_manifest_invalid")
 
 
 def _inside(root: Path, relative: Any) -> Path:

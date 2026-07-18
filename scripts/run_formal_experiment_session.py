@@ -18,6 +18,10 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from experiments.evidence_capture.artifact_manifest import (  # noqa: E402
+    ArtifactValidationError,
+    validate_artifact_manifest,
+)
 from experiments.protocol.matrix import load_experiment_matrix  # noqa: E402
 from experiments.protocol.qualification import (  # noqa: E402
     qualify_experiment_session,
@@ -290,8 +294,16 @@ def _case_result(
         elif role_record.get("dataset_role") != row["expected_child_dataset_role"]:
             reason = "child_dataset_role_mismatch"
         else:
-            status = "successful"
-            reason = ""
+            artifact_path, artifact_reason = _validate_child_artifacts(
+                row, output_dir
+            )
+            if artifact_path is not None:
+                paths.add(artifact_path)
+            if artifact_reason:
+                reason = artifact_reason
+            else:
+                status = "successful"
+                reason = ""
     return {
         "schema_version": "formal-experiment-case-result/v1",
         "run_id": row["run_id"],
@@ -304,6 +316,40 @@ def _case_result(
             _artifact(output_dir, path) for path in sorted(paths)
         ],
     }
+
+
+def _validate_child_artifacts(
+    row: dict[str, Any], output_dir: Path
+) -> tuple[Path | None, str]:
+    relative = row.get("expected_artifact_manifest")
+    if relative is None:
+        return None, ""
+    try:
+        path = _inside(output_dir, relative)
+    except ValueError:
+        return None, "artifact_path_escape"
+    if not path.is_file():
+        return None, "artifact_manifest_missing"
+    identity = row.get("expected_artifact_identity")
+    if not isinstance(identity, dict) or set(identity) != {
+        "fault_id",
+        "condition_variant",
+        "dataset_role",
+    }:
+        return path, "artifact_manifest_invalid"
+    try:
+        validate_artifact_manifest(
+            _read_json(path),
+            case_root=path.parent,
+            expected_fault_id=identity["fault_id"],
+            expected_condition_variant=identity["condition_variant"],
+            expected_dataset_role=identity["dataset_role"],
+        )
+    except ArtifactValidationError as error:
+        return path, error.reason_code
+    except (OSError, json.JSONDecodeError, ValueError, KeyError, TypeError):
+        return path, "artifact_manifest_invalid"
+    return path, ""
 
 
 def _execute_case(command: list[str]) -> int:
