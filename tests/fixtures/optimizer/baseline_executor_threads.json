@@ -1,0 +1,7 @@
+{
+  "schema_version": "optimization-baseline-profile/v1",
+  "cause_id": "executor_queueing",
+  "baseline_config": {
+    "executor_threads": 1
+  }
+}
