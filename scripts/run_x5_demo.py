@@ -194,6 +194,8 @@ def execute_demo(
     for index, stage in enumerate(stages):
         stage["status"] = "running"
         stage["started_at_utc"] = datetime.now(timezone.utc).isoformat()
+        if stage["name"] == "report" and index == len(stages) - 1:
+            summary["status"] = "completed"
         _write_json_atomic(summary_path, summary)
         log_path = output_dir / f"{index + 1:02d}_{stage['name']}.log"
         with log_path.open("x", encoding="utf-8") as handle:
