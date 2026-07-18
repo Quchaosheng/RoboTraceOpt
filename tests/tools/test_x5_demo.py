@@ -75,6 +75,37 @@ class X5DemoTest(unittest.TestCase):
         self.assertTrue(saved["development_only"])
         self.assertFalse(saved["formal_evidence"])
 
+    def test_report_stage_observes_completed_demo_status(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            output_dir = Path(temporary_directory) / "demo"
+            plan = build_demo_plan(
+                output_dir,
+                runtime_interface="can0",
+                peer_interface="can1",
+                bitrate=500000,
+                duration_seconds=4,
+            )
+            observed_status = []
+
+            def runner(argv, **kwargs):
+                if any(
+                    argument.endswith("generate_experiment_report.py")
+                    for argument in argv
+                ):
+                    observed_status.append(
+                        json.loads(
+                            (output_dir / "demo_summary.json").read_text(
+                                encoding="utf-8"
+                            )
+                        )["status"]
+                    )
+                return Completed(0)
+
+            summary = execute_demo(plan, output_dir, runner=runner)
+
+        self.assertEqual(summary["status"], "completed")
+        self.assertEqual(observed_status, ["completed"])
+
 
 if __name__ == "__main__":
     unittest.main()

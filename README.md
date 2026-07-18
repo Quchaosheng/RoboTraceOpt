@@ -35,6 +35,34 @@ tests/         unit and contract tests
 docs/          public schemas, environment notes, and migration references
 ```
 
+## RDK X5 preparation
+
+X5 setup, two-adapter physical CAN wiring, pilot execution, the short defense
+demonstration, and recovery steps are documented in
+[`docs/hardware/X5_RUNBOOK.md`](docs/hardware/X5_RUNBOOK.md).
+
+Preview package installation and run the read-only software preflight:
+
+```bash
+bash scripts/bootstrap_x5.sh --dry-run
+python3 scripts/preflight_x5.py --mode software
+```
+
+With two UP physical CAN interfaces, rehearse the complete demonstration without
+starting a workload:
+
+```bash
+python3 scripts/run_x5_demo.py \
+  --dry-run \
+  --runtime-interface can0 \
+  --peer-interface can1 \
+  --bitrate 500000 \
+  --output-dir data/raw/demos/x5_plan_01
+```
+
+Physical CAN output remains development evidence and is not substituted for the
+frozen native X5 tracing/eBPF matrix.
+
 ## Environment
 
 The primary development environment is Ubuntu 22.04 with ROS 2 Humble. The
