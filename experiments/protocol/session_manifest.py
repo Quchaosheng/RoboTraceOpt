@@ -53,11 +53,10 @@ def build_session_manifest(
     root = session_root.resolve()
     repository = repository_root.resolve()
     qualification_path = root / "qualification.json"
-    ordered_rows = _expand_cases(
-        [cases_by_id[case_id] for case_id in selected_ids], seed
-    )
+    selected_cases = [cases_by_id[case_id] for case_id in selected_ids]
+    ordered_rows = _expand_cases(selected_cases, seed)
     runs = []
-    position_counts: dict[str, dict[str, int]] = defaultdict(dict)
+    position_counts = _initial_position_counts(selected_cases)
     for sequence, row in enumerate(ordered_rows, start=1):
         case = row["case"]
         run_id = f"{session_name}_{case['case_id']}_r{row['repetition_index']:02d}"
@@ -76,8 +75,8 @@ def build_session_manifest(
             seed=seed,
         )
         position = str(row["position_index"])
-        counts = position_counts.setdefault(case["case_id"], {})
-        counts[position] = counts.get(position, 0) + 1
+        counts = position_counts[case["case_id"]]
+        counts[position] += 1
         runs.append(
             {
                 "sequence_index": sequence,
@@ -129,6 +128,21 @@ def build_session_manifest(
         "runs": runs,
     }
 
+
+def _initial_position_counts(
+    cases: list[dict[str, Any]],
+) -> dict[str, dict[str, int]]:
+    group_sizes: dict[str, int] = defaultdict(int)
+    for case in cases:
+        if case["runner_id"] == "fault_condition":
+            group_sizes[case["group_id"]] += 1
+    result = {}
+    for case in cases:
+        positions = group_sizes.get(case["group_id"], 1)
+        result[case["case_id"]] = {
+            str(position): 0 for position in range(1, positions + 1)
+        }
+    return result
 
 def _expand_cases(cases: list[dict[str, Any]], seed: int) -> list[dict[str, Any]]:
     fault_groups: dict[str, list[dict[str, Any]]] = defaultdict(list)

@@ -61,6 +61,11 @@ class SessionManifestTest(unittest.TestCase):
             "formal-experiment-session-manifest/v1",
         )
         self.assertEqual(len(first["runs"]), 122)
+        for case_id, counts in first["position_counts"].items():
+            if case_id.startswith("diagnosis_"):
+                self.assertEqual(len(counts), 12)
+                self.assertEqual(sum(counts.values()), 10)
+                self.assertLessEqual(set(counts.values()), {0, 1})
         self.assertEqual(first["dataset_role"], "pilot")
         self.assertTrue(first["development_only"])
         self.assertFalse(first["formal_experiment_allowed"])

@@ -74,16 +74,17 @@ def command_config(command):
     raise AssertionError("candidate argument missing")
 
 
-def write_report(output, config, objective, rate=1.0):
+def write_report(output, config, objective, rate=1.0, dataset_role="pilot"):
     output.mkdir(parents=True, exist_ok=True)
     (output / "trial_report.json").write_text(
         json.dumps(
             {
                 "schema_version": "optimization-runtime-trial/v1",
                 "candidate_config": config,
-                "development_only": True,
+                "dataset_role": dataset_role,
+                "development_only": dataset_role in {"development", "pilot"},
                 "formal_inference_allowed": False,
-                "formal_optimization_allowed": False,
+                "formal_optimization_allowed": dataset_role == "test",
                 "complete_trace_rate": rate,
                 "complete_trace_count": 10,
                 "metrics_ns": {
@@ -141,20 +142,30 @@ class RepeatedCampaignCliTest(unittest.TestCase):
         self.assertEqual(calls, [])
 
     def test_test_and_calibration_metadata_propagates_to_all_artifacts(self):
+        commands = []
+
         def execute(command):
+            commands.append(command)
             config = command_config(command)
             output = Path(command[command.index("--output-dir") + 1])
-            write_report(output, config, 100.0)
+            role = command[command.index("--dataset-role") + 1]
+            write_report(output, config, 100.0, dataset_role=role)
             return 0
 
         with tempfile.TemporaryDirectory() as directory:
             test_args = campaign_args(directory)
+            test_qualification = qualification("test")
+            test_qualification_path = Path(directory) / "test_qualification.json"
+            test_qualification_path.write_text(
+                json.dumps(test_qualification), encoding="utf-8"
+            )
             run_repeated_campaign(
                 diagnosis(),
                 baseline(),
                 **test_args,
                 dataset_role="test",
-                qualification_report=qualification("test"),
+                qualification_report=test_qualification,
+                qualification_source=test_qualification_path,
                 execute_trial=execute,
             )
             paths = [
@@ -163,6 +174,7 @@ class RepeatedCampaignCliTest(unittest.TestCase):
                 test_args["output_dir"] / "summary.json",
                 *test_args["output_dir"].glob("trials/**/trial_result.json"),
                 *test_args["output_dir"].glob("candidate_validations/*.json"),
+                *test_args["output_dir"].glob("trials/**/trial_report.json"),
             ]
             artifacts = [
                 json.loads(path.read_text(encoding="utf-8")) for path in paths
@@ -170,12 +182,18 @@ class RepeatedCampaignCliTest(unittest.TestCase):
 
             calibration_args = campaign_args(directory)
             calibration_args["output_dir"] = Path(directory) / "calibration"
+            calibration_qualification = qualification("calibration")
+            calibration_qualification_path = Path(directory) / "calibration_qualification.json"
+            calibration_qualification_path.write_text(
+                json.dumps(calibration_qualification), encoding="utf-8"
+            )
             calibration = run_repeated_campaign(
                 diagnosis(),
                 baseline(),
                 **calibration_args,
                 dataset_role="calibration",
-                qualification_report=qualification("calibration"),
+                qualification_report=calibration_qualification,
+                qualification_source=calibration_qualification_path,
                 execute_trial=execute,
             )
 
@@ -188,6 +206,12 @@ class RepeatedCampaignCliTest(unittest.TestCase):
         self.assertEqual(calibration["dataset_role"], "calibration")
         self.assertFalse(calibration["formal_optimization_allowed"])
         self.assertFalse(calibration["development_only"])
+        self.assertTrue(commands)
+        self.assertTrue(all("--qualification-report" in row for row in commands))
+        self.assertEqual(
+            {row[row.index("--dataset-role") + 1] for row in commands},
+            {"test", "calibration"},
+        )
 
     def test_public_docs_freeze_pilot_command_and_ignore_boundaries(self):
         optimizer_readme = (ROOT / "optimizer/README.md").read_text(
