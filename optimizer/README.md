@@ -163,3 +163,64 @@ The committed diagnosis fixtures are synthetic orchestration inputs. They
 carry no oracle fields and do not provide diagnosis-accuracy evidence. The
 runtime trials remain real development measurements. Diagnosed causes without
 an executable runtime profile are denied before any ROS process starts.
+
+## Repeated pilot campaigns
+
+The repeated campaign runner evaluates whether a single-run decision remains
+supported across balanced repeats. Each block contains the baseline and every
+unique candidate once. A seeded initial permutation is cyclically rotated so
+that no configuration is permanently assigned to the cold-start or final
+position. Candidate comparisons use only the baseline measured in the same
+block.
+
+The validator bootstraps the median paired improvement ratio and complete-trace
+rate delta with the Python standard library. A candidate is accepted only when
+all planned pairs succeed, the latency-improvement confidence lower bound
+meets the frozen threshold, and the completeness-delta lower bound does not
+cross its allowed regression threshold. Failed and invalid trials remain in
+the campaign and prevent acceptance; the runner never retries or replaces
+them.
+
+Run the five-block Executor pilot:
+
+```bash
+python3 scripts/run_repeated_optimization_campaign.py \
+  --diagnosis-report tests/fixtures/optimizer/diagnosis_executor_queueing.json \
+  --baseline-profile tests/fixtures/optimizer/baseline_executor_threads.json \
+  --campaign-name executor_repeated_20260718_01 \
+  --strategy guided \
+  --budget 4 \
+  --seed 20260718 \
+  --repetitions 5 \
+  --duration-seconds 8 \
+  --minimum-confidence 0.6 \
+  --minimum-completeness 1.0 \
+  --minimum-improvement-ratio 0.0 \
+  --minimum-complete-trace-rate-delta 0.0 \
+  --confidence-level 0.95 \
+  --bootstrap-resamples 10000 \
+  --output-dir data/raw/optimization/pilot/executor_repeated_20260718_01
+```
+
+Run the matching QoS pilot by using
+`diagnosis_dds_communication_delay.json`, `baseline_qos_depth.json`, campaign
+name `qos_repeated_20260718_01`, and output
+`data/raw/optimization/pilot/qos_repeated_20260718_01` with the same seed,
+budget, repetitions, duration, thresholds, and bootstrap settings.
+
+The output freezes the schedule before execution and retains one terminal
+record per planned trial:
+
+```text
+campaign_manifest.json
+trials/block_NN/position_NN_cfg_HASH/{trial_report,trial_result}.json
+candidate_validations/cfg_HASH.json
+decision.json
+summary.json
+```
+
+These commands always produce `dataset_role=pilot`, `development_only=true`,
+and `formal_optimization_allowed=false`. WSL measurements are protocol and
+variance checks, not formal superiority evidence. Native Linux and X5 use the
+same CLI and schemas but must write separate datasets and environment
+manifests; pilot and formal results must not be pooled.
