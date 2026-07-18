@@ -91,10 +91,15 @@ class SchedulingPressureTest(unittest.TestCase):
             [
                 "python3",
                 "-c",
-                "import signal,time; signal.signal(signal.SIGINT, signal.SIG_IGN); time.sleep(30)",
-            ]
+                "import signal,time; signal.signal(signal.SIGINT, signal.SIG_IGN); "
+                "print('ready', flush=True); time.sleep(30)",
+            ],
+            stdout=subprocess.PIPE,
+            text=True,
         )
-        time.sleep(0.1)
+        self.assertIsNotNone(stubborn.stdout)
+        self.assertEqual(stubborn.stdout.readline().strip(), "ready")
+        stubborn.stdout.close()
         self.assertEqual(stop_process(stubborn, 0.1), "forced_kill")
 
     def test_captures_an_auditable_injected_scheduler_manifest(self) -> None:
