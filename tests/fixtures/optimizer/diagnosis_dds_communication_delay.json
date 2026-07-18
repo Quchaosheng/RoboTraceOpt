@@ -1,0 +1,11 @@
+{
+  "schema_version": "diagnosis-report/v1",
+  "trace_id": "development-dds-communication-delay",
+  "status": "diagnosed",
+  "evidence_state": "valid",
+  "confidence": 0.9,
+  "completeness": 1.0,
+  "top_1": "dds_communication_delay",
+  "top_k": ["dds_communication_delay"],
+  "reason_codes": ["synthetic_orchestration_fixture"]
+}
