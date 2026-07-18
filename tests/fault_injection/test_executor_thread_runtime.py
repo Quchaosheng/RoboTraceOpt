@@ -1,3 +1,4 @@
+import ast
 import unittest
 from pathlib import Path
 
@@ -6,7 +7,9 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class ExecutorThreadRuntimeTest(unittest.TestCase):
-    def test_planner_uses_separate_callback_groups_and_configurable_executor(self) -> None:
+    def test_planner_uses_separate_callback_groups_and_configurable_executor(
+        self,
+    ) -> None:
         source = (
             ROOT / "ros2_core/src/vlm_planner_pkg/src/vlm_planner_node.py"
         ).read_text(encoding="utf-8")
@@ -25,14 +28,24 @@ class ExecutorThreadRuntimeTest(unittest.TestCase):
         launch = (
             ROOT / "ros2_core/src/runtime_bringup/launch/ai_runtime.launch.py"
         ).read_text(encoding="utf-8")
-        declaration = launch.split(
-            'DeclareLaunchArgument(\n            "executor_threads"', 1
-        )[1].split("),", 1)[0]
-        self.assertIn('default_value="1"', declaration)
+        declaration = next(
+            node
+            for node in ast.walk(ast.parse(launch))
+            if isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Name)
+            and node.func.id == "DeclareLaunchArgument"
+            and node.args
+            and ast.literal_eval(node.args[0]) == "executor_threads"
+        )
+        defaults = {
+            keyword.arg: ast.literal_eval(keyword.value)
+            for keyword in declaration.keywords
+        }
+        self.assertEqual(defaults["default_value"], "1")
         self.assertGreaterEqual(launch.count('"executor_threads"'), 2)
-        config = (
-            ROOT / "ros2_core/src/vlm_planner_pkg/config/planner.yaml"
-        ).read_text(encoding="utf-8")
+        config = (ROOT / "ros2_core/src/vlm_planner_pkg/config/planner.yaml").read_text(
+            encoding="utf-8"
+        )
         self.assertNotIn("executor_threads:", config)
 
 

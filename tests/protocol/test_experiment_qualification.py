@@ -6,7 +6,9 @@ from experiments.protocol.matrix import load_experiment_matrix
 from experiments.protocol.qualification import qualify_experiment_session
 
 
-MATRIX = load_experiment_matrix(Path("experiments/protocol/formal_experiment_matrix.json"))
+MATRIX = load_experiment_matrix(
+    Path("experiments/protocol/formal_experiment_matrix.json")
+)
 
 
 def capability_report(
@@ -16,9 +18,7 @@ def capability_report(
     is_wsl=True,
 ):
     names = {
-        requirement
-        for case in MATRIX["cases"]
-        for requirement in case["requirements"]
+        requirement for case in MATRIX["cases"] for requirement in case["requirements"]
     }
     return {
         "schema_version": 1,
@@ -31,8 +31,7 @@ def capability_report(
             "is_wsl": is_wsl,
         },
         "readiness": {
-            name: {"status": "ready", "path": name, "reason": "test"}
-            for name in names
+            name: {"status": "ready", "path": name, "reason": "test"} for name in names
         },
         "provenance": {"git_commit": "c" * 40, "git_status": ""},
     }
@@ -57,6 +56,25 @@ def qualify(
 
 
 class ExperimentQualificationTest(unittest.TestCase):
+    def test_formal_roles_reject_development_only_fault_cases(self):
+        report = capability_report(label="x86-native", is_wsl=False)
+
+        control = qualify(
+            report,
+            role="test",
+            selected=("diagnosis_f1_control",),
+        )
+        f5 = qualify(
+            report,
+            role="calibration",
+            selected=("diagnosis_f5_injected",),
+        )
+
+        self.assertEqual(control["status"], "denied")
+        self.assertIn("case_not_allowed_for_dataset_role", control["reason_codes"])
+        self.assertEqual(f5["status"], "denied")
+        self.assertIn("case_not_allowed_for_dataset_role", f5["reason_codes"])
+
     def test_wsl_allows_pilot_but_denies_test(self):
         pilot = qualify(capability_report())
         self.assertEqual(pilot["status"], "allowed")
@@ -71,9 +89,7 @@ class ExperimentQualificationTest(unittest.TestCase):
             capability_report(label="x86-native", is_wsl=False), role="test"
         )
         x5 = qualify(
-            capability_report(
-                label="rdk-x5", machine="aarch64", is_wsl=False
-            ),
+            capability_report(label="rdk-x5", machine="aarch64", is_wsl=False),
             role="test",
         )
 
@@ -112,10 +128,36 @@ class ExperimentQualificationTest(unittest.TestCase):
 
         self.assertEqual(denied["status"], "denied")
         self.assertIn("capability_not_ready", denied["reason_codes"])
-        self.assertEqual(
-            denied["cases"][0]["missing_requirements"], ["ros2_tracing"]
-        )
+        self.assertEqual(denied["cases"][0]["missing_requirements"], ["ros2_tracing"])
         self.assertEqual(allowed["status"], "allowed")
+
+    def test_f3_requires_comparable_ebpf_identity(self):
+        report = capability_report(label="x86-native", is_wsl=False)
+        report["readiness"]["identity_comparable_ebpf"] = {
+            "status": "blocked",
+            "path": "namespace_identity",
+            "reason": "live identity is not comparable",
+        }
+
+        result = qualify(
+            report,
+            role="calibration",
+            selected=("diagnosis_f3_injected",),
+        )
+
+        self.assertEqual(result["status"], "denied")
+        self.assertIn("capability_not_ready", result["reason_codes"])
+        self.assertEqual(
+            result["cases"][0]["missing_requirements"],
+            ["identity_comparable_ebpf"],
+        )
+
+    def test_rejects_malformed_readiness_entries(self):
+        report = capability_report()
+        report["readiness"]["runtime_event"] = "ready"
+
+        with self.assertRaisesRegex(ValueError, "readiness"):
+            qualify(report)
 
     def test_rejects_invalid_role_selection_and_hashes(self):
         report = capability_report()

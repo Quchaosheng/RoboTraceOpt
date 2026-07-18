@@ -78,7 +78,9 @@ class EbpfAdapterTest(unittest.TestCase):
         with self.assertRaises(AdapterReject) as context:
             load_process_identities(manifest)
 
-        self.assertEqual(context.exception.reason_code, "identity_domain_not_comparable")
+        self.assertEqual(
+            context.exception.reason_code, "identity_domain_not_comparable"
+        )
 
     def test_cli_converts_with_frozen_process_manifest(self) -> None:
         manifest = json.loads(PROCESS_MANIFEST.read_text(encoding="utf-8"))
@@ -156,7 +158,9 @@ class EbpfAdapterTest(unittest.TestCase):
             [event.event_type for event in events],
             ["sched_switch_out", "sched_switch_in"],
         )
-        self.assertEqual([(event.pid, event.tid) for event in events], [(10, 101), (20, 202)])
+        self.assertEqual(
+            [(event.pid, event.tid) for event in events], [(10, 101), (20, 202)]
+        )
         self.assertEqual(events[0].attributes["counterpart_tid"], 202)
         self.assertEqual(events[1].attributes["counterpart_tid"], 101)
         self.assertEqual(events[0].provenance["record_index"], 7)
@@ -251,7 +255,9 @@ class EbpfAdapterTest(unittest.TestCase):
 
     def test_rejects_non_monotonic_kernel_clock(self) -> None:
         record = common_record("sched_wakeup")
-        record.update({"clock_id": "unknown", "tid": 101, "comm": "node", "target_cpu": 1})
+        record.update(
+            {"clock_id": "unknown", "tid": 101, "comm": "node", "target_cpu": 1}
+        )
 
         with self.assertRaises(AdapterReject) as context:
             adapt_ebpf_record(

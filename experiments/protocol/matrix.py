@@ -15,6 +15,7 @@ CAPABILITIES = {
     "runtime_event",
     "ros2_tracing",
     "ebpf",
+    "identity_comparable_ebpf",
     "socketcan",
     "cpu_control",
     "cross_host_clock",
@@ -132,7 +133,12 @@ def _parameters(runner_id: str, value: Any) -> None:
 
     for field in ("diagnosis_report", "baseline_profile"):
         path = value[field]
-        if not isinstance(path, str) or not path or Path(path).is_absolute() or ".." in Path(path).parts:
+        if (
+            not isinstance(path, str)
+            or not path
+            or Path(path).is_absolute()
+            or ".." in Path(path).parts
+        ):
             raise ValueError(f"invalid {field}")
     if value["strategy"] not in {"guided", "random", "unguided_random"}:
         raise ValueError("invalid strategy")

@@ -42,8 +42,12 @@ def generate_launch_description():
                 output="screen",
                 parameters=[
                     {
-                        "request_rate_hz": ParameterValue(request_rate_hz, value_type=float),
-                        "server_delay_ms": ParameterValue(server_delay_ms, value_type=int),
+                        "request_rate_hz": ParameterValue(
+                            request_rate_hz, value_type=float
+                        ),
+                        "server_delay_ms": ParameterValue(
+                            server_delay_ms, value_type=int
+                        ),
                         "runtime_events_enabled": ParameterValue(
                             runtime_events_enabled, value_type=bool
                         ),

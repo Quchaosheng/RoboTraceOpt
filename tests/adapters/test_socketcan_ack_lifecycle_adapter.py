@@ -94,7 +94,9 @@ def injected_sources():
             ]
         )
         if attempt < 2:
-            runtime.append(runtime_event("can_retry_scheduled", base + 20_100_000, attempt + 1))
+            runtime.append(
+                runtime_event("can_retry_scheduled", base + 20_100_000, attempt + 1)
+            )
     runtime.append(runtime_event("can_retry_exhausted", 1_080_100_000, 2))
     responder = [
         {
@@ -113,7 +115,13 @@ def injected_sources():
         for base in (1_000_000_000, 1_030_000_000, 1_060_000_000)
     ]
     candump = [
-        {"record_index": index, "realtime_ns": index * 1_000, "interface": "vcan0", "can_id": 0x123, "payload_hex": "010203"}
+        {
+            "record_index": index,
+            "realtime_ns": index * 1_000,
+            "interface": "vcan0",
+            "can_id": 0x123,
+            "payload_hex": "010203",
+        }
         for index in (1, 2, 3)
     ]
     return runtime, responder, candump
@@ -141,8 +149,20 @@ def control_sources():
         }
     ]
     candump = [
-        {"record_index": 1, "realtime_ns": 1_000, "interface": "vcan0", "can_id": 0x123, "payload_hex": "010203"},
-        {"record_index": 2, "realtime_ns": 2_000, "interface": "vcan0", "can_id": 0x1A3, "payload_hex": "010203"},
+        {
+            "record_index": 1,
+            "realtime_ns": 1_000,
+            "interface": "vcan0",
+            "can_id": 0x123,
+            "payload_hex": "010203",
+        },
+        {
+            "record_index": 2,
+            "realtime_ns": 2_000,
+            "interface": "vcan0",
+            "can_id": 0x1A3,
+            "payload_hex": "010203",
+        },
     ]
     return runtime, responder, candump
 
@@ -234,17 +254,30 @@ class SocketCanAckLifecycleAdapterTest(unittest.TestCase):
         )
 
         self.assertEqual(events, [])
-        self.assertEqual(report["invalid_pair_reason_counts"], {"missing_responder_observation": 1})
+        self.assertEqual(
+            report["invalid_pair_reason_counts"], {"missing_responder_observation": 1}
+        )
 
     def test_drop_rejects_an_unexpected_ack_frame(self) -> None:
         run, oracle, capture = manifests("injected")
         runtime, responder, candump = injected_sources()
         candump.append(
-            {"record_index": 4, "realtime_ns": 4_000, "interface": "vcan0", "can_id": 0x1A3, "payload_hex": "010203"}
+            {
+                "record_index": 4,
+                "realtime_ns": 4_000,
+                "interface": "vcan0",
+                "can_id": 0x1A3,
+                "payload_hex": "010203",
+            }
         )
 
         events, report = derive_socketcan_ack_lifecycle_evidence(
-            runtime, responder, candump, run, oracle, capture,
+            runtime,
+            responder,
+            candump,
+            run,
+            oracle,
+            capture,
             runtime_source_file="runtime.jsonl",
             responder_source_file="responder.jsonl",
             candump_source_file="candump.log",
@@ -254,7 +287,9 @@ class SocketCanAckLifecycleAdapterTest(unittest.TestCase):
         )
 
         self.assertEqual(events, [])
-        self.assertEqual(report["invalid_pair_reason_counts"], {"unexpected_candump_ack": 1})
+        self.assertEqual(
+            report["invalid_pair_reason_counts"], {"unexpected_candump_ack": 1}
+        )
 
     def test_drop_rejects_an_ack_received_terminal(self) -> None:
         run, oracle, capture = manifests("injected")
@@ -270,7 +305,12 @@ class SocketCanAckLifecycleAdapterTest(unittest.TestCase):
         candump = candump[:1]
 
         events, report = derive_socketcan_ack_lifecycle_evidence(
-            runtime, responder, candump, run, oracle, capture,
+            runtime,
+            responder,
+            candump,
+            run,
+            oracle,
+            capture,
             runtime_source_file="runtime.jsonl",
             responder_source_file="responder.jsonl",
             candump_source_file="candump.log",
@@ -280,7 +320,9 @@ class SocketCanAckLifecycleAdapterTest(unittest.TestCase):
         )
 
         self.assertEqual(events, [])
-        self.assertEqual(report["invalid_pair_reason_counts"], {"terminal_variant_mismatch": 1})
+        self.assertEqual(
+            report["invalid_pair_reason_counts"], {"terminal_variant_mismatch": 1}
+        )
 
     def test_rejects_mock_profile_and_physical_can_claim(self) -> None:
         run, oracle, capture = manifests("control")
@@ -305,7 +347,10 @@ class SocketCanAckLifecycleAdapterTest(unittest.TestCase):
 
         self.assertEqual(events, [])
         self.assertEqual(report["status"], "invalid")
-        self.assertIn(report["reason_code"], {"oracle_profile_mismatch", "invalid_capture_manifest"})
+        self.assertIn(
+            report["reason_code"],
+            {"oracle_profile_mismatch", "invalid_capture_manifest"},
+        )
 
 
 if __name__ == "__main__":

@@ -17,7 +17,11 @@ def report(variant: str) -> dict:
     metrics = {}
     for metric in METRICS:
         control_base = 0 if metric == "server_processing_elapsed_ns" else 1_000
-        base = 100_000_000 if injected and metric == "server_processing_elapsed_ns" else control_base
+        base = (
+            100_000_000
+            if injected and metric == "server_processing_elapsed_ns"
+            else control_base
+        )
         metrics[metric] = {
             "median": base,
             "p90": base + (100 if control_base else 0),
@@ -50,8 +54,12 @@ class F4BlockingDelayComparisonTest(unittest.TestCase):
     def test_compares_absolute_effect_and_null_zero_control_ratio(self) -> None:
         comparison = compare_reports(report("injected"), report("control"))
 
-        self.assertEqual(comparison["schema_version"], "f4-blocking-delay-comparison/v1")
-        self.assertEqual(comparison["delay_profiles_ms"], {"injected": 100, "control": 0})
+        self.assertEqual(
+            comparison["schema_version"], "f4-blocking-delay-comparison/v1"
+        )
+        self.assertEqual(
+            comparison["delay_profiles_ms"], {"injected": 100, "control": 0}
+        )
         self.assertEqual(comparison["sample_counts"], {"injected": 8, "control": 10})
         median = comparison["metrics_ns"]["server_processing_elapsed_ns"]["median"]
         self.assertEqual(median["absolute_delta"], 100_000_000)

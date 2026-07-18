@@ -79,6 +79,21 @@ class ArtifactManifestTest(unittest.TestCase):
         self.assertEqual(measured.bytes, 10)
         self.assertEqual(measured.sha256, digest.hexdigest())
 
+    def test_rejects_symlinks_inside_artifact_directories(self) -> None:
+        ctf = self.root / "ctf"
+        self._write(ctf / "metadata", b"meta")
+        target_dir = self.root / "outside_dir"
+        target_dir.mkdir()
+        (target_dir / "stream").write_bytes(b"stream")
+        link_dir = ctf / "link_dir"
+        try:
+            link_dir.symlink_to(target_dir, target_is_directory=True)
+        except OSError as error:
+            self.skipTest(f"symlink creation unavailable: {error}")
+
+        with self.assertRaisesRegex(ArtifactValidationError, "symlink"):
+            measure_path(ctf)
+
     def test_builds_and_validates_a_stable_manifest(self) -> None:
         artifacts = self._base_artifacts()
 

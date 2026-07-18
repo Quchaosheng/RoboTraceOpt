@@ -36,7 +36,9 @@ def actions_for_cause(cause_id: str) -> list[dict[str, Any]]:
 
 def validate_action(cause_id: str, action_id: str, value: Any) -> None:
     actions = actions_for_cause(cause_id)
-    action = next((item for item in actions if item.get("action_id") == action_id), None)
+    action = next(
+        (item for item in actions if item.get("action_id") == action_id), None
+    )
     if action is None:
         raise ValueError(f"action {action_id} is not allowed for cause {cause_id}")
     kind = action.get("kind")

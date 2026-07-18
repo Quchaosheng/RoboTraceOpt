@@ -42,8 +42,10 @@ class ClockCalibrationReport:
 
 
 def _utc_now() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="microseconds").replace(
-        "+00:00", "Z"
+    return (
+        datetime.now(timezone.utc)
+        .isoformat(timespec="microseconds")
+        .replace("+00:00", "Z")
     )
 
 
@@ -59,28 +61,33 @@ def assess_clock_comparability(
     method: str,
     measured_at_utc: str | None = None,
 ) -> ClockCalibrationReport:
-    unknown = sorted(
-        {source_clock_id, target_clock_id} - KNOWN_CLOCKS
-    )
+    unknown = sorted({source_clock_id, target_clock_id} - KNOWN_CLOCKS)
     if unknown:
         raise ClockCalibrationError(
             "unknown_clock", "unsupported clock domain: " + ", ".join(unknown)
         )
     if not source_host or not target_host:
-        raise ClockCalibrationError("invalid_host", "source and target host are required")
+        raise ClockCalibrationError(
+            "invalid_host", "source and target host are required"
+        )
     if not method:
         raise ClockCalibrationError("invalid_method", "calibration method is required")
     if tolerance_ns < 0:
-        raise ClockCalibrationError("invalid_tolerance", "tolerance must be non-negative")
+        raise ClockCalibrationError(
+            "invalid_tolerance", "tolerance must be non-negative"
+        )
     if not offset_samples_ns or len(offset_samples_ns) != len(uncertainty_samples_ns):
         raise ClockCalibrationError(
-            "invalid_samples", "offset and uncertainty samples must be non-empty and paired"
+            "invalid_samples",
+            "offset and uncertainty samples must be non-empty and paired",
         )
     if any(
         isinstance(value, bool) or not isinstance(value, int)
         for value in (*offset_samples_ns, *uncertainty_samples_ns)
     ):
-        raise ClockCalibrationError("invalid_samples", "samples must be integer nanoseconds")
+        raise ClockCalibrationError(
+            "invalid_samples", "samples must be integer nanoseconds"
+        )
     if any(value < 0 for value in uncertainty_samples_ns):
         raise ClockCalibrationError("invalid_samples", "uncertainty cannot be negative")
 
@@ -119,7 +126,11 @@ def measure_local_monotonic_alignment(
     if sample_count <= 0:
         raise ClockCalibrationError("invalid_samples", "sample_count must be positive")
     if candidate_reader is None:
-        candidate_reader = lambda: time.clock_gettime_ns(time.CLOCK_MONOTONIC)
+
+        def read_candidate() -> int:
+            return time.clock_gettime_ns(time.CLOCK_MONOTONIC)
+
+        candidate_reader = read_candidate
 
     offsets: list[int] = []
     uncertainties: list[int] = []

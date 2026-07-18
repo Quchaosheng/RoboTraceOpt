@@ -41,7 +41,9 @@ def manifests(variant: str = "injected"):
     return run, oracle
 
 
-def event(name: str, timestamp_ns: int, *, delay_ms: int = 100, payload_id: str = "payload-1"):
+def event(
+    name: str, timestamp_ns: int, *, delay_ms: int = 100, payload_id: str = "payload-1"
+):
     extra = {"payload_id": payload_id}
     if name in {"service_process_start", "service_process_end"}:
         extra["requested_delay_ms"] = delay_ms
@@ -97,7 +99,9 @@ class ServiceBlockingDelayAdapterTest(unittest.TestCase):
         self.assertFalse(attributes["formal_syscall_attribution"])
         self.assertFalse(attributes["ebpf_evidence"])
         self.assertEqual(report["complete_trace_count"], 1)
-        self.assertEqual(report["measurement_semantics"], "application_service_blocking_elapsed")
+        self.assertEqual(
+            report["measurement_semantics"], "application_service_blocking_elapsed"
+        )
 
     def test_accepts_zero_delay_control(self) -> None:
         records = [
@@ -177,7 +181,9 @@ class ServiceBlockingDelayAdapterTest(unittest.TestCase):
         run["dataset_role"] = "test"
         oracle["dataset_role"] = "test"
         events, report = derive_service_blocking_delay_evidence(
-            complete_trace(), run, oracle,
+            complete_trace(),
+            run,
+            oracle,
             runtime_source_file="runtime.jsonl",
             run_manifest_source_file="run.json",
             oracle_manifest_source_file="oracle.json",
@@ -188,7 +194,9 @@ class ServiceBlockingDelayAdapterTest(unittest.TestCase):
         run, oracle = manifests()
         oracle["session_id"] = "other"
         events, report = derive_service_blocking_delay_evidence(
-            complete_trace(), run, oracle,
+            complete_trace(),
+            run,
+            oracle,
             runtime_source_file="runtime.jsonl",
             run_manifest_source_file="run.json",
             oracle_manifest_source_file="oracle.json",

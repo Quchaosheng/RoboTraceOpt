@@ -17,7 +17,7 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 if str(REPOSITORY_ROOT) not in sys.path:
     sys.path.insert(0, str(REPOSITORY_ROOT))
 
-from scripts.export_tracetools_fixture import (
+from scripts.export_tracetools_fixture import (  # noqa: E402
     DEFAULT_EVENTS,
     directory_sha256,
     trace_records,
@@ -134,7 +134,9 @@ def export_records(
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--fault-id", choices=sorted(FAULT_REQUIRED_EVENTS), required=True)
+    parser.add_argument(
+        "--fault-id", choices=sorted(FAULT_REQUIRED_EVENTS), required=True
+    )
     parser.add_argument("--trace", type=Path, required=True)
     parser.add_argument("--output-jsonl", type=Path, required=True)
     parser.add_argument("--output-manifest", type=Path, required=True)

@@ -30,7 +30,9 @@ def evaluate_associations(
     oracle_list = list(oracle_edges)
     decisions_by_id = {decision.event_id: decision for decision in decision_list}
     oracle_by_id = {edge.event_id: edge for edge in oracle_list}
-    if len(decisions_by_id) != len(decision_list) or len(oracle_by_id) != len(oracle_list):
+    if len(decisions_by_id) != len(decision_list) or len(oracle_by_id) != len(
+        oracle_list
+    ):
         raise ValueError("decision and oracle event IDs must be unique")
     if decisions_by_id.keys() != oracle_by_id.keys():
         missing = sorted(decisions_by_id.keys() - oracle_by_id.keys())

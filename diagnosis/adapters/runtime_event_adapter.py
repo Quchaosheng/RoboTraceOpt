@@ -40,7 +40,9 @@ def adapt_runtime_event(
             "missing_required_field", "missing fields: " + ", ".join(missing)
         )
     if not source_file or record_index < 0:
-        raise AdapterReject("invalid_provenance", "source_file and record_index are required")
+        raise AdapterReject(
+            "invalid_provenance", "source_file and record_index are required"
+        )
 
     string_fields = (
         "trace_id",
@@ -54,10 +56,18 @@ def adapt_runtime_event(
         "reason_code",
         "extra_json",
     )
-    invalid_strings = [name for name in string_fields if not isinstance(record[name], str)]
+    invalid_strings = [
+        name for name in string_fields if not isinstance(record[name], str)
+    ]
     if invalid_strings:
-        reason = "invalid_extra_json" if invalid_strings == ["extra_json"] else "invalid_field_type"
-        raise AdapterReject(reason, "fields must be strings: " + ", ".join(invalid_strings))
+        reason = (
+            "invalid_extra_json"
+            if invalid_strings == ["extra_json"]
+            else "invalid_field_type"
+        )
+        raise AdapterReject(
+            reason, "fields must be strings: " + ", ".join(invalid_strings)
+        )
 
     trace_id = record["trace_id"]
     stage = record["stage"]
@@ -90,10 +100,13 @@ def adapt_runtime_event(
     duration_ns = record["duration_ns"]
     if pid <= 0 or tid <= 0 or host_id == "unknown":
         raise AdapterReject(
-            "invalid_runtime_identity", "pid/tid must be positive and host_id must be known"
+            "invalid_runtime_identity",
+            "pid/tid must be positive and host_id must be known",
         )
     if timestamp_ns < 0 or sequence_id < 0 or duration_ns < 0:
-        raise AdapterReject("invalid_numeric_field", "numeric fields must be non-negative")
+        raise AdapterReject(
+            "invalid_numeric_field", "numeric fields must be non-negative"
+        )
 
     try:
         extra = json.loads(record["extra_json"])
@@ -141,9 +154,13 @@ def adapt_runtime_jsonl(
         try:
             record = json.loads(line)
         except json.JSONDecodeError as error:
-            raise AdapterReject("invalid_json", f"line {line_number}: {error.msg}") from error
+            raise AdapterReject(
+                "invalid_json", f"line {line_number}: {error.msg}"
+            ) from error
         if not isinstance(record, dict):
-            raise AdapterReject("invalid_json", f"line {line_number}: record must be an object")
+            raise AdapterReject(
+                "invalid_json", f"line {line_number}: record must be an object"
+            )
         try:
             events.append(
                 adapt_runtime_event(

@@ -34,7 +34,9 @@ KERNEL_CONFIG_KEYS = (
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--label", required=True, help="Platform label, e.g. x86-wsl or rk3568.")
+    parser.add_argument(
+        "--label", required=True, help="Platform label, e.g. x86-wsl or rk3568."
+    )
     parser.add_argument("--can-interface", default="vcan0")
     parser.add_argument("--output-json", type=Path)
     parser.add_argument("--output-md", type=Path)
@@ -89,7 +91,11 @@ def tracing_capability_available(
     trace_help: dict[str, Any], status: dict[str, Any]
 ) -> bool:
     status_text = f"{status.get('stdout', '')}\n{status.get('stderr', '')}"
-    return command_ok(trace_help) and command_ok(status) and "Tracing enabled" in status_text
+    return (
+        command_ok(trace_help)
+        and command_ok(status)
+        and "Tracing enabled" in status_text
+    )
 
 
 def read_text(path: Path) -> str:
@@ -97,6 +103,20 @@ def read_text(path: Path) -> str:
         return path.read_text(encoding="utf-8", errors="replace").strip()
     except OSError:
         return ""
+
+
+def path_is_file(path: Path) -> bool:
+    try:
+        return path.is_file()
+    except OSError:
+        return False
+
+
+def path_is_dir(path: Path) -> bool:
+    try:
+        return path.is_dir()
+    except OSError:
+        return False
 
 
 def parse_os_release() -> dict[str, str]:
@@ -111,11 +131,8 @@ def parse_os_release() -> dict[str, str]:
 
 def find_tracefs() -> Path | None:
     for candidate in (Path("/sys/kernel/tracing"), Path("/sys/kernel/debug/tracing")):
-        try:
-            if candidate.is_dir():
-                return candidate
-        except OSError:
-            continue
+        if path_is_dir(candidate):
+            return candidate
     return None
 
 
@@ -126,10 +143,14 @@ def read_kernel_config() -> dict[str, str]:
     boot_config = Path(f"/boot/config-{release}")
     try:
         if proc_config.is_file():
-            with gzip.open(proc_config, "rt", encoding="utf-8", errors="replace") as handle:
+            with gzip.open(
+                proc_config, "rt", encoding="utf-8", errors="replace"
+            ) as handle:
                 lines = handle.readlines()
         elif boot_config.is_file():
-            lines = boot_config.read_text(encoding="utf-8", errors="replace").splitlines()
+            lines = boot_config.read_text(
+                encoding="utf-8", errors="replace"
+            ).splitlines()
     except OSError:
         lines = []
 
@@ -151,7 +172,7 @@ def read_kernel_config() -> dict[str, str]:
 def collect_governors() -> dict[str, str]:
     governors: dict[str, str] = {}
     pattern = Path("/sys/devices/system/cpu/cpufreq")
-    if not pattern.is_dir():
+    if not path_is_dir(pattern):
         return governors
     for path in sorted(pattern.glob("policy*/scaling_governor")):
         governors[path.parent.name] = read_text(path)
@@ -172,40 +193,90 @@ def parse_can_interfaces(result: dict[str, Any]) -> list[dict[str, Any]]:
 
 def classify_readiness(checks: dict[str, bool]) -> dict[str, dict[str, str]]:
     if checks["ros2_runtime"]:
-        runtime = item("ready", "workspace", "ROS 2 and runtime_bringup are discoverable.")
+        runtime = item(
+            "ready", "workspace", "ROS 2 and runtime_bringup are discoverable."
+        )
     else:
-        runtime = item("blocked", "unavailable", "ROS 2 or runtime_bringup is not discoverable.")
+        runtime = item(
+            "blocked", "unavailable", "ROS 2 or runtime_bringup is not discoverable."
+        )
 
     if checks["tracetools"]:
-        tracing = item("ready", "tracetools", "The tracetools provider reports tracing enabled at compile time.")
+        tracing = item(
+            "ready",
+            "tracetools",
+            "The tracetools provider reports tracing enabled at compile time.",
+        )
     else:
-        tracing = item("blocked", "unavailable", "The tracetools provider is missing or reports tracing disabled.")
+        tracing = item(
+            "blocked",
+            "unavailable",
+            "The tracetools provider is missing or reports tracing disabled.",
+        )
 
     if checks["btf"] and checks["sched_switch_tracepoint"] and checks["bpftool_probe"]:
-        ebpf = item("ready", "libbpf_core", "BTF, sched_switch tracepoint, and bpftool probe are available.")
+        ebpf = item(
+            "ready",
+            "libbpf_core",
+            "BTF, sched_switch tracepoint, and bpftool probe are available.",
+        )
     elif checks["sched_switch_tracepoint"] and checks["bpftool_probe"]:
-        ebpf = item("partial", "bcc_or_non_core", "Tracepoints and BPF are usable, but CO-RE BTF was not found.")
+        ebpf = item(
+            "partial",
+            "bcc_or_non_core",
+            "Tracepoints and BPF are usable, but CO-RE BTF was not found.",
+        )
     elif checks["sched_switch_tracepoint"]:
-        ebpf = item("partial", "tracefs_only", "Tracefs is visible, but eBPF support was not proven by bpftool.")
+        ebpf = item(
+            "partial",
+            "tracefs_only",
+            "Tracefs is visible, but eBPF support was not proven by bpftool.",
+        )
     else:
-        ebpf = item("blocked", "unavailable", "No usable sched_switch tracepoint was observed.")
+        ebpf = item(
+            "blocked", "unavailable", "No usable sched_switch tracepoint was observed."
+        )
 
     if checks["can_interface"] and checks["can_utils"]:
-        socketcan = item("ready", "existing_interface", "A CAN interface and can-utils are available.")
+        socketcan = item(
+            "ready",
+            "existing_interface",
+            "A CAN interface and can-utils are available.",
+        )
     elif checks["can_utils"]:
-        socketcan = item("partial", "create_vcan", "can-utils are present; create or attach the requested CAN interface.")
+        socketcan = item(
+            "partial",
+            "create_vcan",
+            "can-utils are present; create or attach the requested CAN interface.",
+        )
     else:
-        socketcan = item("blocked", "unavailable", "No usable CAN interface/can-utils combination was observed.")
+        socketcan = item(
+            "blocked",
+            "unavailable",
+            "No usable CAN interface/can-utils combination was observed.",
+        )
 
     if checks["cpu_governor_visible"]:
         cpu = item("ready", "cpufreq", "CPU governor controls are visible.")
     else:
-        cpu = item("partial", "not_exposed", "CPU governor controls are not exposed by this platform.")
+        cpu = item(
+            "partial",
+            "not_exposed",
+            "CPU governor controls are not exposed by this platform.",
+        )
 
     if checks["time_sync_reported"]:
-        clock = item("partial", "sync_reported", "A synchronization service reports status; measure offset before cross-host fusion.")
+        clock = item(
+            "partial",
+            "sync_reported",
+            "A synchronization service reports status; measure offset before cross-host fusion.",
+        )
     else:
-        clock = item("blocked", "not_verified", "No host synchronization status was available; cross-host timestamps are not comparable.")
+        clock = item(
+            "blocked",
+            "not_verified",
+            "No host synchronization status was available; cross-host timestamps are not comparable.",
+        )
 
     if checks["scheduling_tools"]:
         scheduling = item(
@@ -235,6 +306,26 @@ def item(status: str, path: str, reason: str) -> dict[str, str]:
     return {"status": status, "path": path, "reason": reason}
 
 
+def classify_identity_readiness(*, is_wsl: bool, ebpf_status: str) -> dict[str, str]:
+    if is_wsl:
+        return item(
+            "blocked",
+            "namespace_identity",
+            "WSL PID identity is not comparable to kernel eBPF task IDs.",
+        )
+    if ebpf_status != "ready":
+        return item(
+            "blocked",
+            "ebpf_prerequisite",
+            "Comparable eBPF identity requires a ready native eBPF capability.",
+        )
+    return item(
+        "ready",
+        "process_manifest",
+        "Native identity is eligible; the live process manifest still verifies it.",
+    )
+
+
 def collect_capabilities(label: str, can_interface: str = "vcan0") -> dict[str, Any]:
     tracefs = find_tracefs()
     tracepoint = tracefs / "events/sched/sched_switch/format" if tracefs else None
@@ -245,13 +336,19 @@ def collect_capabilities(label: str, can_interface: str = "vcan0") -> dict[str, 
 
     commands = {
         "lscpu": run_command(["lscpu"]),
-        "ros2_runtime_prefix": run_command(["ros2", "pkg", "prefix", "runtime_bringup"]),
+        "ros2_runtime_prefix": run_command(
+            ["ros2", "pkg", "prefix", "runtime_bringup"]
+        ),
         "ros2_trace_help": run_command(["ros2", "trace", "--help"]),
         "tracetools_status": run_command(["ros2", "run", "tracetools", "status"]),
         "bpftool_feature_probe": run_command(bpftool_args, timeout=30),
-        "can_links": run_command(["ip", "-details", "-json", "link", "show", "type", "can"]),
+        "can_links": run_command(
+            ["ip", "-details", "-json", "link", "show", "type", "can"]
+        ),
         "can_interface": run_command(["ip", "-details", "link", "show", can_interface]),
-        "timedatectl": run_command(["timedatectl", "show", "--property=NTPSynchronized", "--value"]),
+        "timedatectl": run_command(
+            ["timedatectl", "show", "--property=NTPSynchronized", "--value"]
+        ),
         "chronyc_tracking": run_command(["chronyc", "tracking"]),
         "ptp4l_version": run_command(["ptp4l", "-v"]),
     }
@@ -259,7 +356,10 @@ def collect_capabilities(label: str, can_interface: str = "vcan0") -> dict[str, 
     governors = collect_governors()
     btf_path = Path("/sys/kernel/btf/vmlinux")
     proc_version = read_text(Path("/proc/version"))
-    timedatectl_synced = command_ok(commands["timedatectl"]) and commands["timedatectl"]["stdout"].lower() == "yes"
+    timedatectl_synced = (
+        command_ok(commands["timedatectl"])
+        and commands["timedatectl"]["stdout"].lower() == "yes"
+    )
     chrony_reported = command_ok(commands["chronyc_tracking"])
     can_utils = bool(shutil.which("candump") and shutil.which("cansend"))
 
@@ -268,27 +368,36 @@ def collect_capabilities(label: str, can_interface: str = "vcan0") -> dict[str, 
         "tracetools": tracing_capability_available(
             commands["ros2_trace_help"], commands["tracetools_status"]
         ),
-        "btf": btf_path.is_file(),
-        "sched_switch_tracepoint": bool(tracepoint and tracepoint.is_file()),
+        "btf": path_is_file(btf_path),
+        "sched_switch_tracepoint": bool(tracepoint and path_is_file(tracepoint)),
         "bpftool_probe": command_ok(commands["bpftool_feature_probe"]),
         "can_interface": command_ok(commands["can_interface"]),
         "can_utils": can_utils,
         "cpu_governor_visible": bool(governors),
         "time_sync_reported": timedatectl_synced or chrony_reported,
-        "scheduling_tools": bool(
-            shutil.which("stress-ng") and shutil.which("taskset")
-        ),
+        "scheduling_tools": bool(shutil.which("stress-ng") and shutil.which("taskset")),
     }
     readiness = classify_readiness(checks)
     is_wsl = "microsoft" in proc_version.lower() or bool(os.environ.get("WSL_INTEROP"))
+    readiness["identity_comparable_ebpf"] = classify_identity_readiness(
+        is_wsl=is_wsl,
+        ebpf_status=readiness["ebpf"]["status"],
+    )
     limitations = [
         "Cross-host timestamps require a measured offset report even when NTP/PTP reports synchronized.",
         "A successful capability probe does not replace a workload-attached tracing smoke test.",
     ]
     if is_wsl:
-        limitations.append("WSL2 is a development environment, not the planned native x86 Ubuntu experiment host.")
-    if "rk3568" in label.lower() and platform.machine().lower() not in {"aarch64", "arm64"}:
-        limitations.append("The rk3568 label does not match the detected machine architecture.")
+        limitations.append(
+            "WSL2 is a development environment, not the planned native x86 Ubuntu experiment host."
+        )
+    if "rk3568" in label.lower() and platform.machine().lower() not in {
+        "aarch64",
+        "arm64",
+    }:
+        limitations.append(
+            "The rk3568 label does not match the detected machine architecture."
+        )
 
     script_path = Path(__file__).resolve()
     return {
@@ -314,16 +423,26 @@ def collect_capabilities(label: str, can_interface: str = "vcan0") -> dict[str, 
                 "tracetools_status": commands["tracetools_status"],
             },
             "kernel": {
-                "btf_vmlinux": btf_path.is_file(),
+                "btf_vmlinux": path_is_file(btf_path),
                 "btf_path": str(btf_path),
                 "tracefs": str(tracefs) if tracefs else "",
-                "sched_switch_tracepoint": bool(tracepoint and tracepoint.is_file()),
+                "sched_switch_tracepoint": bool(
+                    tracepoint and path_is_file(tracepoint)
+                ),
                 "kernel_config": read_kernel_config(),
-                "unprivileged_bpf_disabled": read_text(Path("/proc/sys/kernel/unprivileged_bpf_disabled")),
-                "perf_event_paranoid": read_text(Path("/proc/sys/kernel/perf_event_paranoid")),
+                "unprivileged_bpf_disabled": read_text(
+                    Path("/proc/sys/kernel/unprivileged_bpf_disabled")
+                ),
+                "perf_event_paranoid": read_text(
+                    Path("/proc/sys/kernel/perf_event_paranoid")
+                ),
                 "kptr_restrict": read_text(Path("/proc/sys/kernel/kptr_restrict")),
                 "cap_eff": next(
-                    (line.split(":", 1)[1].strip() for line in read_text(Path("/proc/self/status")).splitlines() if line.startswith("CapEff:")),
+                    (
+                        line.split(":", 1)[1].strip()
+                        for line in read_text(Path("/proc/self/status")).splitlines()
+                        if line.startswith("CapEff:")
+                    ),
                     "",
                 ),
                 "bpftool_feature_probe": commands["bpftool_feature_probe"],
@@ -344,8 +463,16 @@ def collect_capabilities(label: str, can_interface: str = "vcan0") -> dict[str, 
                 "taskset": shutil.which("taskset") or "",
             },
             "clock": {
-                "clocksource_current": read_text(Path("/sys/devices/system/clocksource/clocksource0/current_clocksource")),
-                "clocksource_available": read_text(Path("/sys/devices/system/clocksource/clocksource0/available_clocksource")),
+                "clocksource_current": read_text(
+                    Path(
+                        "/sys/devices/system/clocksource/clocksource0/current_clocksource"
+                    )
+                ),
+                "clocksource_available": read_text(
+                    Path(
+                        "/sys/devices/system/clocksource/clocksource0/available_clocksource"
+                    )
+                ),
                 "clock_realtime_ns": time.clock_gettime_ns(time.CLOCK_REALTIME),
                 "clock_monotonic_ns": time.clock_gettime_ns(time.CLOCK_MONOTONIC),
                 "timedatectl": commands["timedatectl"],
@@ -391,7 +518,9 @@ def render_markdown(report: dict[str, Any]) -> str:
             "## Evidence",
             "",
             "```json",
-            json.dumps(report["evidence"], ensure_ascii=False, indent=2, sort_keys=True),
+            json.dumps(
+                report["evidence"], ensure_ascii=False, indent=2, sort_keys=True
+            ),
             "```",
             "",
         ]
@@ -402,7 +531,9 @@ def render_markdown(report: dict[str, Any]) -> str:
 def main() -> int:
     args = parse_args()
     report = collect_capabilities(args.label, args.can_interface)
-    rendered_json = json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
+    rendered_json = (
+        json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
+    )
     rendered_markdown = render_markdown(report)
 
     if args.output_json:

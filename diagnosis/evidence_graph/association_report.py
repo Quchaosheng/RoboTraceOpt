@@ -8,7 +8,10 @@ from collections import Counter
 from pathlib import Path
 from typing import Iterable
 
-from diagnosis.evidence_graph.association import AssociationDecision, associate_system_event
+from diagnosis.evidence_graph.association import (
+    AssociationDecision,
+    associate_system_event,
+)
 from diagnosis.evidence_graph.callback_identity import build_callback_identities
 from diagnosis.evidence_graph.stage_window import build_stage_windows
 from diagnosis.schema import NormalizedEvent
@@ -23,7 +26,9 @@ def build_association_report(
     event_type_counts = Counter(decision.event_type for decision in decision_list)
     by_status_and_type: dict[str, Counter[str]] = {}
     for decision in decision_list:
-        by_status_and_type.setdefault(decision.status, Counter())[decision.event_type] += 1
+        by_status_and_type.setdefault(decision.status, Counter())[
+            decision.event_type
+        ] += 1
     total = len(decision_list)
     return {
         "schema_version": "association-report/v1",
@@ -67,9 +72,7 @@ def main() -> int:
     system_events = load_normalized_jsonl(args.system)
     callback_identities = build_callback_identities(system_events)
     decisions = [
-        associate_system_event(
-            event, windows, callback_identities=callback_identities
-        )
+        associate_system_event(event, windows, callback_identities=callback_identities)
         for event in system_events
     ]
     report = build_association_report(decisions)

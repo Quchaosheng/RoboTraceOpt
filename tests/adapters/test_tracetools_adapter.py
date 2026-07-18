@@ -32,7 +32,9 @@ class TracetoolsAdapterTest(unittest.TestCase):
         self.assertEqual(event.host_id, "chaosheng")
         self.assertEqual(event.trace_id, "")
         self.assertEqual(event.stage, "")
-        self.assertEqual(event.attributes["clock"]["ns_from_origin"], 1784105346552079364)
+        self.assertEqual(
+            event.attributes["clock"]["ns_from_origin"], 1784105346552079364
+        )
         self.assertEqual(event.provenance["record_index"], 1)
 
     def test_all_real_fixture_records_normalize(self) -> None:
@@ -65,7 +67,9 @@ class TracetoolsAdapterTest(unittest.TestCase):
             "payload": {"callback": 42},
         }
 
-        event = adapt_tracetools_record(record, source_file="trace.jsonl", record_index=4)
+        event = adapt_tracetools_record(
+            record, source_file="trace.jsonl", record_index=4
+        )
 
         self.assertEqual(event.timestamp_ns, 2_500_000)
 

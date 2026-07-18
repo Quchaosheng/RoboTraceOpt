@@ -46,9 +46,9 @@ class ActionManagerShutdownTest(unittest.TestCase):
         self.assertNotIn(".detach()", source)
         self.assertIn("goal_threads_.emplace_back", source)
         self.assertIn("thread.join()", source)
-        destructor = source.split("ActionManagerNode::~ActionManagerNode()", 1)[1].split(
-            "void ActionManagerNode::on_planner_command", 1
-        )[0]
+        destructor = source.split("ActionManagerNode::~ActionManagerNode()", 1)[
+            1
+        ].split("void ActionManagerNode::on_planner_command", 1)[0]
         self.assertLess(
             destructor.index("action_server_.reset()"),
             destructor.index("thread.join()"),

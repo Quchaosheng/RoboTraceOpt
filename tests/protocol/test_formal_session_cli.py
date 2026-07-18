@@ -19,7 +19,9 @@ PUBLIC_MATRIX = load_experiment_matrix(
 
 def write_json(path, value):
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    path.write_text(
+        json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
 
 
 def sha(path):
@@ -54,9 +56,7 @@ def write_matrix(path, case_count=3):
 
 def write_capabilities(path, is_wsl=True):
     requirements = {
-        item
-        for row in PUBLIC_MATRIX["cases"]
-        for item in row["requirements"]
+        item for row in PUBLIC_MATRIX["cases"] for item in row["requirements"]
     }
     write_json(
         path,
@@ -247,7 +247,10 @@ class FormalSessionCliTest(unittest.TestCase):
         self.assertEqual(summary["status"], "completed")
         self.assertEqual(result["status"], "successful")
         self.assertTrue(
-            any(row["path"].endswith("/artifact_manifest.json") for row in result["artifacts"])
+            any(
+                row["path"].endswith("/artifact_manifest.json")
+                for row in result["artifacts"]
+            )
         )
 
     def test_missing_or_tampered_fault_artifacts_fail_the_case(self):
@@ -268,7 +271,10 @@ class FormalSessionCliTest(unittest.TestCase):
             (missing, "artifact_manifest_missing"),
             (tampered, "artifact_hash_mismatch"),
         ):
-            with self.subTest(reason=expected_reason), tempfile.TemporaryDirectory() as directory:
+            with (
+                self.subTest(reason=expected_reason),
+                tempfile.TemporaryDirectory() as directory,
+            ):
                 root = Path(directory)
                 matrix = root / "matrix.json"
                 capabilities = root / "capabilities.json"
@@ -316,7 +322,9 @@ class FormalSessionCliTest(unittest.TestCase):
             summary = run_formal_session(
                 matrix_path=matrix,
                 capability_path=capabilities,
-                selected_case_ids=[row["case_id"] for row in json.loads(matrix.read_text())["cases"]],
+                selected_case_ids=[
+                    row["case_id"] for row in json.loads(matrix.read_text())["cases"]
+                ],
                 dataset_role="pilot",
                 session_name="execution_test",
                 seed=9,
@@ -378,7 +386,9 @@ class FormalSessionCliTest(unittest.TestCase):
                 safe_root=root / "build",
                 dry_run=False,
                 resume=True,
-                execute_case=lambda command: calls.append(command) or execute_success(command),
+                execute_case=lambda command: (
+                    calls.append(command) or execute_success(command)
+                ),
             )
 
         self.assertEqual(len(calls), 1)
@@ -453,12 +463,9 @@ class FormalSessionCliTest(unittest.TestCase):
 
             self.assertEqual(marker.read_text(encoding="utf-8"), "keep")
 
-
     def test_public_docs_freeze_readiness_commands_and_data_boundaries(self):
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
-        optimizer_readme = (ROOT / "optimizer/README.md").read_text(
-            encoding="utf-8"
-        )
+        optimizer_readme = (ROOT / "optimizer/README.md").read_text(encoding="utf-8")
         ignore = (ROOT / ".gitignore").read_text(encoding="utf-8")
 
         for expected in (
@@ -490,6 +497,7 @@ class FormalSessionCliTest(unittest.TestCase):
             with self.subTest(pattern=pattern):
                 self.assertIn(pattern, ignore)
         self.assertIn("does not contain measurement evidence", readme)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -144,12 +144,19 @@ Prepare a blinded F6 bundle without starting ROS 2:
 python3 scripts/run_fault_condition.py \
   --fault-id F6 \
   --dataset-role calibration \
+  --case-id diagnosis_f6_injected \
+  --qualification-report data/raw/diagnosis/calibration/session_f6_001/qualification.json \
   --session-id session_f6_001 \
   --condition-id condition_opaque_001 \
   --output-dir data/raw/diagnosis/calibration/session_f6_001/condition_opaque_001 \
   --capability ros2_runtime \
   --capability runtime_event
 ```
+
+Calibration and test children must receive the matching qualification report
+created by `scripts/run_formal_experiment_session.py`; capability flags alone
+are accepted only for development runs. Control variants and F5 remain
+development-only until their profiles are frozen.
 
 Add `--execute --duration-seconds 8` to launch the condition. The output
 directory contains separate public, oracle, command, runtime-event, launch-log,

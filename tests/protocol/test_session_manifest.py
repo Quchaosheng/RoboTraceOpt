@@ -71,11 +71,7 @@ class SessionManifestTest(unittest.TestCase):
         self.assertFalse(first["formal_experiment_allowed"])
         self.assertTrue(all(isinstance(row["argv"], list) for row in first["runs"]))
         self.assertFalse(
-            any(
-                "shell=True" in part
-                for row in first["runs"]
-                for part in row["argv"]
-            )
+            any("shell=True" in part for row in first["runs"] for part in row["argv"])
         )
 
     def test_balanced_fault_rotation_places_two_cases_twice_per_position(self):
@@ -98,7 +94,9 @@ class SessionManifestTest(unittest.TestCase):
             self.assertEqual({row["position_index"] for row in rows}, {1, 2})
 
     def test_fault_commands_map_roles_and_catalog_capabilities(self):
-        f3 = next(row for row in MATRIX["cases"] if row["case_id"] == "diagnosis_f3_injected")
+        f3 = next(
+            row for row in MATRIX["cases"] if row["case_id"] == "diagnosis_f3_injected"
+        )
         pilot = build_case_argv(
             f3,
             run_id="session_f3_r01",
@@ -129,6 +127,13 @@ class SessionManifestTest(unittest.TestCase):
             test["argv"][test["argv"].index("--dataset-role") + 1],
             "test",
         )
+        self.assertIn("--qualification-report", test["argv"])
+        self.assertIn("--case-id", test["argv"])
+        self.assertEqual(
+            test["argv"][test["argv"].index("--case-id") + 1],
+            "diagnosis_f3_injected",
+        )
+        self.assertNotIn("--qualification-report", pilot["argv"])
         for capability in (
             "ros2_runtime",
             "ros2_tracing",
@@ -140,9 +145,7 @@ class SessionManifestTest(unittest.TestCase):
         self.assertEqual(pilot["expected_report"], "summary.json")
         self.assertEqual(pilot["role_evidence_path"], "run_manifest.json")
         self.assertEqual(pilot["expected_child_dataset_role"], "development")
-        self.assertEqual(
-            pilot["expected_artifact_manifest"], "artifact_manifest.json"
-        )
+        self.assertEqual(pilot["expected_artifact_manifest"], "artifact_manifest.json")
         self.assertEqual(
             pilot["expected_artifact_identity"],
             {
@@ -151,14 +154,12 @@ class SessionManifestTest(unittest.TestCase):
                 "dataset_role": "development",
             },
         )
-        self.assertEqual(
-            test["expected_artifact_identity"]["dataset_role"], "test"
-        )
+        self.assertEqual(test["expected_artifact_identity"]["dataset_role"], "test")
 
     def test_session_rows_freeze_fault_artifact_identity_only(self):
         manifest = build(
             MATRIX,
-            ["diagnosis_f1_control", "optimization_executor"],
+            ["diagnosis_f1_injected", "optimization_executor"],
             role="test",
         )
         fault = next(
@@ -178,15 +179,21 @@ class SessionManifestTest(unittest.TestCase):
             fault["expected_artifact_identity"],
             {
                 "fault_id": "F1",
-                "condition_variant": "control",
+                "condition_variant": "injected",
                 "dataset_role": "test",
             },
         )
         self.assertNotIn("expected_artifact_manifest", optimization)
         self.assertNotIn("expected_artifact_identity", optimization)
 
+    def test_session_manifest_rejects_development_only_formal_fault_case(self):
+        with self.assertRaisesRegex(ValueError, "dataset role"):
+            build(MATRIX, ["diagnosis_f1_control"], role="test")
+
     def test_formal_optimization_command_contains_frozen_policy(self):
-        case = next(row for row in MATRIX["cases"] if row["case_id"] == "optimization_executor")
+        case = next(
+            row for row in MATRIX["cases"] if row["case_id"] == "optimization_executor"
+        )
         invocation = build_case_argv(
             case,
             run_id="x5_executor_r01",

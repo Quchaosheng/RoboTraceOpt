@@ -85,25 +85,32 @@ def required_artifact_roles(fault_id: str) -> set[str]:
 
 def measure_path(path: Path) -> MeasuredPath:
     if path.is_symlink():
-        raise ArtifactValidationError("artifact_symlink", f"symlink is forbidden: {path}")
+        raise ArtifactValidationError(
+            "artifact_symlink", f"symlink is forbidden: {path}"
+        )
     if path.is_file():
         size = path.stat().st_size
         if size < 1:
-            raise ArtifactValidationError("artifact_empty", f"artifact is empty: {path}")
+            raise ArtifactValidationError(
+                "artifact_empty", f"artifact is empty: {path}"
+            )
         return MeasuredPath("file", size, _sha256_file(path))
     if not path.is_dir():
-        raise ArtifactValidationError("artifact_missing", f"artifact is missing: {path}")
+        raise ArtifactValidationError(
+            "artifact_missing", f"artifact is missing: {path}"
+        )
 
-    files = sorted(item for item in path.rglob("*") if item.is_file())
+    entries = sorted(path.rglob("*"))
+    if any(item.is_symlink() for item in entries):
+        raise ArtifactValidationError(
+            "artifact_symlink", f"symlink is forbidden below: {path}"
+        )
+    files = [item for item in entries if item.is_file()]
     if not files:
         raise ArtifactValidationError("artifact_empty", f"directory is empty: {path}")
     digest = hashlib.sha256()
     total = 0
     for file_path in files:
-        if file_path.is_symlink():
-            raise ArtifactValidationError(
-                "artifact_symlink", f"symlink is forbidden: {file_path}"
-            )
         relative = file_path.relative_to(path).as_posix()
         digest.update(relative.encode("utf-8"))
         digest.update(b"\0")

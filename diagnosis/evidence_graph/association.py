@@ -119,9 +119,7 @@ def associate_system_event(
             source=event.source,
             event_type=event.event_type,
         )
-    callback_identity = callback_identity_for_event(
-        event, callback_identities or {}
-    )
+    callback_identity = callback_identity_for_event(event, callback_identities or {})
     if callback_identity and callback_identity.infrastructure:
         return AssociationDecision(
             event_id=event.event_id,

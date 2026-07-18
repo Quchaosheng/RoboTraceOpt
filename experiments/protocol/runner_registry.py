@@ -40,6 +40,7 @@ def build_case_argv(
             output_dir=output_dir,
             repository_root=repository_root,
             safe_root=safe_root,
+            qualification_path=qualification_path,
         )
     if runner_id == "repeated_optimization":
         return _optimization_invocation(
@@ -63,10 +64,13 @@ def _fault_invocation(
     output_dir: Path,
     repository_root: Path,
     safe_root: Path,
+    qualification_path: Path,
 ) -> dict[str, Any]:
     parameters = case["parameters"]
     fault_id = parameters["fault_id"]
-    catalog = load_fault_catalog(repository_root / "experiments/fault_injection/fault_catalog.json")
+    catalog = load_fault_catalog(
+        repository_root / "experiments/fault_injection/fault_catalog.json"
+    )
     if fault_id not in catalog:
         raise ValueError(f"fault is not in the catalog: {fault_id}")
     child_role = ROLE_MAP[dataset_role]
@@ -90,6 +94,15 @@ def _fault_invocation(
         "--safe-root",
         str(safe_root),
     ]
+    if dataset_role in {"calibration", "test"}:
+        argv.extend(
+            [
+                "--case-id",
+                str(case["case_id"]),
+                "--qualification-report",
+                str(qualification_path),
+            ]
+        )
     for capability in catalog[fault_id].required_capabilities:
         argv.extend(["--capability", capability])
     argv.append("--execute")

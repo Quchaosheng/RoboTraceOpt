@@ -35,23 +35,48 @@ COUNTS = ("attempt_count", "timeout_count", "retry_scheduled_count")
 TERMINALS = ("ack_received", "retry_exhausted")
 
 
-def compare_reports(injected: dict[str, Any], control: dict[str, Any]) -> dict[str, Any]:
+def compare_reports(
+    injected: dict[str, Any], control: dict[str, Any]
+) -> dict[str, Any]:
     _validate(injected, "injected")
     _validate(control, "control")
-    for field in MATCHED_FIELDS:
+    return build_comparison(
+        injected,
+        control,
+        schema_version="f6-vcan-ack-comparison/v1",
+        measurement_semantics="application_socketcan_vcan_ack_lifecycle",
+        virtual_can_bus=True,
+        physical_can_evidence=False,
+        matched_fields=MATCHED_FIELDS,
+        profile_label="vcan",
+    )
+
+
+def build_comparison(
+    injected: dict[str, Any],
+    control: dict[str, Any],
+    *,
+    schema_version: str,
+    measurement_semantics: str,
+    virtual_can_bus: bool,
+    physical_can_evidence: bool,
+    matched_fields: tuple[str, ...],
+    profile_label: str,
+) -> dict[str, Any]:
+    for field in matched_fields:
         if injected["profile"].get(field) != control["profile"].get(field):
-            raise ValueError(f"F6 vcan reports differ in {field}")
+            raise ValueError(f"F6 {profile_label} reports differ in {field}")
 
     return {
-        "schema_version": "f6-vcan-ack-comparison/v1",
-        "measurement_semantics": "application_socketcan_vcan_ack_lifecycle",
+        "schema_version": schema_version,
+        "measurement_semantics": measurement_semantics,
         "socketcan_evidence": True,
-        "virtual_can_bus": True,
-        "physical_can_evidence": False,
+        "virtual_can_bus": virtual_can_bus,
+        "physical_can_evidence": physical_can_evidence,
         "development_only": True,
         "formal_inference_allowed": False,
         "matched_profile": {
-            field: injected["profile"][field] for field in MATCHED_FIELDS
+            field: injected["profile"][field] for field in matched_fields
         },
         "responder_policies": {"injected": "drop", "control": "echo"},
         "sample_counts": {
@@ -77,14 +102,10 @@ def compare_reports(injected: dict[str, Any], control: dict[str, Any]) -> dict[s
             "control": control["ack_frame_match_coverage"],
         },
         "ack_success_rate_delta": _delta(injected, control, "ack_success_rate"),
-        "retry_exhausted_rate_delta": _delta(
-            injected, control, "retry_exhausted_rate"
-        ),
+        "retry_exhausted_rate_delta": _delta(injected, control, "retry_exhausted_rate"),
         "rates": {
             "ack_success": _pair(injected, control, "ack_success_rate"),
-            "retry_exhausted": _pair(
-                injected, control, "retry_exhausted_rate"
-            ),
+            "retry_exhausted": _pair(injected, control, "retry_exhausted_rate"),
         },
         "mean_count_deltas": {
             name: float(injected["count_distributions"][name]["mean"])
@@ -119,18 +140,31 @@ def _validate(report: dict[str, Any], variant: str) -> None:
         raise ValueError("unsupported F6 vcan report schema")
     if report.get("condition_variant") != variant:
         raise ValueError(f"expected {variant} report")
-    if report.get("measurement_semantics") != "application_socketcan_vcan_ack_lifecycle":
+    if (
+        report.get("measurement_semantics")
+        != "application_socketcan_vcan_ack_lifecycle"
+    ):
         raise ValueError("incompatible measurement semantics")
-    if report.get("socketcan_evidence") is not True or report.get("virtual_can_bus") is not True:
+    if (
+        report.get("socketcan_evidence") is not True
+        or report.get("virtual_can_bus") is not True
+    ):
         raise ValueError("SocketCAN/vcan evidence flags are required")
     if report.get("physical_can_evidence") is not False:
         raise ValueError("physical CAN evidence must be disabled")
-    if report.get("development_only") is not True or report.get("formal_inference_allowed") is not False:
+    if (
+        report.get("development_only") is not True
+        or report.get("formal_inference_allowed") is not False
+    ):
         raise ValueError("F6 vcan report must be development-only")
     profile = report.get("profile")
     if not isinstance(profile, dict):
         raise ValueError("F6 vcan profile is required")
-    if profile.get("transport_profile") != "vcan" or profile.get("ack_mode") != "socketcan" or profile.get("mock_mode") is not False:
+    if (
+        profile.get("transport_profile") != "vcan"
+        or profile.get("ack_mode") != "socketcan"
+        or profile.get("mock_mode") is not False
+    ):
         raise ValueError("F6 report is not a vcan SocketCAN profile")
     expected_policy = "drop" if variant == "injected" else "echo"
     if profile.get("responder_policy") != expected_policy:

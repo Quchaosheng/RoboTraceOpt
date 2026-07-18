@@ -59,6 +59,9 @@ def create_fault_manifests(
     condition_variant: str = "injected",
     target_cpu: int | None = None,
     f6_transport_profile: str = "mock",
+    f6_can_interface: str | None = None,
+    f6_responder_interface: str | None = None,
+    f6_bitrate: int | None = None,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     if spec.implementation_status != "ready":
         raise ValueError(
@@ -72,10 +75,12 @@ def create_fault_manifests(
         raise ValueError("F6 transport profile is only valid for F6")
     if (
         spec.fault_id == "F6"
-        and f6_transport_profile == "vcan"
+        and f6_transport_profile in {"vcan", "physical"}
         and dataset_role != "development"
     ):
-        raise ValueError("F6 vcan transport profile is development-only")
+        raise ValueError(
+            f"F6 {f6_transport_profile} transport profile is development-only"
+        )
     validate_condition_variant(spec, condition_variant)
     if condition_variant == "control" and dataset_role != "development":
         raise ValueError("control variant is development-only")
@@ -83,9 +88,8 @@ def create_fault_manifests(
         raise ValueError("session_id is required")
     if not condition_id:
         raise ValueError("condition_id is required")
-    if (
-        len(git_commit) != 40
-        or any(character not in hexdigits for character in git_commit)
+    if len(git_commit) != 40 or any(
+        character not in hexdigits for character in git_commit
     ):
         raise ValueError("git_commit must be a 40-character SHA-1")
     public = {
@@ -124,13 +128,22 @@ def create_fault_manifests(
         injection["subscriber_depth"] = depth
         injection.pop("control_depth")
     if spec.fault_id == "F3":
-        if isinstance(target_cpu, bool) or not isinstance(target_cpu, int) or target_cpu < 0:
+        if (
+            isinstance(target_cpu, bool)
+            or not isinstance(target_cpu, int)
+            or target_cpu < 0
+        ):
             raise ValueError("F3 target_cpu must be a non-negative integer")
         injection["target_cpu"] = target_cpu
         injection["stress_enabled"] = condition_variant == "injected"
     if spec.fault_id == "F6":
         injection = materialize_f6_injection(
-            spec, condition_variant, f6_transport_profile
+            spec,
+            condition_variant,
+            f6_transport_profile,
+            can_interface=f6_can_interface,
+            responder_interface=f6_responder_interface,
+            bitrate=f6_bitrate,
         )
     oracle = {
         "schema_version": "fault-oracle/v1",
@@ -150,15 +163,20 @@ def materialize_f6_injection(
     spec: FaultSpec,
     condition_variant: str,
     transport_profile: str = "mock",
+    *,
+    can_interface: str | None = None,
+    responder_interface: str | None = None,
+    bitrate: int | None = None,
 ) -> dict[str, Any]:
     if spec.fault_id != "F6":
         raise ValueError("F6 transport profile is only valid for F6")
     validate_condition_variant(spec, condition_variant)
-    if transport_profile not in {"mock", "vcan"}:
+    if transport_profile not in {"mock", "vcan", "physical"}:
         raise ValueError(f"invalid F6 transport profile: {transport_profile}")
 
     injection = dict(spec.injection)
     vcan_profile = injection.pop("vcan_profile", None)
+    physical_profile = injection.pop("physical_profile", None)
     if transport_profile == "mock":
         injection["mock_ack_policy"] = (
             str(injection["mock_ack_policy"])
@@ -168,8 +186,9 @@ def materialize_f6_injection(
         injection.pop("control_ack_policy")
         return injection
 
-    if not isinstance(vcan_profile, dict):
-        raise ValueError("F6 vcan profile is missing")
+    selected_profile = vcan_profile if transport_profile == "vcan" else physical_profile
+    if not isinstance(selected_profile, dict):
+        raise ValueError(f"F6 {transport_profile} profile is missing")
     for key in ("mock_ack_policy", "control_ack_policy", "ack_mode", "mock_mode"):
         injection.pop(key)
     policy_key = (
@@ -180,11 +199,22 @@ def materialize_f6_injection(
     injection.update(
         {
             key: value
-            for key, value in vcan_profile.items()
+            for key, value in selected_profile.items()
             if key not in {"injected_responder_policy", "control_responder_policy"}
         }
     )
-    injection["responder_policy"] = str(vcan_profile[policy_key])
+    injection["responder_policy"] = str(selected_profile[policy_key])
+    if transport_profile == "physical":
+        if can_interface is not None:
+            injection["can_interface"] = can_interface
+        if responder_interface is not None:
+            injection["responder_interface"] = responder_interface
+        if bitrate is not None:
+            injection["bitrate"] = bitrate
+        if injection["can_interface"] == injection["responder_interface"]:
+            raise ValueError("physical CAN interfaces must be distinct")
+        if not isinstance(injection["bitrate"], int) or injection["bitrate"] <= 0:
+            raise ValueError("physical CAN bitrate must be positive")
     return injection
 
 

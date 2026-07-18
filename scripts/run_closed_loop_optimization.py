@@ -155,9 +155,7 @@ def run_closed_loop(
             "minimum_completeness": minimum_completeness,
             "quantile": selected_quantile,
             "minimum_improvement_ratio": minimum_improvement_ratio,
-            "minimum_complete_trace_rate_delta": (
-                minimum_complete_trace_rate_delta
-            ),
+            "minimum_complete_trace_rate_delta": (minimum_complete_trace_rate_delta),
         },
         "inputs": {
             "diagnosis": _input_record(diagnosis_report, diagnosis_source),
@@ -245,9 +243,7 @@ def run_closed_loop(
                 candidate_config=candidate_config,
                 quantile=selected_quantile,
                 minimum_improvement_ratio=minimum_improvement_ratio,
-                minimum_complete_trace_rate_delta=(
-                    minimum_complete_trace_rate_delta
-                ),
+                minimum_complete_trace_rate_delta=(minimum_complete_trace_rate_delta),
             )
         except (FileNotFoundError, json.JSONDecodeError, ValueError):
             candidate_results.append(
@@ -261,9 +257,7 @@ def run_closed_loop(
         validation = dict(evaluated["validation"])
         validation["inputs"] = {
             "baseline_report": str(baseline_dir / "trial_report.json"),
-            "baseline_report_sha256": _sha256_file(
-                baseline_dir / "trial_report.json"
-            ),
+            "baseline_report_sha256": _sha256_file(baseline_dir / "trial_report.json"),
             "candidate_report": str(report_path),
             "candidate_report_sha256": _sha256_file(report_path),
         }
@@ -274,14 +268,10 @@ def run_closed_loop(
         evaluated["validation_path"] = str(validation_path)
         candidate_results.append(evaluated)
 
-    decision = select_closed_loop_decision(
-        cause_id, baseline_config, candidate_results
-    )
+    decision = select_closed_loop_decision(cause_id, baseline_config, candidate_results)
     decision_path = output_dir / "decision.json"
     _write_json(decision_path, decision)
-    validated_count = sum(
-        row.get("status") == "validated" for row in candidate_results
-    )
+    validated_count = sum(row.get("status") == "validated" for row in candidate_results)
     failed_count = sum(row.get("status") == "failed" for row in candidate_results)
     skipped_count = len(candidate_results) - validated_count - failed_count
     return _finish_summary(
@@ -367,9 +357,7 @@ def main() -> int:
     parser.add_argument("--minimum-completeness", type=float, default=1.0)
     parser.add_argument("--quantile")
     parser.add_argument("--minimum-improvement-ratio", type=float, default=0.0)
-    parser.add_argument(
-        "--minimum-complete-trace-rate-delta", type=float, default=0.0
-    )
+    parser.add_argument("--minimum-complete-trace-rate-delta", type=float, default=0.0)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument(
         "--safe-root",
@@ -388,9 +376,7 @@ def main() -> int:
         minimum_completeness=args.minimum_completeness,
         quantile=args.quantile,
         minimum_improvement_ratio=args.minimum_improvement_ratio,
-        minimum_complete_trace_rate_delta=(
-            args.minimum_complete_trace_rate_delta
-        ),
+        minimum_complete_trace_rate_delta=(args.minimum_complete_trace_rate_delta),
         output_dir=args.output_dir,
         safe_root=args.safe_root,
         diagnosis_source=args.diagnosis_report,

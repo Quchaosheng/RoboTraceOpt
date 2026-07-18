@@ -3,7 +3,7 @@ import unittest
 from pathlib import Path
 
 from scripts.run_closed_loop_optimization import build_trial_invocation
-from scripts.run_optimization_trial import _trial_evidence
+from scripts.run_optimization_trial import _trial_evidence, apply_trial_evidence
 from optimizer.trials.runtime_trial import (
     build_trial_command,
     build_trial_manifest,
@@ -14,8 +14,14 @@ from optimizer.trials.runtime_trial import (
 )
 
 
-def event(name: str, timestamp_ns: int, *, trace_id: str = "trace-1", delay_ms: int = 25):
-    extra = {"planner_delay_ms": delay_ms, "planner_delay_mode": "busy_compute"} if name == "planner_process_start" else {}
+def event(
+    name: str, timestamp_ns: int, *, trace_id: str = "trace-1", delay_ms: int = 25
+):
+    extra = (
+        {"planner_delay_ms": delay_ms, "planner_delay_mode": "busy_compute"}
+        if name == "planner_process_start"
+        else {}
+    )
     return {
         "trace_id": trace_id,
         "sequence_id": 1,
@@ -85,6 +91,7 @@ class RuntimeTrialTest(unittest.TestCase):
             command[command.index("--qualification-report") + 1],
             "qualification.json",
         )
+
     def test_manifest_accepts_unguided_and_rejects_unknown_strategy(self) -> None:
         manifest = build_trial_manifest(
             cause_id="dds_communication_delay",
@@ -129,6 +136,42 @@ class RuntimeTrialTest(unittest.TestCase):
         self.assertTrue(formal["formal_optimization_allowed"])
         with self.assertRaisesRegex(ValueError, "qualification"):
             _trial_evidence("test", None, "a" * 40)
+
+    def test_applies_qualified_evidence_to_trial_report(self) -> None:
+        report = derive_f1_trial_report(
+            [
+                event("planner_process_start", 1_000),
+                event("planner_process_end", 25_002_000),
+            ],
+            {"planner_delay_ms": 25},
+        )
+        evidence = _trial_evidence(
+            "test",
+            {
+                "schema_version": "formal-experiment-qualification/v1",
+                "status": "allowed",
+                "dataset_role": "test",
+                "formal_experiment_allowed": True,
+                "matrix_sha256": "b" * 64,
+                "capability_sha256": "c" * 64,
+                "git_commit": "a" * 40,
+                "git_status": "",
+            },
+            "a" * 40,
+        )
+
+        enriched = apply_trial_evidence(report, evidence)
+
+        self.assertEqual(enriched["dataset_role"], "test")
+        self.assertFalse(enriched["development_only"])
+        self.assertTrue(enriched["formal_inference_allowed"])
+        self.assertTrue(enriched["formal_optimization_allowed"])
+        with self.assertRaisesRegex(ValueError, "inconsistent"):
+            apply_trial_evidence(
+                report,
+                {**evidence, "formal_inference_allowed": False},
+            )
+
     def test_builds_arbitrary_f4_candidate_command(self) -> None:
         command = build_trial_command(
             "blocking_syscall_io", {"server_delay_ms": 50}, Path("events.jsonl")
@@ -162,7 +205,10 @@ class RuntimeTrialTest(unittest.TestCase):
         report = derive_f1_trial_report(records, {"planner_delay_ms": 25})
         self.assertEqual(report["complete_trace_count"], 2)
         self.assertEqual(report["complete_trace_rate"], 1.0)
-        self.assertEqual(report["metrics_ns"]["planner_processing_elapsed_ns"]["median"], 25_002_000.0)
+        self.assertEqual(
+            report["metrics_ns"]["planner_processing_elapsed_ns"]["median"],
+            25_002_000.0,
+        )
         self.assertFalse(report["formal_optimization_allowed"])
 
     def test_rejects_wrong_profile_and_counts_incomplete_trace(self) -> None:

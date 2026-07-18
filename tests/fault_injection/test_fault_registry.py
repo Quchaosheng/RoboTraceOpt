@@ -16,7 +16,10 @@ from experiments.fault_injection.runner import (
     require_capabilities,
     write_condition_bundle,
 )
-from scripts.run_fault_condition import validate_fault_output
+from scripts.run_fault_condition import (
+    validate_fault_output,
+    validate_formal_qualification,
+)
 
 
 class FaultRegistryTest(unittest.TestCase):
@@ -141,7 +144,9 @@ class FaultRegistryTest(unittest.TestCase):
         self.assertEqual(control_oracle["cause_id"], "none")
         self.assertEqual(injected_oracle["injection"]["planner_delay_ms"], 100)
         self.assertEqual(control_oracle["injection"]["planner_delay_ms"], 0)
-        self.assertEqual(control_oracle["injection"]["planner_delay_mode"], "busy_compute")
+        self.assertEqual(
+            control_oracle["injection"]["planner_delay_mode"], "busy_compute"
+        )
         self.assertEqual(control_oracle["injection"]["input_rate_hz"], 4)
         self.assertEqual(control_oracle["injection"]["planner_backend"], "mock")
         self.assertTrue(control_oracle["injection"]["action_manager_enabled"])
@@ -199,7 +204,9 @@ class FaultRegistryTest(unittest.TestCase):
                 condition_variant="control",
             )
 
-    def test_f6_vcan_variants_are_blinded_and_change_only_responder_policy(self) -> None:
+    def test_f6_vcan_variants_are_blinded_and_change_only_responder_policy(
+        self,
+    ) -> None:
         spec = load_fault_catalog()["F6"]
         injected_public, injected_oracle = create_fault_manifests(
             spec,
@@ -261,7 +268,7 @@ class FaultRegistryTest(unittest.TestCase):
                 session_id="f6-vcan-unknown",
                 condition_id="opaque-vcan-unknown",
                 git_commit="a" * 40,
-                f6_transport_profile="physical",
+                f6_transport_profile="invalid",
             )
         with self.assertRaisesRegex(ValueError, "socketcan_vcan"):
             require_capabilities(
@@ -400,6 +407,36 @@ class FaultRegistryTest(unittest.TestCase):
 
 
 class FaultRunnerTest(unittest.TestCase):
+    def test_formal_qualification_accepts_matching_injected_case(self) -> None:
+        validate_formal_qualification(
+            {
+                "schema_version": "formal-experiment-qualification/v1",
+                "status": "allowed",
+                "dataset_role": "test",
+                "development_only": False,
+                "formal_experiment_allowed": True,
+                "matrix_sha256": "a" * 64,
+                "capability_sha256": "b" * 64,
+                "git_commit": "c" * 40,
+                "git_status": "",
+                "selected_case_ids": ["diagnosis_f1_injected"],
+                "cases": [
+                    {
+                        "case_id": "diagnosis_f1_injected",
+                        "status": "ready",
+                        "missing_requirements": [],
+                        "role_errors": [],
+                    }
+                ],
+            },
+            dataset_role="test",
+            fault_id="F1",
+            condition_variant="injected",
+            case_id="diagnosis_f1_injected",
+            git_commit="c" * 40,
+            git_status="",
+        )
+
     def test_setup_scripts_are_sourced_with_nounset_temporarily_disabled(self) -> None:
         script = build_execution_script(
             ["ros2", "launch", "pkg", "file.py"],
@@ -557,9 +594,17 @@ class FaultRunnerTest(unittest.TestCase):
     def test_f3_capability_gate_is_role_sensitive(self) -> None:
         spec = load_fault_catalog()["F3"]
         development = {"ros2_runtime", "ros2_tracing", "stress_ng", "taskset"}
-        self.assertIn("dataset_role", inspect.signature(require_capabilities).parameters)
+        self.assertIn(
+            "dataset_role", inspect.signature(require_capabilities).parameters
+        )
 
-        require_capabilities(spec, development, dataset_role="development")
+        with self.assertRaisesRegex(ValueError, "identity_comparable_ebpf"):
+            require_capabilities(spec, development, dataset_role="development")
+        require_capabilities(
+            spec,
+            development | {"identity_comparable_ebpf"},
+            dataset_role="development",
+        )
         with self.assertRaisesRegex(ValueError, "identity_comparable_ebpf"):
             require_capabilities(spec, development, dataset_role="calibration")
         with self.assertRaisesRegex(ValueError, "taskset"):
@@ -574,7 +619,9 @@ class FaultRunnerTest(unittest.TestCase):
 
         command = build_launch_command(spec, Path("/tmp/runtime_events.jsonl"))
 
-        self.assertEqual(command[:4], ["ros2", "launch", "runtime_bringup", "ai_runtime.launch.py"])
+        self.assertEqual(
+            command[:4], ["ros2", "launch", "runtime_bringup", "ai_runtime.launch.py"]
+        )
         self.assertIn("mock_ack_policy:=drop", command)
         self.assertIn("ack_timeout_ms:=20", command)
         self.assertIn("max_retries:=2", command)
@@ -627,13 +674,23 @@ class FaultRunnerTest(unittest.TestCase):
             "max_retries:=2",
         ):
             self.assertIn(argument, injected)
-        self.assertFalse(any(value.startswith("mock_ack_policy:=") for value in injected))
+        self.assertFalse(
+            any(value.startswith("mock_ack_policy:=") for value in injected)
+        )
 
     def test_capability_gate_rejects_formal_f4_on_wsl(self) -> None:
         spec = load_fault_catalog()["F4"]
-        self.assertIn("dataset_role", inspect.signature(require_capabilities).parameters)
+        self.assertIn(
+            "dataset_role", inspect.signature(require_capabilities).parameters
+        )
 
-        require_capabilities(spec, {"ros2_runtime"}, dataset_role="development")
+        with self.assertRaisesRegex(ValueError, "identity_comparable_ebpf"):
+            require_capabilities(spec, {"ros2_runtime"}, dataset_role="development")
+        require_capabilities(
+            spec,
+            {"ros2_runtime", "identity_comparable_ebpf"},
+            dataset_role="development",
+        )
         with self.assertRaisesRegex(ValueError, "identity_comparable_ebpf"):
             require_capabilities(spec, {"ros2_runtime"}, dataset_role="calibration")
 
@@ -673,10 +730,14 @@ class FaultRunnerTest(unittest.TestCase):
 
             self.assertEqual(paths["public_manifest"].name, "run_manifest.json")
             self.assertEqual(paths["oracle_manifest"].name, "oracle_manifest.json")
-            self.assertNotIn("cause_id", paths["public_manifest"].read_text(encoding="utf-8"))
-            self.assertIn("can_ack_failure", paths["oracle_manifest"].read_text(encoding="utf-8"))
+            self.assertNotIn(
+                "cause_id", paths["public_manifest"].read_text(encoding="utf-8")
+            )
+            self.assertIn(
+                "can_ack_failure", paths["oracle_manifest"].read_text(encoding="utf-8")
+            )
 
-    def test_prepare_cli_writes_a_capability_gated_bundle(self) -> None:
+    def test_prepare_cli_rejects_formal_role_without_qualification(self) -> None:
         repository_root = Path(__file__).resolve().parents[2]
         with tempfile.TemporaryDirectory() as temporary_directory:
             output_dir = Path(temporary_directory) / "condition"
@@ -705,12 +766,9 @@ class FaultRunnerTest(unittest.TestCase):
                 capture_output=True,
                 text=True,
             )
-            self.assertEqual(completed.returncode, 0, completed.stderr)
-
-            self.assertTrue((output_dir / "run_manifest.json").is_file())
-            self.assertTrue((output_dir / "oracle_manifest.json").is_file())
-            self.assertTrue((output_dir / "command.json").is_file())
-            self.assertFalse((output_dir / "runtime_events.jsonl").exists())
+            self.assertNotEqual(completed.returncode, 0)
+            self.assertIn("qualification report", completed.stderr)
+            self.assertFalse(output_dir.exists())
 
     def test_prepare_cli_writes_a_blinded_f6_vcan_bundle(self) -> None:
         repository_root = Path(__file__).resolve().parents[2]
@@ -760,7 +818,9 @@ class FaultRunnerTest(unittest.TestCase):
             self.assertNotIn("responder_policy", public)
             self.assertEqual(oracle["injection"]["responder_policy"], "echo")
             self.assertIn("ack_mode:=socketcan", command)
-            self.assertFalse(any(value.startswith("mock_ack_policy:=") for value in command))
+            self.assertFalse(
+                any(value.startswith("mock_ack_policy:=") for value in command)
+            )
 
     def test_prepare_f3_cli_freezes_cpu_and_stress_commands(self) -> None:
         repository_root = Path(__file__).resolve().parents[2]
@@ -788,6 +848,8 @@ class FaultRunnerTest(unittest.TestCase):
                     "stress_ng",
                     "--capability",
                     "taskset",
+                    "--capability",
+                    "identity_comparable_ebpf",
                 ],
                 cwd=repository_root,
                 check=False,
@@ -803,7 +865,9 @@ class FaultRunnerTest(unittest.TestCase):
                 (output_dir / "command.json").read_text(encoding="utf-8")
             )
             target_cpu = oracle["injection"]["target_cpu"]
-            self.assertEqual(commands["argv"][:3], ["taskset", "--cpu-list", str(target_cpu)])
+            self.assertEqual(
+                commands["argv"][:3], ["taskset", "--cpu-list", str(target_cpu)]
+            )
             self.assertEqual(
                 commands["stress_argv"][:4],
                 ["taskset", "--cpu-list", str(target_cpu), "stress-ng"],
