@@ -1,4 +1,4 @@
-"""Execute one development-only runtime optimization candidate trial."""
+"""Execute one role-qualified runtime optimization candidate trial."""
 
 from __future__ import annotations
 
@@ -34,11 +34,63 @@ def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def _trial_evidence(
+    dataset_role: str,
+    qualification: dict[str, object] | None,
+    git_commit: str,
+) -> dict[str, object]:
+    if dataset_role not in {"development", "pilot", "calibration", "test"}:
+        raise ValueError("unsupported trial dataset role")
+    if dataset_role in {"calibration", "test"}:
+        if (
+            qualification is None
+            or qualification.get("schema_version")
+            != "formal-experiment-qualification/v1"
+            or qualification.get("status") != "allowed"
+            or qualification.get("dataset_role") != dataset_role
+        ):
+            raise ValueError("qualified trial requires matching qualification")
+        for field in ("matrix_sha256", "capability_sha256"):
+            value = qualification.get(field)
+            if not (
+                isinstance(value, str)
+                and len(value) == 64
+                and all(character in "0123456789abcdef" for character in value)
+            ):
+                raise ValueError(f"qualification has invalid {field}")
+        if qualification.get("git_commit") != git_commit:
+            raise ValueError("qualification git commit does not match")
+        if qualification.get("git_status"):
+            raise ValueError("qualification records a dirty worktree")
+        if (
+            dataset_role == "test"
+            and qualification.get("formal_experiment_allowed") is not True
+        ):
+            raise ValueError("test trial is not formally qualified")
+    return {
+        "dataset_role": dataset_role,
+        "development_only": dataset_role in {"development", "pilot"},
+        "formal_optimization_allowed": dataset_role == "test",
+    }
+
+
+def _read_json(path: Path) -> dict[str, object]:
+    value = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(value, dict):
+        raise ValueError(f"JSON object required: {path}")
+    return value
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--trial-id", required=True)
     parser.add_argument("--strategy", choices=TRIAL_STRATEGIES, required=True)
     parser.add_argument("--seed", type=int, required=True)
+    parser.add_argument(
+        "--dataset-role",
+        choices=("development", "pilot", "calibration", "test"),
+        default="development",
+    )
+    parser.add_argument("--qualification-report", type=Path)
     candidate = parser.add_mutually_exclusive_group(required=True)
     candidate.add_argument("--planner-delay-ms", type=int)
     candidate.add_argument("--server-delay-ms", type=int)
@@ -56,6 +108,19 @@ def main() -> int:
         raise ValueError(f"trial output already exists: {args.output_dir}")
     if args.duration_seconds < 1:
         raise ValueError("duration-seconds must be positive")
+    git_commit = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    qualification = (
+        _read_json(args.qualification_report)
+        if args.qualification_report is not None
+        else None
+    )
+    evidence = _trial_evidence(args.dataset_role, qualification, git_commit)
     args.output_dir.mkdir(parents=True)
     events_path = (args.output_dir / "runtime_events.jsonl").resolve()
     if args.planner_delay_ms is not None:
@@ -75,13 +140,6 @@ def main() -> int:
         config = {"frame_qos_depth": args.frame_qos_depth}
         derive_report = derive_f5_trial_report
     command = build_trial_command(cause_id, config, events_path)
-    git_commit = subprocess.run(
-        ["git", "rev-parse", "HEAD"],
-        cwd=ROOT,
-        check=True,
-        capture_output=True,
-        text=True,
-    ).stdout.strip()
     manifest = build_trial_manifest(
         cause_id=cause_id,
         candidate_config=config,
@@ -90,7 +148,13 @@ def main() -> int:
         seed=args.seed,
         git_commit=git_commit,
         command=command,
+        dataset_role=args.dataset_role,
     )
+    if args.qualification_report is not None:
+        manifest["qualification"] = {
+            "path": str(args.qualification_report),
+            "sha256": _sha256(args.qualification_report),
+        }
     manifest_path = args.output_dir / "trial_manifest.json"
     manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     setup_path = args.safe_root / "install" / "setup.bash"
@@ -110,6 +174,7 @@ def main() -> int:
     if completed.returncode not in {124, 130}:
         raise RuntimeError(f"optimization trial failed with status {completed.returncode}")
     report = derive_report(_read_jsonl(events_path), config)
+    report.update(evidence)
     if report["complete_trace_count"] < 2:
         raise RuntimeError("optimization trial produced fewer than two complete traces")
     report["trial_manifest"] = str(manifest_path)

@@ -1,4 +1,4 @@
-"""Run a development-only balanced repeated optimization campaign."""
+"""Run a role-qualified balanced repeated optimization campaign."""
 
 from __future__ import annotations
 
@@ -58,7 +58,14 @@ def run_repeated_campaign(
     execute_trial: TrialExecutor | None = None,
     diagnosis_source: Path | None = None,
     baseline_source: Path | None = None,
+    dataset_role: str = "pilot",
+    qualification_report: dict[str, Any] | None = None,
+    qualification_source: Path | None = None,
 ) -> dict[str, Any]:
+    evidence = _evidence_fields(dataset_role, qualification_report)
+    _validate_qualification_source(
+        dataset_role, qualification_report, qualification_source
+    )
     if output_dir.exists():
         raise ValueError(f"campaign output already exists: {output_dir}")
     validate_campaign_parameters(
@@ -94,6 +101,7 @@ def run_repeated_campaign(
                 "gate": str(gate_path),
                 "trial_invocation_count": 0,
             },
+            evidence,
         )
 
     cause_id = str(gate["cause_id"])
@@ -109,6 +117,7 @@ def run_repeated_campaign(
                 "gate": str(gate_path),
                 "trial_invocation_count": 0,
             },
+            evidence,
         )
 
     baseline_config = validate_baseline_profile(baseline_profile, cause_id)
@@ -122,10 +131,7 @@ def run_repeated_campaign(
     selected_quantile = quantile or profile["quantile"]
     manifest = {
         "schema_version": "optimization-repeated-campaign-manifest/v1",
-        "dataset_role": "pilot",
-        "development_only": True,
-        "formal_optimization_allowed": False,
-        "live_mutation_performed": False,
+        **evidence,
         "git_commit": _git_commit(),
         "cause_id": cause_id,
         "runtime_profile": profile,
@@ -152,6 +158,10 @@ def run_repeated_campaign(
             "baseline": _input_record(baseline_profile, baseline_source),
         },
     }
+    if qualification_report is not None:
+        manifest["inputs"]['qualification'] = _input_record(
+            qualification_report, qualification_source
+        )
     manifest_path = output_dir / "campaign_manifest.json"
     _write_json(manifest_path, manifest)
 
@@ -176,12 +186,12 @@ def run_repeated_campaign(
             duration_seconds=duration_seconds,
             output_dir=trial_dir,
             safe_root=safe_root,
+            dataset_role=dataset_role,
+            qualification_path=qualification_source,
         )
         result = {
             "schema_version": "optimization-repeated-trial-result/v1",
-            "dataset_role": "pilot",
-            "development_only": True,
-            "formal_optimization_allowed": False,
+            **evidence,
             **dict(row),
             "command": command,
         }
@@ -200,6 +210,14 @@ def run_repeated_campaign(
                 report = _read_json(report_path)
                 if report.get("candidate_config") != config:
                     raise CandidateConfigMismatch
+                if (
+                    report.get("dataset_role") != dataset_role
+                    or report.get("development_only")
+                    != evidence["development_only"]
+                    or report.get("formal_optimization_allowed")
+                    != evidence["formal_optimization_allowed"]
+                ):
+                    raise ValueError("trial report evidence role mismatch")
                 objective = runtime_objective(
                     report,
                     metric=profile["metric"],
@@ -249,6 +267,7 @@ def run_repeated_campaign(
         seed=seed,
     )
     for validation in validations:
+        validation.update(evidence)
         identifier = str(validation["config_id"])
         validation["inputs"] = [
             {
@@ -287,10 +306,7 @@ def run_repeated_campaign(
         selected_config_id = None
     decision = {
         "schema_version": "optimization-repeated-campaign-decision/v1",
-        "dataset_role": "pilot",
-        "development_only": True,
-        "formal_optimization_allowed": False,
-        "live_mutation_performed": False,
+        **evidence,
         "cause_id": cause_id,
         "action": action,
         "reason_code": reason_code,
@@ -322,6 +338,7 @@ def run_repeated_campaign(
             "accepted_candidate_count": len(accepted),
             "rejected_candidate_count": len(validations) - len(accepted),
         },
+        evidence,
     )
 
 
@@ -388,13 +405,73 @@ def _input_record(value: dict[str, Any], source: Path | None) -> dict[str, str]:
     return {"path": "", "sha256": hashlib.sha256(payload).hexdigest()}
 
 
-def _finish_summary(output_dir: Path, fields: dict[str, Any]) -> dict[str, Any]:
+def _validate_qualification_source(
+    dataset_role: str,
+    qualification: dict[str, Any] | None,
+    source: Path | None,
+) -> None:
+    if dataset_role not in {"calibration", "test"}:
+        return
+    if source is None or not source.is_file():
+        raise ValueError("qualified campaign role requires qualification source")
+    if _read_json(source) != qualification:
+        raise ValueError("qualification source does not match report")
+
+def _evidence_fields(
+    dataset_role: str, qualification: dict[str, Any] | None
+) -> dict[str, Any]:
+    roles = {"development", "pilot", "calibration", "test"}
+    if dataset_role not in roles:
+        raise ValueError("unsupported dataset role")
+    if dataset_role in {"calibration", "test"}:
+        if (
+            qualification is None
+            or qualification.get("schema_version")
+            != "formal-experiment-qualification/v1"
+        ):
+            raise ValueError(
+                "qualified campaign role requires a qualification report"
+            )
+        if (
+            qualification.get("status") != "allowed"
+            or qualification.get("dataset_role") != dataset_role
+        ):
+            raise ValueError("qualification report does not allow campaign role")
+        for field in ("matrix_sha256", "capability_sha256"):
+            value = qualification.get(field)
+            if not _is_lower_hex(value, 64):
+                raise ValueError(f"qualification report has invalid {field}")
+        if qualification.get("git_commit") != _git_commit():
+            raise ValueError("qualification report git commit does not match")
+        if qualification.get("git_status"):
+            raise ValueError("qualification report records a dirty worktree")
+        if dataset_role == "test" and (
+            qualification.get("formal_experiment_allowed") is not True
+        ):
+            raise ValueError("test campaign is not formally qualified")
+    return {
+        "dataset_role": dataset_role,
+        "development_only": dataset_role in {"development", "pilot"},
+        "formal_optimization_allowed": dataset_role == "test",
+        "live_mutation_performed": False,
+    }
+
+
+def _is_lower_hex(value: Any, length: int) -> bool:
+    return (
+        isinstance(value, str)
+        and len(value) == length
+        and all(character in "0123456789abcdef" for character in value)
+    )
+
+def _finish_summary(
+    output_dir: Path,
+    fields: dict[str, Any],
+    evidence: dict[str, Any],
+) -> dict[str, Any]:
     summary = {
         "schema_version": "optimization-repeated-campaign-summary/v1",
-        "dataset_role": "pilot",
-        "development_only": True,
-        "formal_optimization_allowed": False,
-        "live_mutation_performed": False,
+        **evidence,
         **fields,
     }
     _write_json(output_dir / "summary.json", summary)
@@ -420,6 +497,12 @@ def main() -> int:
     )
     parser.add_argument("--confidence-level", type=float, default=0.95)
     parser.add_argument("--bootstrap-resamples", type=int, default=10000)
+    parser.add_argument(
+        "--dataset-role",
+        choices=("development", "pilot", "calibration", "test"),
+        default="pilot",
+    )
+    parser.add_argument("--qualification-report", type=Path)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument(
         "--safe-root",
@@ -447,6 +530,13 @@ def main() -> int:
         safe_root=args.safe_root,
         diagnosis_source=args.diagnosis_report,
         baseline_source=args.baseline_profile,
+        dataset_role=args.dataset_role,
+        qualification_report=(
+            _read_json(args.qualification_report)
+            if args.qualification_report is not None
+            else None
+        ),
+        qualification_source=args.qualification_report,
     )
     print(json.dumps(summary, indent=2, sort_keys=True))
     if summary["status"] == "completed":
