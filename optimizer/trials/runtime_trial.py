@@ -46,6 +46,7 @@ def build_trial_manifest(
         "schema_version": "optimization-runtime-trial-manifest/v1",
         "dataset_role": dataset_role,
         "development_only": dataset_role in {"development", "pilot"},
+        "formal_inference_allowed": dataset_role == "test",
         "formal_optimization_allowed": dataset_role == "test",
         "trial_id": trial_id,
         "strategy": strategy,
@@ -135,7 +136,11 @@ def derive_f1_trial_report(
     by_trace: dict[str, list[dict[str, Any]]] = {}
     for record in runtime_records:
         trace_id = record.get("trace_id")
-        if isinstance(trace_id, str) and trace_id and record.get("event_name") in STAGES:
+        if (
+            isinstance(trace_id, str)
+            and trace_id
+            and record.get("event_name") in STAGES
+        ):
             by_trace.setdefault(trace_id, []).append(record)
 
     incomplete = 0
@@ -155,10 +160,13 @@ def derive_f1_trial_report(
         if any(not _integer(row.get("timestamp_ns")) for row in (start, end)):
             invalid["invalid_timestamp"] += 1
             continue
-        if any(
-            start.get(field) != end.get(field)
-            for field in ("sequence_id", "host_id", "clock_id")
-        ) or start.get("clock_id") != "monotonic":
+        if (
+            any(
+                start.get(field) != end.get(field)
+                for field in ("sequence_id", "host_id", "clock_id")
+            )
+            or start.get("clock_id") != "monotonic"
+        ):
             invalid["identity_mismatch"] += 1
             continue
         try:
@@ -257,9 +265,11 @@ def derive_f4_trial_report(
         if any(not _integer(row.get("timestamp_ns")) for row in ordered):
             invalid["invalid_timestamp"] += 1
             continue
-        if len({row.get("sequence_id") for row in ordered}) != 1 or len(
-            {row.get("host_id") for row in ordered}
-        ) != 1 or {row.get("clock_id") for row in ordered} != {"monotonic"}:
+        if (
+            len({row.get("sequence_id") for row in ordered}) != 1
+            or len({row.get("host_id") for row in ordered}) != 1
+            or {row.get("clock_id") for row in ordered} != {"monotonic"}
+        ):
             invalid["identity_mismatch"] += 1
             continue
         metadata: list[dict[str, Any]] = []
@@ -305,7 +315,9 @@ def derive_f4_trial_report(
         "invalid_trace_count": sum(invalid.values()),
         "invalid_trace_reason_counts": dict(sorted(invalid.items())),
         "complete_trace_rate": complete / observed if observed else 0.0,
-        "metrics_ns": {name: _describe(metric_values) for name, metric_values in values.items()},
+        "metrics_ns": {
+            name: _describe(metric_values) for name, metric_values in values.items()
+        },
     }
 
 
@@ -342,10 +354,13 @@ def derive_f2_trial_report(
         if any(not _integer(row.get("timestamp_ns")) for row in (published, received)):
             invalid["invalid_timestamp"] += 1
             continue
-        if any(
-            published.get(field) != received.get(field)
-            for field in ("sequence_id", "host_id", "clock_id")
-        ) or published.get("clock_id") != "monotonic":
+        if (
+            any(
+                published.get(field) != received.get(field)
+                for field in ("sequence_id", "host_id", "clock_id")
+            )
+            or published.get("clock_id") != "monotonic"
+        ):
             invalid["identity_mismatch"] += 1
             continue
         try:
@@ -353,7 +368,10 @@ def derive_f2_trial_report(
         except (json.JSONDecodeError, TypeError):
             invalid["invalid_extra_json"] += 1
             continue
-        if not isinstance(metadata, dict) or metadata.get("executor_threads") != executor_threads:
+        if (
+            not isinstance(metadata, dict)
+            or metadata.get("executor_threads") != executor_threads
+        ):
             raise ValueError("runtime event does not match candidate profile")
         value = int(received["timestamp_ns"]) - int(published["timestamp_ns"])
         if value < 0:
@@ -418,10 +436,13 @@ def derive_f5_trial_report(
         if any(not _integer(row.get("timestamp_ns")) for row in (published, received)):
             invalid["invalid_timestamp"] += 1
             continue
-        if any(
-            published.get(field) != received.get(field)
-            for field in ("sequence_id", "host_id", "clock_id")
-        ) or published.get("clock_id") != "monotonic":
+        if (
+            any(
+                published.get(field) != received.get(field)
+                for field in ("sequence_id", "host_id", "clock_id")
+            )
+            or published.get("clock_id") != "monotonic"
+        ):
             invalid["identity_mismatch"] += 1
             continue
         try:

@@ -47,7 +47,9 @@ class TopologyContract:
                 if path.required_stages[-1] == observed_terminals[0]
             )
         evaluations = [self._evaluate_path(observed, path) for path in candidate_paths]
-        valid = next((result for result in evaluations if result.status == "valid"), None)
+        valid = next(
+            (result for result in evaluations if result.status == "valid"), None
+        )
         if valid is not None:
             return valid
         return min(
@@ -71,7 +73,9 @@ class TopologyContract:
             if stage_index[current] < stage_index[previous]:
                 conflict = (previous, current)
                 break
-        missing = tuple(stage for stage in path.required_stages if stage not in admitted)
+        missing = tuple(
+            stage for stage in path.required_stages if stage not in admitted
+        )
         if conflict:
             return TopologyValidation(
                 status="invalid",
@@ -110,7 +114,9 @@ _CONTRACTS = {
     "w1": TopologyContract(
         workload_id="w1",
         paths=(
-            TopologyPath("ack_received", _W1_PREFIX + ("can_ack_wait_start", "can_ack_received")),
+            TopologyPath(
+                "ack_received", _W1_PREFIX + ("can_ack_wait_start", "can_ack_received")
+            ),
             TopologyPath(
                 "retry_exhausted",
                 _W1_PREFIX + ("can_ack_wait_start", "can_retry_exhausted"),

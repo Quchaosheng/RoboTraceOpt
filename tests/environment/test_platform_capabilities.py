@@ -1,9 +1,12 @@
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
 from scripts.check_platform_capabilities import (
     classify_readiness,
+    classify_identity_readiness,
     find_tracefs,
+    path_is_file,
     parse_can_interfaces,
     render_markdown,
     tracing_capability_available,
@@ -11,6 +14,24 @@ from scripts.check_platform_capabilities import (
 
 
 class PlatformCapabilityTest(unittest.TestCase):
+    def test_inaccessible_kernel_paths_are_reported_as_unavailable(self) -> None:
+        with patch("pathlib.Path.is_file", side_effect=PermissionError):
+            self.assertFalse(path_is_file(Path("/sys/kernel/tracing/format")))
+
+    def test_identity_readiness_blocks_wsl_and_non_ready_ebpf(self) -> None:
+        self.assertEqual(
+            classify_identity_readiness(is_wsl=True, ebpf_status="ready")["status"],
+            "blocked",
+        )
+        self.assertEqual(
+            classify_identity_readiness(is_wsl=False, ebpf_status="partial")["status"],
+            "blocked",
+        )
+        self.assertEqual(
+            classify_identity_readiness(is_wsl=False, ebpf_status="ready")["status"],
+            "ready",
+        )
+
     def test_find_tracefs_skips_inaccessible_candidates(self) -> None:
         with patch("pathlib.Path.is_dir", side_effect=[PermissionError, False]):
             self.assertIsNone(find_tracefs())

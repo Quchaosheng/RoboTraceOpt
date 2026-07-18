@@ -28,7 +28,10 @@ def remaining_capture_duration(
     shutdown_margin: float = 0.5,
 ) -> float:
     values = (duration_seconds, elapsed_startup, shutdown_margin)
-    if any(isinstance(value, bool) or not isinstance(value, (int, float)) for value in values):
+    if any(
+        isinstance(value, bool) or not isinstance(value, (int, float))
+        for value in values
+    ):
         raise EvidenceCaptureError(
             "insufficient_ebpf_window", "capture timing values must be numeric"
         )
@@ -72,7 +75,11 @@ def build_ebpf_capture_argv(
     output: Path,
     summary_output: Path,
 ) -> list[str]:
-    if isinstance(duration, bool) or not isinstance(duration, (int, float)) or duration < 1:
+    if (
+        isinstance(duration, bool)
+        or not isinstance(duration, (int, float))
+        or duration < 1
+    ):
         raise EvidenceCaptureError(
             "insufficient_ebpf_window", "eBPF duration must be at least one second"
         )
@@ -90,9 +97,7 @@ def build_ebpf_capture_argv(
     ]
 
 
-def validate_ebpf_summary(
-    value: dict[str, Any], *, fault_id: str
-) -> dict[str, Any]:
+def validate_ebpf_summary(value: dict[str, Any], *, fault_id: str) -> dict[str, Any]:
     if fault_id not in {"F3", "F4"}:
         raise EvidenceCaptureError(
             "ebpf_fault_unsupported", f"eBPF capture is not registered for {fault_id}"
@@ -116,7 +121,11 @@ def validate_ebpf_summary(
             "ebpf_events_malformed", "eBPF capture contains malformed events"
         )
     event_count = value.get("event_count")
-    if isinstance(event_count, bool) or not isinstance(event_count, int) or event_count < 1:
+    if (
+        isinstance(event_count, bool)
+        or not isinstance(event_count, int)
+        or event_count < 1
+    ):
         raise EvidenceCaptureError(
             "ebpf_events_missing", "eBPF capture contains no target events"
         )
@@ -135,9 +144,10 @@ def validate_ebpf_summary(
         raise EvidenceCaptureError(
             "ebpf_summary_invalid", "eBPF event counts are invalid"
         )
-    if fault_id == "F3" and counts.get("sched_switch", 0) + counts.get(
-        "sched_wakeup", 0
-    ) < 1:
+    if (
+        fault_id == "F3"
+        and counts.get("sched_switch", 0) + counts.get("sched_wakeup", 0) < 1
+    ):
         raise EvidenceCaptureError(
             "ebpf_scheduler_events_missing", "F3 requires scheduler events"
         )

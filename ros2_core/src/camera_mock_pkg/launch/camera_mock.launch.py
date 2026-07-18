@@ -12,12 +12,14 @@ def generate_launch_description():
         "camera_mock.yaml",
     )
 
-    return LaunchDescription([
-        Node(
-            package="camera_mock_pkg",
-            executable="camera_mock_node",
-            name="camera_mock_node",
-            output="screen",
-            parameters=[config_file],
-        ),
-    ])
+    return LaunchDescription(
+        [
+            Node(
+                package="camera_mock_pkg",
+                executable="camera_mock_node",
+                name="camera_mock_node",
+                output="screen",
+                parameters=[config_file],
+            ),
+        ]
+    )

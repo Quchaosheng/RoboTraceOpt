@@ -4,7 +4,9 @@ from diagnosis.evidence_graph.association import AssociationDecision
 from diagnosis.evidence_graph.evaluation import OracleEdge, evaluate_associations
 
 
-def decision(event_id: str, status: str, trace_id: str = "", stage: str = "") -> AssociationDecision:
+def decision(
+    event_id: str, status: str, trace_id: str = "", stage: str = ""
+) -> AssociationDecision:
     return AssociationDecision(
         event_id=event_id,
         status=status,

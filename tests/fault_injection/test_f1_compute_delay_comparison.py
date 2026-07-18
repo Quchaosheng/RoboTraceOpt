@@ -45,16 +45,10 @@ def report(variant: str, *, complete: int = 8) -> dict:
 
 class F1ComputeDelayComparisonTest(unittest.TestCase):
     def test_compares_only_matched_injected_and_control_reports(self) -> None:
-        comparison = compare_reports(
-            report("injected"), report("control", complete=10)
-        )
+        comparison = compare_reports(report("injected"), report("control", complete=10))
 
-        self.assertEqual(
-            comparison["schema_version"], "f1-compute-delay-comparison/v1"
-        )
-        self.assertEqual(
-            comparison["sample_counts"], {"injected": 8, "control": 10}
-        )
+        self.assertEqual(comparison["schema_version"], "f1-compute-delay-comparison/v1")
+        self.assertEqual(comparison["sample_counts"], {"injected": 8, "control": 10})
         self.assertEqual(
             comparison["complete_trace_rates"],
             {"injected": 0.8, "control": 1.0},
@@ -118,9 +112,7 @@ class F1ComputeDelayComparisonTest(unittest.TestCase):
 
         comparison = compare_reports(injected, report("control"))
 
-        self.assertEqual(
-            comparison["metrics_ns"][METRICS[1]]["p99"]["ratio"], 0.5
-        )
+        self.assertEqual(comparison["metrics_ns"][METRICS[1]]["p99"]["ratio"], 0.5)
 
 
 if __name__ == "__main__":

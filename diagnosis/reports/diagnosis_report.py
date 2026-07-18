@@ -5,7 +5,12 @@ from __future__ import annotations
 from typing import Any
 
 from diagnosis.evidence_graph.inference import CandidateDiagnosis, DiagnosisResult
-from diagnosis.evidence_graph.model import EdgeType, EvidenceEdge, EvidenceGraph, EvidenceNode
+from diagnosis.evidence_graph.model import (
+    EdgeType,
+    EvidenceEdge,
+    EvidenceGraph,
+    EvidenceNode,
+)
 
 
 def build_diagnosis_report(
@@ -51,11 +56,7 @@ def _candidate_record(
     edges: tuple[EvidenceEdge, ...],
 ) -> dict[str, Any]:
     cause_node_id = f"cause:{trace_id}:{candidate.cause_id}"
-    candidate_edges = [
-        edge
-        for edge in edges
-        if edge.target_id == cause_node_id
-    ]
+    candidate_edges = [edge for edge in edges if edge.target_id == cause_node_id]
     return {
         "cause_id": candidate.cause_id,
         "layer": candidate.layer,

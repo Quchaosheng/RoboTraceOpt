@@ -92,10 +92,6 @@ def require_capabilities(
         if dataset_role != "development":
             raise ValueError("F6 vcan transport profile is development-only")
         required.add("socketcan_vcan")
-    if spec.fault_id == "F3" and dataset_role == "development":
-        required.discard("identity_comparable_ebpf")
-    if spec.fault_id == "F4" and dataset_role == "development":
-        required.discard("identity_comparable_ebpf")
     missing = sorted(required - set(available))
     if missing:
         raise ValueError(f"missing required capabilities: {', '.join(missing)}")
@@ -171,7 +167,11 @@ def build_launch_command(
             output_argument,
         ]
     if spec.fault_id == "F3":
-        if isinstance(target_cpu, bool) or not isinstance(target_cpu, int) or target_cpu < 0:
+        if (
+            isinstance(target_cpu, bool)
+            or not isinstance(target_cpu, int)
+            or target_cpu < 0
+        ):
             raise ValueError("F3 target_cpu must be a non-negative integer")
         return [
             "taskset",

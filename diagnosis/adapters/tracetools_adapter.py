@@ -22,16 +22,22 @@ def adapt_tracetools_record(
             "missing_required_field", "missing fields: " + ", ".join(missing)
         )
     if not source_file or record_index < 0:
-        raise AdapterReject("invalid_provenance", "source_file and record_index are required")
+        raise AdapterReject(
+            "invalid_provenance", "source_file and record_index are required"
+        )
     if not isinstance(record["clock"], dict):
         raise AdapterReject("invalid_clock", "clock must be an object")
-    if not isinstance(record["context"], dict) or not isinstance(record["payload"], dict):
+    if not isinstance(record["context"], dict) or not isinstance(
+        record["payload"], dict
+    ):
         raise AdapterReject("invalid_field_type", "context and payload must be objects")
 
     event_name = record["event_name"]
     host_id = record["host_id"]
     if not isinstance(event_name, str) or not event_name.startswith("ros2:"):
-        raise AdapterReject("invalid_event_type", "event_name must use the ros2: namespace")
+        raise AdapterReject(
+            "invalid_event_type", "event_name must use the ros2: namespace"
+        )
     if not isinstance(host_id, str) or not host_id or host_id == "unknown":
         raise AdapterReject("invalid_runtime_identity", "host_id must be known")
 
@@ -49,7 +55,9 @@ def adapt_tracetools_record(
         or not isinstance(raw_value, int)
         or raw_value < 0
     ):
-        raise AdapterReject("invalid_clock", "clock frequency/value must be valid integers")
+        raise AdapterReject(
+            "invalid_clock", "clock frequency/value must be valid integers"
+        )
     timestamp_ns = raw_value * 1_000_000_000 // frequency
 
     context = record["context"]
@@ -111,9 +119,13 @@ def adapt_tracetools_jsonl(
         try:
             record = json.loads(line)
         except json.JSONDecodeError as error:
-            raise AdapterReject("invalid_json", f"line {line_number}: {error.msg}") from error
+            raise AdapterReject(
+                "invalid_json", f"line {line_number}: {error.msg}"
+            ) from error
         if not isinstance(record, dict):
-            raise AdapterReject("invalid_json", f"line {line_number}: record must be an object")
+            raise AdapterReject(
+                "invalid_json", f"line {line_number}: record must be an object"
+            )
         try:
             events.append(
                 adapt_tracetools_record(

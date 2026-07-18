@@ -144,8 +144,12 @@ class SchedulingPressureAdapterTest(unittest.TestCase):
         self.assertEqual(report["complete_trace_count"], 2)
         self.assertEqual(report["incomplete_trace_count"], 1)
         self.assertEqual(report["metrics_ns"]["dispatch_upper_bound_ns"]["median"], 100)
-        self.assertEqual(report["metrics_ns"]["zero_work_callback_elapsed_ns"]["median"], 20)
-        self.assertEqual(report["metrics_ns"]["planner_path_upper_bound_ns"]["median"], 150)
+        self.assertEqual(
+            report["metrics_ns"]["zero_work_callback_elapsed_ns"]["median"], 20
+        )
+        self.assertEqual(
+            report["metrics_ns"]["planner_path_upper_bound_ns"]["median"], 150
+        )
         self.assertFalse(report["formal_scheduling_attribution"])
         self.assertEqual(report["ebpf_identity_status"], "not_comparable")
         self.assertEqual(len(events), 2)

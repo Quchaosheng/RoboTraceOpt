@@ -58,7 +58,9 @@ class CaptureEbpfRuntimeTest(unittest.TestCase):
             capture_exit_is_successful(returncode=-2, event_count=0, malformed_count=0)
         )
         self.assertFalse(
-            capture_exit_is_successful(returncode=255, event_count=10, malformed_count=0)
+            capture_exit_is_successful(
+                returncode=255, event_count=10, malformed_count=0
+            )
         )
 
     def test_direct_script_entrypoint_loads_repository_modules(self) -> None:
@@ -71,7 +73,9 @@ class CaptureEbpfRuntimeTest(unittest.TestCase):
 
         self.assertEqual(result.returncode, 0, result.stderr)
 
-    def test_program_filters_syscalls_by_process_without_large_sched_predicate(self) -> None:
+    def test_program_filters_syscalls_by_process_without_large_sched_predicate(
+        self,
+    ) -> None:
         program = build_bpftrace_program([10, 20])
 
         for probe in (

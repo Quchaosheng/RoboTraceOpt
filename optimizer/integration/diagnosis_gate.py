@@ -65,18 +65,30 @@ def plan_from_diagnosis(
 
 
 def _validate_report(report: dict[str, Any]) -> None:
-    if not isinstance(report, dict) or report.get("schema_version") != "diagnosis-report/v1":
+    if (
+        not isinstance(report, dict)
+        or report.get("schema_version") != "diagnosis-report/v1"
+    ):
         raise ValueError("invalid diagnosis report schema")
     forbidden = _find_forbidden_fields(report)
     if forbidden:
         raise ValueError(f"oracle fields are forbidden: {', '.join(sorted(forbidden))}")
     if report.get("status") not in {"diagnosed", "abstained"}:
         raise ValueError("invalid diagnosis status")
-    if report.get("evidence_state") not in {"valid", "partial", "invalid", "not_observed"}:
+    if report.get("evidence_state") not in {
+        "valid",
+        "partial",
+        "invalid",
+        "not_observed",
+    }:
         raise ValueError("invalid evidence state")
     for field in ("confidence", "completeness"):
         value = report.get(field)
-        if isinstance(value, bool) or not isinstance(value, (int, float)) or not 0 <= value <= 1:
+        if (
+            isinstance(value, bool)
+            or not isinstance(value, (int, float))
+            or not 0 <= value <= 1
+        ):
             raise ValueError(f"invalid diagnosis {field}")
     top_1 = report.get("top_1")
     top_k = report.get("top_k")
@@ -103,14 +115,20 @@ def _find_forbidden_fields(value: Any) -> set[str]:
 
 
 def _validate_threshold(name: str, value: float) -> None:
-    if isinstance(value, bool) or not isinstance(value, (int, float)) or not 0 <= value <= 1:
+    if (
+        isinstance(value, bool)
+        or not isinstance(value, (int, float))
+        or not 0 <= value <= 1
+    ):
         raise ValueError(f"{name} must be between 0 and 1")
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--diagnosis-report", type=Path, required=True)
-    parser.add_argument("--strategy", choices=("guided", "random", "unguided_random"), default="guided")
+    parser.add_argument(
+        "--strategy", choices=("guided", "random", "unguided_random"), default="guided"
+    )
     parser.add_argument("--budget", type=int, required=True)
     parser.add_argument("--seed", type=int, required=True)
     parser.add_argument("--minimum-confidence", type=float, required=True)
@@ -126,7 +144,9 @@ def main() -> int:
         minimum_completeness=args.minimum_completeness,
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    args.output.write_text(
+        json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
     return 0 if result["decision"] == "allow" else 2
 
 

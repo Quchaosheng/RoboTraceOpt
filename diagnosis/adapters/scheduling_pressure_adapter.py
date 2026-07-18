@@ -100,7 +100,9 @@ def derive_scheduling_pressure_evidence(
     metric_values: dict[str, list[int]] = {metric: [] for metric in METRICS}
     valid_rows: list[tuple[int, str, NormalizedEvent]] = []
     for trace_id, trace_events in by_trace.items():
-        missing = [event_name for event_name in EVENTS if event_name not in trace_events]
+        missing = [
+            event_name for event_name in EVENTS if event_name not in trace_events
+        ]
         if missing:
             missing_counts.update(missing)
             continue
@@ -114,9 +116,7 @@ def derive_scheduling_pressure_evidence(
         if len(sequence_ids) != 1:
             invalid_reasons["trace_identity_mismatch"] += 1
             continue
-        timestamps = {
-            name: records[name].get("timestamp_ns") for name in EVENTS
-        }
+        timestamps = {name: records[name].get("timestamp_ns") for name in EVENTS}
         if any(not _integer(value) for value in timestamps.values()):
             invalid_reasons["invalid_timestamp"] += 1
             continue
@@ -157,18 +157,14 @@ def derive_scheduling_pressure_evidence(
             provenance={
                 "adapter": "scheduling_pressure_proxy_v1",
                 "runtime_source_file": runtime_source_file,
-                "record_indices": {
-                    name: trace_events[name][0] for name in EVENTS
-                },
+                "record_indices": {name: trace_events[name][0] for name in EVENTS},
                 "process_manifest_source_file": process_manifest_source_file,
                 "scheduler_manifest_source_file": scheduler_manifest_source_file,
                 "oracle_manifest_source_file": oracle_manifest_source_file,
                 "structural_gate": dict(gate),
             },
         )
-        valid_rows.append(
-            (int(timestamps["camera_frame_published"]), trace_id, event)
-        )
+        valid_rows.append((int(timestamps["camera_frame_published"]), trace_id, event))
         for metric, value in values.items():
             metric_values[metric].append(value)
 
@@ -253,10 +249,13 @@ def _validate_structure(
     target_cpu = int(injection["target_cpu"])
     ros_processes = scheduler.get("ros_processes")
     if not isinstance(ros_processes, dict) or not {
-        "camera_mock_node", "vlm_planner_node"
+        "camera_mock_node",
+        "vlm_planner_node",
     } <= set(ros_processes):
         return {}, "required_ros_process_not_observed"
-    if not all(_valid_snapshot(snapshot, target_cpu) for snapshot in ros_processes.values()):
+    if not all(
+        _valid_snapshot(snapshot, target_cpu) for snapshot in ros_processes.values()
+    ):
         return {}, "ros_affinity_mismatch"
 
     stress = scheduler.get("stress")

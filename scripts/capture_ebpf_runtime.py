@@ -138,7 +138,9 @@ def record_targets_manifest(
 ) -> bool:
     event_source = record.get("event_source")
     if event_source == "sched_switch":
-        return record.get("prev_tid") in identities or record.get("next_tid") in identities
+        return (
+            record.get("prev_tid") in identities or record.get("next_tid") in identities
+        )
     if event_source == "sched_wakeup":
         return record.get("tid") in identities
     if event_source == "syscall":
@@ -241,11 +243,15 @@ def main() -> int:
     args.summary_output.write_text(
         json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
-    return 0 if capture_exit_is_successful(
-        returncode=process.returncode,
-        event_count=len(records),
-        malformed_count=len(malformed_lines),
-    ) else 1
+    return (
+        0
+        if capture_exit_is_successful(
+            returncode=process.returncode,
+            event_count=len(records),
+            malformed_count=len(malformed_lines),
+        )
+        else 1
+    )
 
 
 if __name__ == "__main__":
