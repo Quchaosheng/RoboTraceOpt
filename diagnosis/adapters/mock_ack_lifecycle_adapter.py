@@ -33,7 +33,9 @@ def derive_mock_ack_lifecycle_evidence(
     run_manifest_source_file: str,
     oracle_manifest_source_file: str,
 ) -> tuple[list[NormalizedEvent], dict[str, Any]]:
-    if not all((runtime_source_file, run_manifest_source_file, oracle_manifest_source_file)):
+    if not all(
+        (runtime_source_file, run_manifest_source_file, oracle_manifest_source_file)
+    ):
         raise ValueError("all source file paths are required")
     variant, injection, reason = _validate_manifests(run_manifest, oracle_manifest)
     records = list(runtime_records)
@@ -63,7 +65,11 @@ def derive_mock_ack_lifecycle_evidence(
     malformed: set[str] = set()
     for index, record in enumerate(records, start=1):
         trace_id = record.get("trace_id")
-        if not isinstance(trace_id, str) or not trace_id or record.get("event_name") not in EVENTS:
+        if (
+            not isinstance(trace_id, str)
+            or not trace_id
+            or record.get("event_name") not in EVENTS
+        ):
             continue
         try:
             extra = json.loads(record.get("extra_json", ""))
@@ -114,7 +120,9 @@ def derive_mock_ack_lifecycle_evidence(
             continue
         terminal = terminals[0]
         waits = [row for row in ordered if row[1]["event_name"] == "can_ack_wait_start"]
-        if waits and int(terminal[1]["timestamp_ns"]) < int(waits[0][1]["timestamp_ns"]):
+        if waits and int(terminal[1]["timestamp_ns"]) < int(
+            waits[0][1]["timestamp_ns"]
+        ):
             invalid["negative_terminal_interval"] += 1
             continue
         terminal_position = ordered.index(terminal)
@@ -122,13 +130,17 @@ def derive_mock_ack_lifecycle_evidence(
             invalid["event_after_terminal"] += 1
             continue
         timeouts = [row for row in ordered if row[1]["event_name"] == "can_ack_timeout"]
-        retries = [row for row in ordered if row[1]["event_name"] == "can_retry_scheduled"]
+        retries = [
+            row for row in ordered if row[1]["event_name"] == "can_retry_scheduled"
+        ]
         if not waits:
             incomplete += 1
             continue
         terminal_name = terminal[1]["event_name"]
         valid_sequence = (
-            _valid_exhausted(waits, timeouts, retries, terminal, int(injection["max_retries"]))
+            _valid_exhausted(
+                waits, timeouts, retries, terminal, int(injection["max_retries"])
+            )
             if terminal_name == "can_retry_exhausted"
             else _valid_success(waits, timeouts, retries, terminal)
         )
@@ -139,7 +151,9 @@ def derive_mock_ack_lifecycle_evidence(
         if latency < 0:
             invalid["negative_terminal_interval"] += 1
             continue
-        state = "ack_received" if terminal_name == "can_ack_received" else "retry_exhausted"
+        state = (
+            "ack_received" if terminal_name == "can_ack_received" else "retry_exhausted"
+        )
         counts = {
             "attempt_count": len(waits),
             "timeout_count": len(timeouts),
@@ -190,8 +204,12 @@ def derive_mock_ack_lifecycle_evidence(
             "ack_received_count": terminal_counts["ack_received"],
             "retry_exhausted_count": terminal_counts["retry_exhausted"],
             "terminal_coverage": valid_count / len(by_trace) if by_trace else 0.0,
-            "ack_success_rate": terminal_counts["ack_received"] / valid_count if valid_count else 0.0,
-            "retry_exhausted_rate": terminal_counts["retry_exhausted"] / valid_count if valid_count else 0.0,
+            "ack_success_rate": terminal_counts["ack_received"] / valid_count
+            if valid_count
+            else 0.0,
+            "retry_exhausted_rate": terminal_counts["retry_exhausted"] / valid_count
+            if valid_count
+            else 0.0,
             "count_distributions": {
                 name: _describe(values) for name, values in distributions.items()
             },
@@ -209,18 +227,36 @@ def derive_mock_ack_lifecycle_evidence(
     return [event for _, _, event in sorted(output)], report
 
 
-def _validate_manifests(run: dict[str, Any], oracle: dict[str, Any]) -> tuple[str, dict[str, Any], str]:
+def _validate_manifests(
+    run: dict[str, Any], oracle: dict[str, Any]
+) -> tuple[str, dict[str, Any], str]:
     if run.get("schema_version") != "fault-run/v1":
         return "", {}, "invalid_run_manifest"
     if oracle.get("schema_version") != "fault-oracle/v1":
         return "", {}, "invalid_f6_oracle"
-    if any(run.get(field) != oracle.get(field) for field in ("condition_id", "session_id", "dataset_role")):
-        return str(oracle.get("condition_variant", "")), {}, "run_oracle_identity_mismatch"
+    if any(
+        run.get(field) != oracle.get(field)
+        for field in ("condition_id", "session_id", "dataset_role")
+    ):
+        return (
+            str(oracle.get("condition_variant", "")),
+            {},
+            "run_oracle_identity_mismatch",
+        )
     if run.get("dataset_role") != "development":
-        return str(oracle.get("condition_variant", "")), {}, "development_partition_required"
+        return (
+            str(oracle.get("condition_variant", "")),
+            {},
+            "development_partition_required",
+        )
     variant = oracle.get("condition_variant")
     injection = oracle.get("injection")
-    if run.get("workload") != "w1" or oracle.get("fault_id") != "F6" or variant not in {"injected", "control"} or not isinstance(injection, dict):
+    if (
+        run.get("workload") != "w1"
+        or oracle.get("fault_id") != "F6"
+        or variant not in {"injected", "control"}
+        or not isinstance(injection, dict)
+    ):
         return str(variant or ""), {}, "invalid_f6_profile"
     expected = {
         "mock_ack_policy": "drop" if variant == "injected" else "success",
@@ -241,7 +277,16 @@ def _validate_manifests(run: dict[str, Any], oracle: dict[str, Any]) -> tuple[st
 
 
 def _event_profile_matches(extra: dict[str, Any], injection: dict[str, Any]) -> bool:
-    return all(extra.get(key) == injection[key] for key in ("ack_mode", "mock_mode", "mock_ack_policy", "ack_timeout_ms", "max_retries")) and _integer(extra.get("retry_count"))
+    return all(
+        extra.get(key) == injection[key]
+        for key in (
+            "ack_mode",
+            "mock_mode",
+            "mock_ack_policy",
+            "ack_timeout_ms",
+            "max_retries",
+        )
+    ) and _integer(extra.get("retry_count"))
 
 
 def _retry_counts(rows: list[tuple[int, dict[str, Any], dict[str, Any]]]) -> list[int]:
@@ -258,11 +303,23 @@ def _valid_exhausted(waits, timeouts, retries, terminal, max_retries: int) -> bo
 
 
 def _valid_success(waits, timeouts, retries, terminal) -> bool:
-    return len(waits) == 1 and _retry_counts(waits) == [0] and not timeouts and not retries and int(terminal[2]["retry_count"]) == 0
+    return (
+        len(waits) == 1
+        and _retry_counts(waits) == [0]
+        and not timeouts
+        and not retries
+        and int(terminal[2]["retry_count"]) == 0
+    )
 
 
 def _single_host(records: Iterable[dict[str, Any]]) -> str:
-    hosts = {record.get("host_id") for record in records if record.get("event_name") in EVENTS and isinstance(record.get("host_id"), str) and record.get("host_id")}
+    hosts = {
+        record.get("host_id")
+        for record in records
+        if record.get("event_name") in EVENTS
+        and isinstance(record.get("host_id"), str)
+        and record.get("host_id")
+    }
     return str(next(iter(hosts))) if len(hosts) == 1 else ""
 
 
@@ -274,7 +331,15 @@ def _describe(values: list[int]) -> dict[str, float | int] | None:
     if not values:
         return None
     ordered = sorted(values)
-    return {"min": ordered[0], "median": _quantile(ordered, 0.5), "p90": _quantile(ordered, 0.9), "p95": _quantile(ordered, 0.95), "p99": _quantile(ordered, 0.99), "max": ordered[-1], "mean": statistics.fmean(ordered)}
+    return {
+        "min": ordered[0],
+        "median": _quantile(ordered, 0.5),
+        "p90": _quantile(ordered, 0.9),
+        "p95": _quantile(ordered, 0.95),
+        "p99": _quantile(ordered, 0.99),
+        "max": ordered[-1],
+        "mean": statistics.fmean(ordered),
+    }
 
 
 def _quantile(values: list[int], probability: float) -> float:
@@ -313,18 +378,26 @@ def main() -> int:
     run = json.loads(args.run_manifest.read_text(encoding="utf-8"))
     oracle = json.loads(args.oracle_manifest.read_text(encoding="utf-8"))
     events, report = derive_mock_ack_lifecycle_evidence(
-        _read_jsonl(args.runtime_events), run, oracle,
+        _read_jsonl(args.runtime_events),
+        run,
+        oracle,
         runtime_source_file=str(args.runtime_events),
         run_manifest_source_file=str(args.run_manifest),
         oracle_manifest_source_file=str(args.oracle_manifest),
     )
-    report["input_sha256"] = {"runtime_events": _sha256(args.runtime_events), "run_manifest": _sha256(args.run_manifest), "oracle_manifest": _sha256(args.oracle_manifest)}
+    report["input_sha256"] = {
+        "runtime_events": _sha256(args.runtime_events),
+        "run_manifest": _sha256(args.run_manifest),
+        "oracle_manifest": _sha256(args.oracle_manifest),
+    }
     args.output_events.parent.mkdir(parents=True, exist_ok=True)
     with args.output_events.open("w", encoding="utf-8") as handle:
         for event in events:
             handle.write(json.dumps(event.to_dict(), separators=(",", ":")) + "\n")
     args.output_report.parent.mkdir(parents=True, exist_ok=True)
-    args.output_report.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    args.output_report.write_text(
+        json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
     return 0 if events else 1
 
 

@@ -47,7 +47,11 @@ def evaluate_repeated_candidates(
     if schedule.get("schema_version") != "optimization-repeated-schedule/v1":
         raise ValueError("invalid repeated schedule schema")
     repetitions = schedule.get("repetitions")
-    if isinstance(repetitions, bool) or not isinstance(repetitions, int) or repetitions < 2:
+    if (
+        isinstance(repetitions, bool)
+        or not isinstance(repetitions, int)
+        or repetitions < 2
+    ):
         raise ValueError("invalid repeated schedule repetitions")
     if (
         isinstance(minimum_improvement_ratio, bool)
@@ -60,7 +64,9 @@ def evaluate_repeated_candidates(
         or not isinstance(minimum_complete_trace_rate_delta, (int, float))
         or not -1 <= minimum_complete_trace_rate_delta <= 0
     ):
-        raise ValueError("minimum complete trace rate delta must be between minus one and zero")
+        raise ValueError(
+            "minimum complete trace rate delta must be between minus one and zero"
+        )
     _validate_bootstrap_parameters(confidence_level, bootstrap_resamples, seed)
 
     configurations = schedule.get("configurations")
@@ -92,10 +98,9 @@ def evaluate_repeated_candidates(
         if key in indexed:
             raise ValueError("duplicate repeated trial record")
         expected = known[identifier]
-        if (
-            record.get("role") != expected.get("role")
-            or record.get("candidate_config") != expected.get("candidate_config")
-        ):
+        if record.get("role") != expected.get("role") or record.get(
+            "candidate_config"
+        ) != expected.get("candidate_config"):
             raise ValueError("repeated trial record configuration mismatch")
         if record.get("status") == "succeeded":
             _objective(record)

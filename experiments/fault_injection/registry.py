@@ -83,9 +83,8 @@ def create_fault_manifests(
         raise ValueError("session_id is required")
     if not condition_id:
         raise ValueError("condition_id is required")
-    if (
-        len(git_commit) != 40
-        or any(character not in hexdigits for character in git_commit)
+    if len(git_commit) != 40 or any(
+        character not in hexdigits for character in git_commit
     ):
         raise ValueError("git_commit must be a 40-character SHA-1")
     public = {
@@ -124,7 +123,11 @@ def create_fault_manifests(
         injection["subscriber_depth"] = depth
         injection.pop("control_depth")
     if spec.fault_id == "F3":
-        if isinstance(target_cpu, bool) or not isinstance(target_cpu, int) or target_cpu < 0:
+        if (
+            isinstance(target_cpu, bool)
+            or not isinstance(target_cpu, int)
+            or target_cpu < 0
+        ):
             raise ValueError("F3 target_cpu must be a non-negative integer")
         injection["target_cpu"] = target_cpu
         injection["stress_enabled"] = condition_variant == "injected"

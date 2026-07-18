@@ -7,7 +7,9 @@ from typing import Any
 from optimizer.action_registry.registry import actions_for_cause, validate_action
 
 
-def sample_candidates(cause_id: str, *, limit: int, seed: int = 0) -> list[dict[str, Any]]:
+def sample_candidates(
+    cause_id: str, *, limit: int, seed: int = 0
+) -> list[dict[str, Any]]:
     if isinstance(limit, bool) or not isinstance(limit, int) or limit < 1:
         raise ValueError("limit must be positive")
     if isinstance(seed, bool) or not isinstance(seed, int):
@@ -26,7 +28,10 @@ def sample_candidates(cause_id: str, *, limit: int, seed: int = 0) -> list[dict[
         if count == 1:
             values = [lower]
         else:
-            values = [round(lower + index * (upper - lower) / (count - 1)) for index in range(count)]
+            values = [
+                round(lower + index * (upper - lower) / (count - 1))
+                for index in range(count)
+            ]
     candidates = [{action_id: value} for value in values[:limit]]
     for candidate in candidates:
         validate_action(cause_id, action_id, candidate[action_id])

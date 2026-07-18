@@ -71,7 +71,11 @@ def derive_service_blocking_delay_evidence(
     malformed: set[str] = set()
     for index, record in enumerate(records, start=1):
         trace_id = record.get("trace_id")
-        if not isinstance(trace_id, str) or not trace_id or record.get("event_name") not in EVENTS:
+        if (
+            not isinstance(trace_id, str)
+            or not trace_id
+            or record.get("event_name") not in EVENTS
+        ):
             continue
         try:
             extra = json.loads(record.get("extra_json", ""))

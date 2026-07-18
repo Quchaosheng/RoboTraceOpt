@@ -12,12 +12,14 @@ def generate_launch_description():
         "can_bridge.yaml",
     )
 
-    return LaunchDescription([
-        Node(
-            package="can_bridge_pkg",
-            executable="can_bridge_node",
-            name="can_bridge_node",
-            output="screen",
-            parameters=[config_file],
-        ),
-    ])
+    return LaunchDescription(
+        [
+            Node(
+                package="can_bridge_pkg",
+                executable="can_bridge_node",
+                name="can_bridge_node",
+                output="screen",
+                parameters=[config_file],
+            ),
+        ]
+    )

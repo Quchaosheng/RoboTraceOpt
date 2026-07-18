@@ -3,8 +3,8 @@
   <name>ai_robot_runtime_interfaces</name>
   <version>0.0.1</version>
   <description>Shared ROS2 messages and actions for AI Robotics Runtime.</description>
-  <maintainer email="todo@example.com">todo</maintainer>
-  <license>TODO</license>
+  <maintainer email="Quchaosheng@users.noreply.github.com">Quchaosheng</maintainer>
+  <license>Apache-2.0</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
   <buildtool_depend>rosidl_default_generators</buildtool_depend>

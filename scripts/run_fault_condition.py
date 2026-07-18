@@ -72,9 +72,7 @@ def try_snapshot_runtime_processes(
     return snapshot_scheduler_processes(dict(processes), target_cpu)
 
 
-def fault_capture_plan(
-    fault_id: str, capabilities: set[str]
-) -> dict[str, bool]:
+def fault_capture_plan(fault_id: str, capabilities: set[str]) -> dict[str, bool]:
     tracing = "ros2_tracing" in capabilities and fault_id in FAULT_REQUIRED_EVENTS
     ebpf = bool({"ebpf", "identity_comparable_ebpf"} & capabilities) and fault_id in {
         "F3",
@@ -213,6 +211,76 @@ def _read_json(path: Path) -> dict[str, Any]:
     return value
 
 
+def validate_formal_qualification(
+    qualification: dict[str, Any] | None,
+    *,
+    dataset_role: str,
+    fault_id: str,
+    condition_variant: str,
+    case_id: str | None,
+    git_commit: str,
+    git_status: str,
+) -> None:
+    """Validate the outer qualification before a formal fault can start."""
+    if dataset_role not in {"calibration", "test"}:
+        return
+    if qualification is None:
+        raise ValueError("formal fault role requires a qualification report")
+    if (
+        qualification.get("schema_version") != "formal-experiment-qualification/v1"
+        or qualification.get("status") != "allowed"
+        or qualification.get("dataset_role") != dataset_role
+        or qualification.get("development_only") is not False
+    ):
+        raise ValueError("qualification report does not allow formal fault role")
+    if (
+        dataset_role == "test"
+        and qualification.get("formal_experiment_allowed") is not True
+    ):
+        raise ValueError("test fault is not formally qualified")
+    if not case_id:
+        raise ValueError("formal fault role requires case-id")
+    expected_case_id = f"diagnosis_{fault_id.lower()}_{condition_variant}"
+    if case_id != expected_case_id:
+        raise ValueError("case-id does not match fault condition")
+    selected = qualification.get("selected_case_ids")
+    if not isinstance(selected, list) or case_id not in selected:
+        raise ValueError("qualification report does not select this case")
+    case_rows = qualification.get("cases")
+    matching_rows = (
+        [
+            row
+            for row in case_rows
+            if isinstance(row, dict) and row.get("case_id") == case_id
+        ]
+        if isinstance(case_rows, list)
+        else []
+    )
+    if (
+        len(matching_rows) != 1
+        or matching_rows[0].get("status") != "ready"
+        or matching_rows[0].get("missing_requirements")
+        or matching_rows[0].get("role_errors")
+    ):
+        raise ValueError("qualification report does not mark this case ready")
+    for field in ("matrix_sha256", "capability_sha256"):
+        value = qualification.get(field)
+        if not (
+            isinstance(value, str)
+            and len(value) == 64
+            and all(character in "0123456789abcdef" for character in value)
+        ):
+            raise ValueError(f"qualification report has invalid {field}")
+    if qualification.get("git_commit") != git_commit:
+        raise ValueError("qualification report git commit does not match")
+    if qualification.get("git_status") or git_status:
+        raise ValueError("formal fault requires a clean worktree")
+    if condition_variant == "control":
+        raise ValueError("control variant is development-only")
+    if fault_id == "F5":
+        raise ValueError("F5 is development-only until its profile is frozen")
+
+
 def _write_json_atomic(path: Path, value: dict[str, Any]) -> None:
     temporary = path.with_name(path.name + ".tmp")
     temporary.write_text(
@@ -229,6 +297,8 @@ def parse_args() -> argparse.Namespace:
         choices=("development", "calibration", "test"),
         required=True,
     )
+    parser.add_argument("--case-id")
+    parser.add_argument("--qualification-report", type=Path)
     parser.add_argument("--session-id", required=True)
     parser.add_argument("--condition-id", required=True)
     parser.add_argument(
@@ -264,6 +334,34 @@ def main() -> int:
     if args.fault_id not in catalog:
         raise ValueError(f"unknown fault ID: {args.fault_id}")
     spec = catalog[args.fault_id]
+    git_commit = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=REPOSITORY_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    git_status = subprocess.run(
+        ["git", "status", "--short"],
+        cwd=REPOSITORY_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    qualification = (
+        _read_json(args.qualification_report)
+        if args.qualification_report is not None
+        else None
+    )
+    validate_formal_qualification(
+        qualification,
+        dataset_role=args.dataset_role,
+        fault_id=spec.fault_id,
+        condition_variant=args.condition_variant,
+        case_id=args.case_id,
+        git_commit=git_commit,
+        git_status=git_status,
+    )
     require_capabilities(
         spec,
         set(args.capability),
@@ -282,13 +380,6 @@ def main() -> int:
         if spec.fault_id == "F3" and args.condition_variant == "injected"
         else []
     )
-    git_commit = subprocess.run(
-        ["git", "rev-parse", "HEAD"],
-        cwd=REPOSITORY_ROOT,
-        check=True,
-        capture_output=True,
-        text=True,
-    ).stdout.strip()
     public, oracle = create_fault_manifests(
         spec,
         dataset_role=args.dataset_role,
@@ -328,9 +419,7 @@ def main() -> int:
             target_cpu=target_cpu,
             stress_command=stress_command,
             f6_transport_profile=args.f6_transport_profile,
-            f6_injection=(
-                dict(oracle["injection"]) if spec.fault_id == "F6" else None
-            ),
+            f6_injection=(dict(oracle["injection"]) if spec.fault_id == "F6" else None),
             session_id=args.session_id,
         )
         summary_path = args.output_dir / "summary.json"
@@ -515,7 +604,11 @@ def execute_condition(
                     capture = subprocess.run(
                         [
                             "python3",
-                            str(REPOSITORY_ROOT / "scripts" / "capture_process_manifest.py"),
+                            str(
+                                REPOSITORY_ROOT
+                                / "scripts"
+                                / "capture_process_manifest.py"
+                            ),
                             "--runtime-events",
                             str(events_path),
                             "--minimum-processes",
@@ -692,7 +785,9 @@ def validate_fault_output(
         if required <= trace_events
     }
     if len(complete_trace_ids) < 2:
-        raise ValueError(f"{workload} fault run produced fewer than two complete traces")
+        raise ValueError(
+            f"{workload} fault run produced fewer than two complete traces"
+        )
     return {
         "schema_version": "fault-run-summary/v1",
         "fault_id": fault_id,

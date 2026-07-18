@@ -34,8 +34,7 @@ def build_evidence_graph(
         missing = sorted(events_by_id.keys() - decisions_by_id.keys())
         extra = sorted(decisions_by_id.keys() - events_by_id.keys())
         raise ValueError(
-            "association decision coverage mismatch: "
-            f"missing={missing}, extra={extra}"
+            f"association decision coverage mismatch: missing={missing}, extra={extra}"
         )
 
     graph = EvidenceGraph()
@@ -48,7 +47,9 @@ def build_evidence_graph(
         windows_by_trace[stage_window.trace_id].append(stage_window)
 
     for trace_id, trace_windows in sorted(windows_by_trace.items()):
-        ordered = sorted(trace_windows, key=lambda item: (item.start_ns, item.window_id))
+        ordered = sorted(
+            trace_windows, key=lambda item: (item.start_ns, item.window_id)
+        )
         sequence_ids = {item.sequence_id for item in ordered}
         if len(sequence_ids) != 1:
             raise ValueError(
@@ -99,8 +100,12 @@ def build_evidence_graph(
             for source_stage, target_stage in zip(
                 validation.conflicting_stages, validation.conflicting_stages[1:]
             ):
-                source_window = next(item for item in ordered if item.stage == source_stage)
-                target_window = next(item for item in ordered if item.stage == target_stage)
+                source_window = next(
+                    item for item in ordered if item.stage == source_stage
+                )
+                target_window = next(
+                    item for item in ordered if item.stage == target_stage
+                )
                 graph.add_edge(
                     EvidenceEdge(
                         source_window.window_id,
@@ -129,7 +134,9 @@ def build_evidence_graph(
             continue
         stage_window = windows_by_id.get(decision.window_id)
         if stage_window is None:
-            raise ValueError(f"accepted decision references unknown window: {decision.window_id}")
+            raise ValueError(
+                f"accepted decision references unknown window: {decision.window_id}"
+            )
         if (decision.trace_id, decision.sequence_id, decision.stage) != (
             stage_window.trace_id,
             stage_window.sequence_id,
@@ -192,9 +199,7 @@ def _stage_node(stage_window: StageWindow) -> EvidenceNode:
     )
 
 
-def _system_node(
-    event: NormalizedEvent, decision: AssociationDecision
-) -> EvidenceNode:
+def _system_node(event: NormalizedEvent, decision: AssociationDecision) -> EvidenceNode:
     node_type = _system_node_type(event)
     return EvidenceNode(
         node_id=f"evidence:{event.event_id}",
@@ -218,10 +223,7 @@ def _system_node(
 def _system_node_type(event: NormalizedEvent) -> NodeType:
     event_type = event.event_type.lower()
     source = event.source.lower()
-    if (
-        source == "derived_fusion"
-        and event_type == "ros_callback_dispatch_bound"
-    ):
+    if source == "derived_fusion" and event_type == "ros_callback_dispatch_bound":
         return NodeType.ROS_CALLBACK
     if source == "derived_fusion" and event_type == "dds_delivery_bound":
         return NodeType.DDS_COMMUNICATION
@@ -233,7 +235,10 @@ def _system_node_type(event: NormalizedEvent) -> NodeType:
     if source == "ebpf":
         if "syscall" in event_type:
             return NodeType.SYSCALL_INTERVAL
-        if any(token in event_type for token in ("sched", "wakeup", "off_cpu", "scheduling")):
+        if any(
+            token in event_type
+            for token in ("sched", "wakeup", "off_cpu", "scheduling")
+        ):
             return NodeType.SCHEDULING_INTERVAL
     if source in {"can", "socketcan", "can_ack"}:
         if event_type in {

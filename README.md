@@ -157,6 +157,11 @@ is:
 python3 scripts/run_formal_experiment_session.py \
   --matrix experiments/protocol/formal_experiment_matrix.json \
   --capability-report data/raw/environment/rdk-x5.json \
+  --case diagnosis_f1_injected \
+  --case diagnosis_f2_injected \
+  --case diagnosis_f3_injected \
+  --case diagnosis_f4_injected \
+  --case diagnosis_f6_injected \
   --dataset-role test \
   --session-name x5_test_01 \
   --seed 20260718 \
@@ -168,3 +173,5 @@ An interrupted session is continued with the same frozen arguments plus
 Git commit, role, seed, and session name. Successful, failed, and interrupted
 cases are terminal and are never rerun in place; a new measurement attempt
 uses a new session name. Physical CAN is not part of this first formal matrix.
+Control variants and F5 are intentionally excluded here because they remain
+development-only until their formal evidence profiles are frozen.

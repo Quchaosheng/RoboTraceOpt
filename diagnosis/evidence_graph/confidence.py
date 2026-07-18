@@ -65,12 +65,15 @@ class ScoringProfile:
             minimum_margin=_number(record, "minimum_margin"),
             minimum_completeness=_number(record, "minimum_completeness"),
         )
-        if min(
-            profile.conflict_penalty,
-            profile.missing_penalty,
-            profile.minimum_score,
-            profile.minimum_margin,
-        ) < 0:
+        if (
+            min(
+                profile.conflict_penalty,
+                profile.missing_penalty,
+                profile.minimum_score,
+                profile.minimum_margin,
+            )
+            < 0
+        ):
             raise ValueError("scoring penalties and minima must be non-negative")
         if not 0 <= profile.minimum_completeness <= 1:
             raise ValueError("minimum_completeness must be between 0 and 1")

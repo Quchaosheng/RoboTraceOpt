@@ -47,8 +47,12 @@ def report(variant: str) -> dict:
             "retry_scheduled_count": {"mean": 2.0 if injected else 0.0},
         },
         "terminal_latency_ns": {
-            "ack_received": None if injected else {"median": 5.0, "p90": 6.0, "p95": 7.0, "p99": 8.0},
-            "retry_exhausted": {"median": 80.0, "p90": 82.0, "p95": 83.0, "p99": 84.0} if injected else None,
+            "ack_received": None
+            if injected
+            else {"median": 5.0, "p90": 6.0, "p95": 7.0, "p99": 8.0},
+            "retry_exhausted": {"median": 80.0, "p90": 82.0, "p95": 83.0, "p99": 84.0}
+            if injected
+            else None,
         },
     }
 

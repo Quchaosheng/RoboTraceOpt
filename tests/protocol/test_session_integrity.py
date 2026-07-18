@@ -2,7 +2,6 @@ import hashlib
 import json
 import tempfile
 import unittest
-from copy import deepcopy
 from pathlib import Path
 
 from experiments.evidence_capture.artifact_manifest import build_artifact_manifest
@@ -185,9 +184,7 @@ class SessionIntegrityTest(unittest.TestCase):
         output_relative = row["output_dir"]
         row["role_evidence_path"] = f"{output_relative}/run_manifest.json"
         row["expected_child_dataset_role"] = "development"
-        row["expected_artifact_manifest"] = (
-            f"{output_relative}/artifact_manifest.json"
-        )
+        row["expected_artifact_manifest"] = f"{output_relative}/artifact_manifest.json"
         row["expected_artifact_identity"] = {
             "fault_id": "F1",
             "condition_variant": "control",
@@ -233,7 +230,12 @@ class SessionIntegrityTest(unittest.TestCase):
                     "return_code": 0,
                     "artifacts": [
                         artifact(root, path)
-                        for path in (started, summary, run_manifest, child_manifest_path)
+                        for path in (
+                            started,
+                            summary,
+                            run_manifest,
+                            child_manifest_path,
+                        )
                     ],
                 },
             )

@@ -128,7 +128,9 @@ class SchedulingPressureTest(unittest.TestCase):
 
             self.assertEqual(manifest["schema_version"], "f3-scheduler-manifest/v1")
             self.assertEqual(manifest["target_cpu"], target_cpu)
-            self.assertEqual(manifest["ros_processes"]["planner"]["allowed_cpus"], [target_cpu])
+            self.assertEqual(
+                manifest["ros_processes"]["planner"]["allowed_cpus"], [target_cpu]
+            )
             self.assertTrue(manifest["stress"]["enabled"])
             self.assertIn(stress_process.pid, manifest["stress"]["pids"])
             self.assertEqual(manifest["ebpf_identity_status"], "not_comparable")
@@ -138,10 +140,14 @@ class SchedulingPressureTest(unittest.TestCase):
             ros_process.wait()
             stress_process.wait()
 
-    def test_assembles_manifest_from_snapshots_taken_while_processes_were_live(self) -> None:
+    def test_assembles_manifest_from_snapshots_taken_while_processes_were_live(
+        self,
+    ) -> None:
         self.assertIn(
             "ros_process_snapshots",
-            inspect.signature(scheduling_pressure.capture_scheduler_manifest).parameters,
+            inspect.signature(
+                scheduling_pressure.capture_scheduler_manifest
+            ).parameters,
         )
         target_cpu = max(os.sched_getaffinity(0))
         ros_process = subprocess.Popen(["sleep", "30"])
@@ -222,9 +228,7 @@ class SchedulingPressureTest(unittest.TestCase):
     def test_runtime_snapshot_rejects_an_incomplete_json_line_for_retry(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_directory:
             events_path = Path(temporary_directory) / "runtime_events.jsonl"
-            events_path.write_text(
-                '{"source_node":"camera","pid":', encoding="utf-8"
-            )
+            events_path.write_text('{"source_node":"camera","pid":', encoding="utf-8")
 
             with self.assertRaisesRegex(ValueError, "invalid RuntimeEvent identity"):
                 run_fault_condition.try_snapshot_runtime_processes(

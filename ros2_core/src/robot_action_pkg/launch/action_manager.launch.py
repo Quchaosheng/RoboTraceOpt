@@ -12,12 +12,14 @@ def generate_launch_description():
         "robot_action.yaml",
     )
 
-    return LaunchDescription([
-        Node(
-            package="robot_action_pkg",
-            executable="action_manager_node",
-            name="action_manager_node",
-            output="screen",
-            parameters=[config_file],
-        ),
-    ])
+    return LaunchDescription(
+        [
+            Node(
+                package="robot_action_pkg",
+                executable="action_manager_node",
+                name="action_manager_node",
+                output="screen",
+                parameters=[config_file],
+            ),
+        ]
+    )

@@ -39,9 +39,7 @@ class RuntimeEventAdapterTest(unittest.TestCase):
         events = adapt_runtime_jsonl(lines, source_file="runtime_events.jsonl")
 
         self.assertEqual([event.trace_id for event in events], ["trace-1", "trace-2"])
-        self.assertEqual(
-            [event.provenance["record_index"] for event in events], [2, 3]
-        )
+        self.assertEqual([event.provenance["record_index"] for event in events], [2, 3])
 
     def test_adapts_v2_record_with_auditable_provenance(self) -> None:
         event = adapt_runtime_event(
@@ -62,8 +60,12 @@ class RuntimeEventAdapterTest(unittest.TestCase):
         second = runtime_record()
         second["oracle_id"] = "evaluation-only-b"
 
-        first_event = adapt_runtime_event(first, source_file="events.jsonl", record_index=1)
-        second_event = adapt_runtime_event(second, source_file="events.jsonl", record_index=1)
+        first_event = adapt_runtime_event(
+            first, source_file="events.jsonl", record_index=1
+        )
+        second_event = adapt_runtime_event(
+            second, source_file="events.jsonl", record_index=1
+        )
 
         self.assertEqual(first_event, second_event)
         self.assertNotIn("oracle_id", first_event.to_dict())

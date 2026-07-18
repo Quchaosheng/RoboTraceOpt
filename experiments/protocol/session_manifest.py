@@ -59,6 +59,7 @@ def build_session_manifest(
     position_counts = _initial_position_counts(selected_cases)
     for sequence, row in enumerate(ordered_rows, start=1):
         case = row["case"]
+        _validate_case_role(case, dataset_role)
         run_id = f"{session_name}_{case['case_id']}_r{row['repetition_index']:02d}"
         relative_output = Path("cases") / f"{sequence:03d}_{run_id}"
         output = (root / relative_output).resolve()
@@ -78,27 +79,25 @@ def build_session_manifest(
         counts = position_counts[case["case_id"]]
         counts[position] += 1
         run = {
-                "sequence_index": sequence,
-                "run_id": run_id,
-                "case_id": case["case_id"],
-                "group_id": case["group_id"],
-                "runner_id": case["runner_id"],
-                "repetition_index": row["repetition_index"],
-                "block_index": row["block_index"],
-                "position_index": row["position_index"],
-                "requirements": list(case["requirements"]),
-                "output_dir": relative_output.as_posix(),
-                "argv": invocation["argv"],
-                "expected_report": (
-                    relative_output / invocation["expected_report"]
-                ).as_posix(),
-                "role_evidence_path": (
-                    relative_output / invocation["role_evidence_path"]
-                ).as_posix(),
-                "expected_child_dataset_role": invocation[
-                    "expected_child_dataset_role"
-                ],
-            }
+            "sequence_index": sequence,
+            "run_id": run_id,
+            "case_id": case["case_id"],
+            "group_id": case["group_id"],
+            "runner_id": case["runner_id"],
+            "repetition_index": row["repetition_index"],
+            "block_index": row["block_index"],
+            "position_index": row["position_index"],
+            "requirements": list(case["requirements"]),
+            "output_dir": relative_output.as_posix(),
+            "argv": invocation["argv"],
+            "expected_report": (
+                relative_output / invocation["expected_report"]
+            ).as_posix(),
+            "role_evidence_path": (
+                relative_output / invocation["role_evidence_path"]
+            ).as_posix(),
+            "expected_child_dataset_role": invocation["expected_child_dataset_role"],
+        }
         if "expected_artifact_manifest" in invocation:
             run["expected_artifact_manifest"] = (
                 relative_output / invocation["expected_artifact_manifest"]
@@ -114,9 +113,7 @@ def build_session_manifest(
         "generated_at_utc": generated_at_utc,
         "dataset_role": dataset_role,
         "development_only": dataset_role in {"development", "pilot"},
-        "formal_experiment_allowed": qualification[
-            "formal_experiment_allowed"
-        ],
+        "formal_experiment_allowed": qualification["formal_experiment_allowed"],
         "live_mutation_performed": False,
         "platform_label": qualification["platform_label"],
         "git_commit": git_commit,
@@ -149,6 +146,19 @@ def _initial_position_counts(
             str(position): 0 for position in range(1, positions + 1)
         }
     return result
+
+
+def _validate_case_role(case: dict[str, Any], dataset_role: str) -> None:
+    if dataset_role not in {"calibration", "test"}:
+        return
+    if case["runner_id"] != "fault_condition":
+        return
+    parameters = case["parameters"]
+    if parameters["condition_variant"] == "control":
+        raise ValueError("case is not allowed for formal dataset role")
+    if parameters["fault_id"] == "F5":
+        raise ValueError("case is not allowed for formal dataset role")
+
 
 def _expand_cases(cases: list[dict[str, Any]], seed: int) -> list[dict[str, Any]]:
     fault_groups: dict[str, list[dict[str, Any]]] = defaultdict(list)
@@ -222,8 +232,7 @@ def _validate_session_inputs(
         if not _lower_hex(source["sha256"], (64,)):
             raise ValueError(f"invalid {field} source sha256")
     if (
-        qualification.get("schema_version")
-        != "formal-experiment-qualification/v1"
+        qualification.get("schema_version") != "formal-experiment-qualification/v1"
         or qualification.get("status") != "allowed"
     ):
         raise ValueError("session requires an allowed qualification")

@@ -125,7 +125,11 @@ def derive_socketcan_ack_lifecycle_evidence(
     malformed: set[str] = set()
     for index, record in enumerate(runtime, start=1):
         trace_id = record.get("trace_id")
-        if not isinstance(trace_id, str) or not trace_id or record.get("event_name") not in EVENTS:
+        if (
+            not isinstance(trace_id, str)
+            or not trace_id
+            or record.get("event_name") not in EVENTS
+        ):
             continue
         try:
             extra = json.loads(record.get("extra_json", ""))
@@ -187,7 +191,9 @@ def derive_socketcan_ack_lifecycle_evidence(
             continue
         sends = [row for row in ordered if row[1]["event_name"] == "can_frame_sent"]
         timeouts = [row for row in ordered if row[1]["event_name"] == "can_ack_timeout"]
-        retries = [row for row in ordered if row[1]["event_name"] == "can_retry_scheduled"]
+        retries = [
+            row for row in ordered if row[1]["event_name"] == "can_retry_scheduled"
+        ]
         terminal_name = str(terminal[1]["event_name"])
         expected_terminal = (
             "can_retry_exhausted" if variant == "injected" else "can_ack_received"
@@ -196,7 +202,9 @@ def derive_socketcan_ack_lifecycle_evidence(
             invalid["terminal_variant_mismatch"] += 1
             continue
         lifecycle_valid = (
-            _valid_exhausted(waits, timeouts, retries, terminal, int(injection["max_retries"]))
+            _valid_exhausted(
+                waits, timeouts, retries, terminal, int(injection["max_retries"])
+            )
             if terminal_name == "can_retry_exhausted"
             else _valid_success(waits, timeouts, retries, terminal)
         )
@@ -290,7 +298,9 @@ def derive_socketcan_ack_lifecycle_evidence(
         if latency < 0:
             invalid["negative_terminal_interval"] += 1
             continue
-        state = "ack_received" if terminal_name == "can_ack_received" else "retry_exhausted"
+        state = (
+            "ack_received" if terminal_name == "can_ack_received" else "retry_exhausted"
+        )
         counts = {
             "attempt_count": len(waits),
             "timeout_count": len(timeouts),
@@ -348,11 +358,21 @@ def derive_socketcan_ack_lifecycle_evidence(
             "ack_received_count": terminal_counts["ack_received"],
             "retry_exhausted_count": terminal_counts["retry_exhausted"],
             "terminal_coverage": valid_count / len(by_trace) if by_trace else 0.0,
-            "command_frame_match_coverage": matched_commands / expected_attempts if expected_attempts else 0.0,
-            "responder_match_coverage": matched_responders / expected_attempts if expected_attempts else 0.0,
-            "ack_frame_match_coverage": matched_acks / expected_acks if expected_acks else None,
-            "ack_success_rate": terminal_counts["ack_received"] / valid_count if valid_count else 0.0,
-            "retry_exhausted_rate": terminal_counts["retry_exhausted"] / valid_count if valid_count else 0.0,
+            "command_frame_match_coverage": matched_commands / expected_attempts
+            if expected_attempts
+            else 0.0,
+            "responder_match_coverage": matched_responders / expected_attempts
+            if expected_attempts
+            else 0.0,
+            "ack_frame_match_coverage": matched_acks / expected_acks
+            if expected_acks
+            else None,
+            "ack_success_rate": terminal_counts["ack_received"] / valid_count
+            if valid_count
+            else 0.0,
+            "retry_exhausted_rate": terminal_counts["retry_exhausted"] / valid_count
+            if valid_count
+            else 0.0,
             "count_distributions": {
                 name: _describe(values) for name, values in distributions.items()
             },
@@ -378,7 +398,10 @@ def _validate_manifests(
         return variant, {}, "invalid_run_manifest"
     if oracle.get("schema_version") != "fault-oracle/v1":
         return variant, {}, "invalid_f6_oracle"
-    if any(run.get(field) != oracle.get(field) for field in ("condition_id", "session_id", "dataset_role")):
+    if any(
+        run.get(field) != oracle.get(field)
+        for field in ("condition_id", "session_id", "dataset_role")
+    ):
         return variant, {}, "run_oracle_identity_mismatch"
     if run.get("dataset_role") != "development":
         return variant, {}, "development_partition_required"
@@ -437,10 +460,19 @@ def _validate_runtime_rows(
     for _, _, extra in rows:
         if any(
             extra.get(key) != injection[key]
-            for key in ("ack_mode", "mock_mode", "can_interface", "ack_timeout_ms", "max_retries")
+            for key in (
+                "ack_mode",
+                "mock_mode",
+                "can_interface",
+                "ack_timeout_ms",
+                "max_retries",
+            )
         ) or not _integer(extra.get("retry_count")):
             return "event_profile_mismatch"
-        if _parse_can_id(extra.get("ack_can_id")) - _parse_can_id(extra.get("can_id")) != injection["ack_can_id_offset"]:
+        if (
+            _parse_can_id(extra.get("ack_can_id")) - _parse_can_id(extra.get("can_id"))
+            != injection["ack_can_id_offset"]
+        ):
             return "event_frame_identity_mismatch"
     return ""
 
