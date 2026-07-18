@@ -235,6 +235,21 @@ class RepeatedCampaignCliTest(unittest.TestCase):
                 )
         self.assertEqual(calls, [])
 
+    def test_invalid_campaign_parameters_create_no_output(self):
+        calls = []
+        with tempfile.TemporaryDirectory() as directory:
+            args = campaign_args(directory)
+            args["repetitions"] = 1
+            with self.assertRaisesRegex(ValueError, "repetitions"):
+                run_repeated_campaign(
+                    diagnosis(),
+                    baseline(),
+                    **args,
+                    execute_trial=lambda command: calls.append(command) or 0,
+                )
+            self.assertFalse(args["output_dir"].exists())
+        self.assertEqual(calls, [])
+
     def test_successful_results_record_report_hashes(self):
         def execute(command):
             config = command_config(command)

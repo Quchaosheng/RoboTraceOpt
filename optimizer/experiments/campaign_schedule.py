@@ -19,6 +19,17 @@ def config_id(config: dict[str, Any]) -> str:
     return f"cfg_{hashlib.sha256(payload).hexdigest()[:12]}"
 
 
+def validate_campaign_parameters(
+    *, repetitions: int, seed: int, campaign_name: str
+) -> None:
+    if isinstance(repetitions, bool) or not isinstance(repetitions, int) or repetitions < 2:
+        raise ValueError("repetitions must be an integer of at least two")
+    if isinstance(seed, bool) or not isinstance(seed, int):
+        raise ValueError("seed must be an integer")
+    if not isinstance(campaign_name, str) or _CAMPAIGN_NAME.fullmatch(campaign_name) is None:
+        raise ValueError("invalid campaign name")
+
+
 def build_repeated_schedule(
     execution_schedule: dict[str, Any],
     *,
@@ -28,12 +39,9 @@ def build_repeated_schedule(
 ) -> dict[str, Any]:
     if execution_schedule.get("schema_version") != "optimization-execution-schedule/v1":
         raise ValueError("invalid execution schedule schema")
-    if isinstance(repetitions, bool) or not isinstance(repetitions, int) or repetitions < 2:
-        raise ValueError("repetitions must be an integer of at least two")
-    if isinstance(seed, bool) or not isinstance(seed, int):
-        raise ValueError("seed must be an integer")
-    if not isinstance(campaign_name, str) or _CAMPAIGN_NAME.fullmatch(campaign_name) is None:
-        raise ValueError("invalid campaign name")
+    validate_campaign_parameters(
+        repetitions=repetitions, seed=seed, campaign_name=campaign_name
+    )
 
     cause_id = execution_schedule.get("cause_id")
     action_id = execution_schedule.get("action_id")
