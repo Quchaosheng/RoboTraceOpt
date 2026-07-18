@@ -13,7 +13,10 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 if str(REPOSITORY_ROOT) not in sys.path:
     sys.path.insert(0, str(REPOSITORY_ROOT))
 
-from scripts.check_platform_capabilities import collect_capabilities
+from experiments.physical_can.interfaces import (  # noqa: E402
+    validate_physical_can_pair,
+)
+from scripts.check_platform_capabilities import collect_capabilities  # noqa: E402
 
 
 def evaluate_x5_readiness(
@@ -56,8 +59,7 @@ def evaluate_x5_readiness(
         ),
         _check(
             "ros2_humble",
-            str(evidence.get("ros2", {}).get("ros_distro", "")).lower()
-            == "humble",
+            str(evidence.get("ros2", {}).get("ros_distro", "")).lower() == "humble",
             "ROS 2 Humble",
             str(evidence.get("ros2", {}).get("ros_distro", "")),
         ),
@@ -74,12 +76,16 @@ def evaluate_x5_readiness(
 
     if mode == "physical-can":
         interfaces = evidence.get("can", {}).get("interfaces", [])
-        physical_ready, observed = _physical_pair_ready(
-            interfaces,
-            runtime_interface=runtime_interface,
-            peer_interface=peer_interface,
-            bitrate=bitrate,
-        )
+        try:
+            validate_physical_can_pair(
+                interfaces,
+                runtime_interface=runtime_interface,
+                peer_interface=peer_interface,
+                bitrate=bitrate,
+            )
+            physical_ready, observed = True, "ready"
+        except ValueError as error:
+            physical_ready, observed = False, str(error)
         checks.append(
             _check(
                 "physical_can_pair",
@@ -134,63 +140,11 @@ def _check(name: str, ready: bool, expected: str, observed: str) -> dict[str, An
     }
 
 
-def _physical_pair_ready(
-    records: Any,
-    *,
-    runtime_interface: str,
-    peer_interface: str,
-    bitrate: int,
-) -> tuple[bool, str]:
-    if runtime_interface == peer_interface:
-        return False, "runtime and peer interfaces are identical"
-    if not isinstance(records, list):
-        return False, "CAN interface evidence is missing"
-    by_name = {
-        str(record.get("ifname")): record
-        for record in records
-        if isinstance(record, dict) and record.get("ifname")
-    }
-    failures: list[str] = []
-    for name in (runtime_interface, peer_interface):
-        record = by_name.get(name)
-        if record is None:
-            failures.append(f"{name}:missing")
-            continue
-        linkinfo = record.get("linkinfo", {})
-        info_data = linkinfo.get("info_data", {})
-        actual_bitrate = _find_integer(info_data, "bitrate")
-        state = str(info_data.get("state", "")).upper()
-        if linkinfo.get("info_kind") != "can":
-            failures.append(f"{name}:not-physical-can")
-        elif "UP" not in record.get("flags", []):
-            failures.append(f"{name}:down")
-        elif state == "BUS-OFF":
-            failures.append(f"{name}:bus-off")
-        elif actual_bitrate != bitrate:
-            failures.append(f"{name}:bitrate={actual_bitrate}")
-    return not failures, ", ".join(failures) if failures else "ready"
-
-
-def _find_integer(value: Any, key: str) -> int | None:
-    if isinstance(value, dict):
-        candidate = value.get(key)
-        if isinstance(candidate, int) and not isinstance(candidate, bool):
-            return candidate
-        for child in value.values():
-            found = _find_integer(child, key)
-            if found is not None:
-                return found
-    if isinstance(value, list):
-        for child in value:
-            found = _find_integer(child, key)
-            if found is not None:
-                return found
-    return None
-
-
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--mode", choices=("software", "physical-can"), default="software")
+    parser.add_argument(
+        "--mode", choices=("software", "physical-can"), default="software"
+    )
     parser.add_argument("--runtime-interface", default="can0")
     parser.add_argument("--peer-interface", default="can1")
     parser.add_argument("--bitrate", type=int, default=500_000)

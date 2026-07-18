@@ -268,7 +268,7 @@ class FaultRegistryTest(unittest.TestCase):
                 session_id="f6-vcan-unknown",
                 condition_id="opaque-vcan-unknown",
                 git_commit="a" * 40,
-                f6_transport_profile="physical",
+                f6_transport_profile="invalid",
             )
         with self.assertRaisesRegex(ValueError, "socketcan_vcan"):
             require_capabilities(

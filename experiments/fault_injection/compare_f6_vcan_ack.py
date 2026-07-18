@@ -40,20 +40,43 @@ def compare_reports(
 ) -> dict[str, Any]:
     _validate(injected, "injected")
     _validate(control, "control")
-    for field in MATCHED_FIELDS:
+    return build_comparison(
+        injected,
+        control,
+        schema_version="f6-vcan-ack-comparison/v1",
+        measurement_semantics="application_socketcan_vcan_ack_lifecycle",
+        virtual_can_bus=True,
+        physical_can_evidence=False,
+        matched_fields=MATCHED_FIELDS,
+        profile_label="vcan",
+    )
+
+
+def build_comparison(
+    injected: dict[str, Any],
+    control: dict[str, Any],
+    *,
+    schema_version: str,
+    measurement_semantics: str,
+    virtual_can_bus: bool,
+    physical_can_evidence: bool,
+    matched_fields: tuple[str, ...],
+    profile_label: str,
+) -> dict[str, Any]:
+    for field in matched_fields:
         if injected["profile"].get(field) != control["profile"].get(field):
-            raise ValueError(f"F6 vcan reports differ in {field}")
+            raise ValueError(f"F6 {profile_label} reports differ in {field}")
 
     return {
-        "schema_version": "f6-vcan-ack-comparison/v1",
-        "measurement_semantics": "application_socketcan_vcan_ack_lifecycle",
+        "schema_version": schema_version,
+        "measurement_semantics": measurement_semantics,
         "socketcan_evidence": True,
-        "virtual_can_bus": True,
-        "physical_can_evidence": False,
+        "virtual_can_bus": virtual_can_bus,
+        "physical_can_evidence": physical_can_evidence,
         "development_only": True,
         "formal_inference_allowed": False,
         "matched_profile": {
-            field: injected["profile"][field] for field in MATCHED_FIELDS
+            field: injected["profile"][field] for field in matched_fields
         },
         "responder_policies": {"injected": "drop", "control": "echo"},
         "sample_counts": {
