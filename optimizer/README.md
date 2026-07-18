@@ -224,3 +224,32 @@ and `formal_optimization_allowed=false`. WSL measurements are protocol and
 variance checks, not formal superiority evidence. Native Linux and X5 use the
 same CLI and schemas but must write separate datasets and environment
 manifests; pilot and formal results must not be pooled.
+
+Both five-block WSL pilots were executed at commit `40b7e96` with 20 planned,
+20 terminal, and 20 successful reports each. Over five blocks, every one of
+the four configurations occupied each position once, with the fifth placement
+distributed one per configuration. There were no failed or invalid trials.
+
+The Executor pilot restored `executor_threads=1`. Median paired improvement
+estimates for two, three, and four threads were -1.868, -2.518, and -2.372;
+their 95% intervals were [-3.031, -1.141], [-3.330, -0.941], and
+[-4.000, -0.923]. All three completeness-delta intervals also had negative
+lower bounds, so no candidate satisfied the joint acceptance rule. The
+retained local summary is
+`data/raw/optimization/pilot/executor_repeated_20260718_01/summary.json` with
+SHA-256
+`522a4511a11d6253fed9e31b46920d0e0408ff51779e504b34ec2d2190644dce`;
+the decision SHA-256 is
+`8c6a65edc8689ac49452cc0377da12d61d692ae1e0f0ab5c8439397eb1e432cc`.
+
+The QoS pilot restored `frame_qos_depth=10`. Depth 4 had a median paired
+improvement estimate of 0.032, but its 95% interval [-0.242, 0.336] crossed
+zero and its completeness-delta lower bound was -0.0176. Depths 1 and 7 also
+lacked joint support. The retained local summary is
+`data/raw/optimization/pilot/qos_repeated_20260718_01/summary.json` with
+SHA-256
+`b0012f409a1870ca63c0309ed3381d3986ec047a5c79c9b23c76fe4747f9f43c`;
+the decision SHA-256 is
+`40a2394b765e739de24c8fa06ab63fe5a64798de6ff74f83e44cc4126ecadd94`.
+These pilot intervals characterize WSL variability and conservative rollback
+behavior only; they are not native-Linux or X5 optimization conclusions.
