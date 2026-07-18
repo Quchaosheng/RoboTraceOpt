@@ -1,0 +1,11 @@
+{
+  "schema_version": "diagnosis-report/v1",
+  "trace_id": "development-executor-queueing",
+  "status": "diagnosed",
+  "evidence_state": "valid",
+  "confidence": 0.9,
+  "completeness": 1.0,
+  "top_1": "executor_queueing",
+  "top_k": ["executor_queueing"],
+  "reason_codes": ["synthetic_orchestration_fixture"]
+}
