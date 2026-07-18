@@ -1,0 +1,143 @@
+{
+  "schema_version": "formal-experiment-matrix/v1",
+  "cases": [
+    {
+      "case_id": "diagnosis_f1_control",
+      "group_id": "diagnosis_faults",
+      "runner_id": "fault_condition",
+      "requirements": ["runtime_event"],
+      "repetitions": 10,
+      "parameters": {"fault_id": "F1", "condition_variant": "control", "duration_seconds": 8}
+    },
+    {
+      "case_id": "diagnosis_f1_injected",
+      "group_id": "diagnosis_faults",
+      "runner_id": "fault_condition",
+      "requirements": ["runtime_event"],
+      "repetitions": 10,
+      "parameters": {"fault_id": "F1", "condition_variant": "injected", "duration_seconds": 8}
+    },
+    {
+      "case_id": "diagnosis_f2_control",
+      "group_id": "diagnosis_faults",
+      "runner_id": "fault_condition",
+      "requirements": ["runtime_event", "ros2_tracing"],
+      "repetitions": 10,
+      "parameters": {"fault_id": "F2", "condition_variant": "control", "duration_seconds": 8}
+    },
+    {
+      "case_id": "diagnosis_f2_injected",
+      "group_id": "diagnosis_faults",
+      "runner_id": "fault_condition",
+      "requirements": ["runtime_event", "ros2_tracing"],
+      "repetitions": 10,
+      "parameters": {"fault_id": "F2", "condition_variant": "injected", "duration_seconds": 8}
+    },
+    {
+      "case_id": "diagnosis_f3_control",
+      "group_id": "diagnosis_faults",
+      "runner_id": "fault_condition",
+      "requirements": ["runtime_event", "ros2_tracing", "ebpf", "cpu_control", "scheduling_tools"],
+      "repetitions": 10,
+      "parameters": {"fault_id": "F3", "condition_variant": "control", "duration_seconds": 8}
+    },
+    {
+      "case_id": "diagnosis_f3_injected",
+      "group_id": "diagnosis_faults",
+      "runner_id": "fault_condition",
+      "requirements": ["runtime_event", "ros2_tracing", "ebpf", "cpu_control", "scheduling_tools"],
+      "repetitions": 10,
+      "parameters": {"fault_id": "F3", "condition_variant": "injected", "duration_seconds": 8}
+    },
+    {
+      "case_id": "diagnosis_f4_control",
+      "group_id": "diagnosis_faults",
+      "runner_id": "fault_condition",
+      "requirements": ["runtime_event", "ebpf"],
+      "repetitions": 10,
+      "parameters": {"fault_id": "F4", "condition_variant": "control", "duration_seconds": 8}
+    },
+    {
+      "case_id": "diagnosis_f4_injected",
+      "group_id": "diagnosis_faults",
+      "runner_id": "fault_condition",
+      "requirements": ["runtime_event", "ebpf"],
+      "repetitions": 10,
+      "parameters": {"fault_id": "F4", "condition_variant": "injected", "duration_seconds": 8}
+    },
+    {
+      "case_id": "diagnosis_f5_control",
+      "group_id": "diagnosis_faults",
+      "runner_id": "fault_condition",
+      "requirements": ["runtime_event", "ros2_tracing"],
+      "repetitions": 10,
+      "parameters": {"fault_id": "F5", "condition_variant": "control", "duration_seconds": 8}
+    },
+    {
+      "case_id": "diagnosis_f5_injected",
+      "group_id": "diagnosis_faults",
+      "runner_id": "fault_condition",
+      "requirements": ["runtime_event", "ros2_tracing"],
+      "repetitions": 10,
+      "parameters": {"fault_id": "F5", "condition_variant": "injected", "duration_seconds": 8}
+    },
+    {
+      "case_id": "diagnosis_f6_control",
+      "group_id": "diagnosis_faults",
+      "runner_id": "fault_condition",
+      "requirements": ["runtime_event"],
+      "repetitions": 10,
+      "parameters": {"fault_id": "F6", "condition_variant": "control", "duration_seconds": 8}
+    },
+    {
+      "case_id": "diagnosis_f6_injected",
+      "group_id": "diagnosis_faults",
+      "runner_id": "fault_condition",
+      "requirements": ["runtime_event"],
+      "repetitions": 10,
+      "parameters": {"fault_id": "F6", "condition_variant": "injected", "duration_seconds": 8}
+    },
+    {
+      "case_id": "optimization_executor",
+      "group_id": "optimization",
+      "runner_id": "repeated_optimization",
+      "requirements": ["runtime_event"],
+      "repetitions": 1,
+      "parameters": {
+        "diagnosis_report": "tests/fixtures/optimizer/diagnosis_executor_queueing.json",
+        "baseline_profile": "tests/fixtures/optimizer/baseline_executor_threads.json",
+        "strategy": "guided",
+        "budget": 4,
+        "campaign_repetitions": 20,
+        "duration_seconds": 8,
+        "minimum_confidence": 0.6,
+        "minimum_completeness": 1.0,
+        "minimum_improvement_ratio": 0.0,
+        "minimum_complete_trace_rate_delta": 0.0,
+        "confidence_level": 0.95,
+        "bootstrap_resamples": 10000
+      }
+    },
+    {
+      "case_id": "optimization_qos",
+      "group_id": "optimization",
+      "runner_id": "repeated_optimization",
+      "requirements": ["runtime_event"],
+      "repetitions": 1,
+      "parameters": {
+        "diagnosis_report": "tests/fixtures/optimizer/diagnosis_dds_communication_delay.json",
+        "baseline_profile": "tests/fixtures/optimizer/baseline_qos_depth.json",
+        "strategy": "guided",
+        "budget": 4,
+        "campaign_repetitions": 20,
+        "duration_seconds": 8,
+        "minimum_confidence": 0.6,
+        "minimum_completeness": 1.0,
+        "minimum_improvement_ratio": 0.0,
+        "minimum_complete_trace_rate_delta": 0.0,
+        "confidence_level": 0.95,
+        "bootstrap_resamples": 10000
+      }
+    }
+  ]
+}
