@@ -33,16 +33,20 @@ def build_trial_manifest(
     seed: int,
     git_commit: str,
     command: list[str],
+    dataset_role: str = "development",
 ) -> dict[str, Any]:
     _single_config(cause_id, candidate_config)
     if not trial_id or not strategy or len(git_commit) != 40 or not command:
         raise ValueError("complete trial identity is required")
     if strategy not in TRIAL_STRATEGIES:
         raise ValueError("unsupported trial strategy")
+    if dataset_role not in {"development", "pilot", "calibration", "test"}:
+        raise ValueError("unsupported trial dataset role")
     return {
         "schema_version": "optimization-runtime-trial-manifest/v1",
-        "dataset_role": "development",
-        "formal_optimization_allowed": False,
+        "dataset_role": dataset_role,
+        "development_only": dataset_role in {"development", "pilot"},
+        "formal_optimization_allowed": dataset_role == "test",
         "trial_id": trial_id,
         "strategy": strategy,
         "seed": seed,

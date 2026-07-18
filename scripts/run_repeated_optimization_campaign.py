@@ -63,6 +63,9 @@ def run_repeated_campaign(
     qualification_source: Path | None = None,
 ) -> dict[str, Any]:
     evidence = _evidence_fields(dataset_role, qualification_report)
+    _validate_qualification_source(
+        dataset_role, qualification_report, qualification_source
+    )
     if output_dir.exists():
         raise ValueError(f"campaign output already exists: {output_dir}")
     validate_campaign_parameters(
@@ -183,6 +186,8 @@ def run_repeated_campaign(
             duration_seconds=duration_seconds,
             output_dir=trial_dir,
             safe_root=safe_root,
+            dataset_role=dataset_role,
+            qualification_path=qualification_source,
         )
         result = {
             "schema_version": "optimization-repeated-trial-result/v1",
@@ -205,6 +210,14 @@ def run_repeated_campaign(
                 report = _read_json(report_path)
                 if report.get("candidate_config") != config:
                     raise CandidateConfigMismatch
+                if (
+                    report.get("dataset_role") != dataset_role
+                    or report.get("development_only")
+                    != evidence["development_only"]
+                    or report.get("formal_optimization_allowed")
+                    != evidence["formal_optimization_allowed"]
+                ):
+                    raise ValueError("trial report evidence role mismatch")
                 objective = runtime_objective(
                     report,
                     metric=profile["metric"],
@@ -391,6 +404,18 @@ def _input_record(value: dict[str, Any], source: Path | None) -> dict[str, str]:
     payload = json.dumps(value, sort_keys=True, separators=(",", ":")).encode()
     return {"path": "", "sha256": hashlib.sha256(payload).hexdigest()}
 
+
+def _validate_qualification_source(
+    dataset_role: str,
+    qualification: dict[str, Any] | None,
+    source: Path | None,
+) -> None:
+    if dataset_role not in {"calibration", "test"}:
+        return
+    if source is None or not source.is_file():
+        raise ValueError("qualified campaign role requires qualification source")
+    if _read_json(source) != qualification:
+        raise ValueError("qualification source does not match report")
 
 def _evidence_fields(
     dataset_role: str, qualification: dict[str, Any] | None
