@@ -11,12 +11,24 @@ import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any, Callable, Mapping
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 if str(REPOSITORY_ROOT) not in sys.path:
     sys.path.insert(0, str(REPOSITORY_ROOT))
 
+from experiments.evidence_capture.artifact_manifest import (  # noqa: E402
+    build_artifact_manifest,
+)
+from experiments.evidence_capture.collector_lifecycle import (  # noqa: E402
+    EvidenceCaptureError,
+    build_ebpf_capture_argv,
+    needs_process_manifest,
+    remaining_capture_duration,
+    validate_ebpf_identity,
+    validate_ebpf_summary,
+)
 from experiments.fault_injection.registry import (  # noqa: E402
     create_fault_manifests,
     load_fault_catalog,
@@ -42,6 +54,11 @@ from experiments.fault_injection.socketcan_capture import (  # noqa: E402
     stop_socketcan_capture,
 )
 from scripts.capture_process_manifest import processes_from_runtime_events  # noqa: E402
+from scripts.export_ros2_trace import (  # noqa: E402
+    EXPORT_SCHEMA,
+    FAULT_REQUIRED_EVENTS,
+)
+from scripts.export_tracetools_fixture import directory_sha256  # noqa: E402
 
 
 def try_snapshot_runtime_processes(
@@ -53,6 +70,152 @@ def try_snapshot_runtime_processes(
     if len(processes) < minimum_processes:
         return None
     return snapshot_scheduler_processes(dict(processes), target_cpu)
+
+
+def fault_capture_plan(
+    fault_id: str, capabilities: set[str]
+) -> dict[str, bool]:
+    tracing = "ros2_tracing" in capabilities and fault_id in FAULT_REQUIRED_EVENTS
+    ebpf = "ebpf" in capabilities and fault_id in {"F3", "F4"}
+    return {
+        "process_manifest": needs_process_manifest(
+            ({"ros2_tracing"} if tracing else set()) | ({"ebpf"} if ebpf else set())
+        ),
+        "ebpf": ebpf,
+        "ros2_export": tracing,
+    }
+
+
+def capture_ebpf_evidence(
+    *,
+    fault_id: str,
+    output_dir: Path,
+    process_manifest: Path,
+    duration_seconds: float,
+    elapsed_startup_seconds: float,
+    execute: Callable[..., subprocess.CompletedProcess] = subprocess.run,
+) -> dict[str, Path]:
+    manifest = _read_json(process_manifest)
+    validate_ebpf_identity(manifest)
+    duration = remaining_capture_duration(duration_seconds, elapsed_startup_seconds)
+    events_path = output_dir / "ebpf_events.jsonl"
+    summary_path = output_dir / "ebpf_capture_summary.json"
+    argv = build_ebpf_capture_argv(
+        python=Path(sys.executable),
+        script=REPOSITORY_ROOT / "scripts" / "capture_ebpf_runtime.py",
+        process_manifest=process_manifest,
+        duration=duration,
+        output=events_path,
+        summary_output=summary_path,
+    )
+    completed = execute(argv, cwd=REPOSITORY_ROOT)
+    if completed.returncode != 0:
+        raise EvidenceCaptureError(
+            "ebpf_capture_command_failed", "eBPF capture command failed"
+        )
+    if not events_path.is_file() or not summary_path.is_file():
+        raise EvidenceCaptureError(
+            "ebpf_capture_output_missing", "eBPF capture output is missing"
+        )
+    summary = validate_ebpf_summary(_read_json(summary_path), fault_id=fault_id)
+    if summary.get("host_id") != manifest.get("host_id"):
+        raise EvidenceCaptureError(
+            "ebpf_host_mismatch", "eBPF capture host does not match process manifest"
+        )
+    return {
+        "ebpf_events": events_path,
+        "ebpf_capture_summary": summary_path,
+    }
+
+
+def export_ros2_evidence(
+    *,
+    fault_id: str,
+    output_dir: Path,
+    host_id: str,
+    execute: Callable[..., subprocess.CompletedProcess] = subprocess.run,
+) -> dict[str, Path]:
+    if fault_id not in FAULT_REQUIRED_EVENTS:
+        raise ValueError(f"ROS 2 trace export is not registered for {fault_id}")
+    trace_path = output_dir / "ctf"
+    events_path = output_dir / "ros2_events.jsonl"
+    manifest_path = output_dir / "ros2_events.manifest.json"
+    argv = [
+        sys.executable,
+        str(REPOSITORY_ROOT / "scripts" / "export_ros2_trace.py"),
+        "--fault-id",
+        fault_id,
+        "--trace",
+        str(trace_path),
+        "--output-jsonl",
+        str(events_path),
+        "--output-manifest",
+        str(manifest_path),
+        "--host-id",
+        host_id,
+    ]
+    completed = execute(argv, cwd=REPOSITORY_ROOT)
+    if completed.returncode != 0:
+        raise RuntimeError("ROS 2 trace export command failed")
+    if not events_path.is_file() or not manifest_path.is_file():
+        raise RuntimeError("ROS 2 trace export output is missing")
+    manifest = _read_json(manifest_path)
+    counts = manifest.get("event_counts")
+    if (
+        manifest.get("schema_version") != EXPORT_SCHEMA
+        or manifest.get("host_id") != host_id
+        or manifest.get("source_trace_sha256") != directory_sha256(trace_path)
+        or not isinstance(manifest.get("event_count"), int)
+        or manifest["event_count"] < 1
+        or not isinstance(counts, dict)
+        or not FAULT_REQUIRED_EVENTS[fault_id] <= set(counts)
+    ):
+        raise RuntimeError("ROS 2 trace export manifest is invalid")
+    return {
+        "ros2_events": events_path,
+        "ros2_events_manifest": manifest_path,
+    }
+
+
+def finalize_fault_artifacts(
+    *,
+    fault_id: str,
+    condition_variant: str,
+    dataset_role: str,
+    output_dir: Path,
+    paths: Mapping[str, Path],
+) -> Path:
+    manifest_path = output_dir / "artifact_manifest.json"
+    if manifest_path.exists():
+        raise ValueError(f"artifact manifest already exists: {manifest_path}")
+    manifest = build_artifact_manifest(
+        fault_id=fault_id,
+        condition_variant=condition_variant,
+        dataset_role=dataset_role,
+        case_root=output_dir,
+        artifacts=paths,
+    )
+    temporary = manifest_path.with_name(manifest_path.name + ".tmp")
+    temporary.write_text(
+        json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+    temporary.replace(manifest_path)
+    return manifest_path
+
+
+def _read_json(path: Path) -> dict[str, Any]:
+    value = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(value, dict):
+        raise ValueError(f"JSON object required: {path}")
+    return value
+
+
+def _write_json_atomic(path: Path, value: dict[str, Any]) -> None:
+    temporary = path.with_name(path.name + ".tmp")
+    temporary.write_text(
+        json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+    temporary.replace(path)
 
 
 def parse_args() -> argparse.Namespace:
@@ -149,7 +312,7 @@ def main() -> int:
         stress_command=stress_command if spec.fault_id == "F3" else None,
     )
     if args.execute:
-        summary = execute_condition(
+        summary, measurement_paths = execute_condition(
             spec.fault_id,
             spec.workload,
             command,
@@ -168,8 +331,23 @@ def main() -> int:
             session_id=args.session_id,
         )
         summary_path = args.output_dir / "summary.json"
-        summary_path.write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
+        _write_json_atomic(summary_path, summary)
         paths["summary"] = summary_path
+        artifact_paths = {
+            "runtime_events": events_path,
+            "run_manifest": paths["public_manifest"],
+            "oracle_manifest": paths["oracle_manifest"],
+            "command_manifest": paths["command"],
+            "fault_summary": summary_path,
+            **measurement_paths,
+        }
+        paths["artifact_manifest"] = finalize_fault_artifacts(
+            fault_id=spec.fault_id,
+            condition_variant=args.condition_variant,
+            dataset_role=args.dataset_role,
+            output_dir=args.output_dir,
+            paths=artifact_paths,
+        )
     print(json.dumps({key: str(path) for key, path in paths.items()}, indent=2))
     return 0
 
@@ -212,13 +390,15 @@ def execute_condition(
     f6_transport_profile: str = "mock",
     f6_injection: dict[str, object] | None = None,
     session_id: str = "",
-) -> dict[str, object]:
+) -> tuple[dict[str, object], dict[str, Path]]:
     setup_path = safe_root / "install" / "setup.bash"
     if not setup_path.is_file():
         raise FileNotFoundError(f"ROS 2 build setup is missing: {setup_path}")
     ros_log_dir = safe_root / "ros_logs" / output_dir.name
     ros_log_dir.mkdir(parents=True, exist_ok=True)
-    tracing = "ros2_tracing" in capabilities
+    capture_plan = fault_capture_plan(fault_id, capabilities)
+    tracing = capture_plan["ros2_export"]
+    measurement_paths: dict[str, Path] = {}
     trace_session = f"fault_{fault_id.lower()}_{os.getpid()}"
     trace_dir = output_dir / "ctf"
     tracing_setup = tracing_overlay_root / "install" / "setup.bash"
@@ -242,6 +422,7 @@ def execute_condition(
             cwd=REPOSITORY_ROOT,
             check=True,
         )
+        measurement_paths["clock_calibration"] = output_dir / "clock_calibration.json"
     shell_command = build_execution_script(
         command,
         setup_path=setup_path,
@@ -288,8 +469,9 @@ def execute_condition(
                 cwd=REPOSITORY_ROOT,
                 output=handle,
             )
-            process_manifest_captured = not tracing
-            if tracing:
+            workload_started = time.monotonic()
+            process_manifest_captured = not capture_plan["process_manifest"]
+            if capture_plan["process_manifest"]:
                 process_manifest = output_dir / "process_manifest.json"
                 minimum_processes = 2 if workload == "w2" else 4
                 for _ in range(50):
@@ -346,6 +528,7 @@ def execute_condition(
                     )
                     if capture.returncode == 0:
                         process_manifest_captured = True
+                        measurement_paths["process_manifest"] = process_manifest
                         break
             if fault_id == "F3" and process_manifest_captured:
                 if target_cpu is None:
@@ -378,6 +561,16 @@ def execute_condition(
                 ).isoformat()
                 scheduler_manifest["stress_log"] = (
                     str(output_dir / "stress.log") if stress_process is not None else ""
+                )
+            if capture_plan["ebpf"]:
+                measurement_paths.update(
+                    capture_ebpf_evidence(
+                        fault_id=fault_id,
+                        output_dir=output_dir,
+                        process_manifest=output_dir / "process_manifest.json",
+                        duration_seconds=duration_seconds,
+                        elapsed_startup_seconds=time.monotonic() - workload_started,
+                    )
                 )
             return_code = process.wait()
     finally:
@@ -418,16 +611,25 @@ def execute_condition(
             "clock_calibration": str(output_dir / "clock_calibration.json"),
             "process_manifest": str(output_dir / "process_manifest.json"),
         }
+        measurement_paths["ros2_ctf"] = trace_dir
+        measurement_paths.update(
+            export_ros2_evidence(
+                fault_id=fault_id,
+                output_dir=output_dir,
+                host_id=socket.gethostname(),
+            )
+        )
     if fault_id == "F3":
         scheduler_path = output_dir / "scheduler_manifest.json"
         if not scheduler_path.is_file():
             raise RuntimeError("F3 scheduler manifest is missing")
         summary["scheduler_manifest"] = str(scheduler_path)
+        measurement_paths["scheduler_manifest"] = scheduler_path
     if socketcan_manifest is not None:
         summary["socketcan_capture_manifest"] = str(
             output_dir / "socketcan_capture_manifest.json"
         )
-    return summary
+    return summary, measurement_paths
 
 
 def validate_fault_output(
