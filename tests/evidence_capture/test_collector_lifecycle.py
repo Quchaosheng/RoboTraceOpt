@@ -19,9 +19,7 @@ class CollectorLifecycleTest(unittest.TestCase):
         self.assertFalse(needs_process_manifest({"runtime_event"}))
         self.assertTrue(needs_process_manifest({"runtime_event", "ros2_tracing"}))
         self.assertTrue(needs_process_manifest({"runtime_event", "ebpf"}))
-        self.assertEqual(
-            remaining_capture_duration(8.0, 1.5, shutdown_margin=0.5), 6.0
-        )
+        self.assertEqual(remaining_capture_duration(8.0, 1.5, shutdown_margin=0.5), 6.0)
         with self.assertRaises(EvidenceCaptureError) as context:
             remaining_capture_duration(8.0, 7.0, shutdown_margin=0.5)
         self.assertEqual(context.exception.reason_code, "insufficient_ebpf_window")
@@ -35,7 +33,9 @@ class CollectorLifecycleTest(unittest.TestCase):
                     "ebpf_identity_status": "not_comparable",
                 }
             )
-        self.assertEqual(context.exception.reason_code, "identity_domain_not_comparable")
+        self.assertEqual(
+            context.exception.reason_code, "identity_domain_not_comparable"
+        )
         with self.assertRaises(EvidenceCaptureError) as context:
             validate_ebpf_identity({**self._process_manifest(), "processes": []})
         self.assertEqual(context.exception.reason_code, "process_manifest_invalid")
@@ -67,9 +67,7 @@ class CollectorLifecycleTest(unittest.TestCase):
         self.assertNotIn("shell=True", argv)
 
     def test_validates_fault_specific_ebpf_counts(self) -> None:
-        validate_ebpf_summary(
-            self._summary(counts={"sched_switch": 4}), fault_id="F3"
-        )
+        validate_ebpf_summary(self._summary(counts={"sched_switch": 4}), fault_id="F3")
         validate_ebpf_summary(self._summary(counts={"syscall": 2}), fault_id="F4")
         with self.assertRaises(EvidenceCaptureError) as context:
             validate_ebpf_summary(self._summary(counts={"syscall": 2}), fault_id="F3")

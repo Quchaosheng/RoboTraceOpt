@@ -33,7 +33,10 @@ def capture_code_version(repo_root: Path) -> dict[str, object]:
         capture_output=True,
         text=True,
     )
-    if unstaged_result.returncode not in (0, 1) or staged_result.returncode not in (0, 1):
+    if unstaged_result.returncode not in (0, 1) or staged_result.returncode not in (
+        0,
+        1,
+    ):
         raise subprocess.CalledProcessError(
             max(unstaged_result.returncode, staged_result.returncode), "git diff"
         )
@@ -94,8 +97,10 @@ def _executable(process_root: Path) -> str:
 
 
 def _format_utc(value: datetime) -> str:
-    return value.astimezone(timezone.utc).isoformat(timespec="microseconds").replace(
-        "+00:00", "Z"
+    return (
+        value.astimezone(timezone.utc)
+        .isoformat(timespec="microseconds")
+        .replace("+00:00", "Z")
     )
 
 
@@ -123,7 +128,9 @@ def capture_process_manifest(
     for node, pid in processes:
         process_root = proc_root / str(pid)
         if not node or pid <= 0 or not process_root.is_dir():
-            raise ProcessLookupError(f"live process not found for {node or '<empty>'} PID {pid}")
+            raise ProcessLookupError(
+                f"live process not found for {node or '<empty>'} PID {pid}"
+            )
         start_ticks = _process_start_ticks(
             (process_root / "stat").read_text(encoding="utf-8")
         )
@@ -174,8 +181,7 @@ def capture_process_manifest(
     return {
         "schema_version": "process-manifest/v2",
         "host_id": resolved_host,
-        "captured_at_utc": captured_at_utc
-        or _format_utc(datetime.now(timezone.utc)),
+        "captured_at_utc": captured_at_utc or _format_utc(datetime.now(timezone.utc)),
         **code_version,
         "osrelease": osrelease,
         "ebpf_identity_status": ebpf_status,
@@ -219,7 +225,9 @@ def _parse_process(value: str) -> tuple[str, int]:
     except (ValueError, TypeError) as error:
         raise argparse.ArgumentTypeError("process must use NODE=PID") from error
     if not node or pid <= 0:
-        raise argparse.ArgumentTypeError("process must use non-empty NODE and positive PID")
+        raise argparse.ArgumentTypeError(
+            "process must use non-empty NODE and positive PID"
+        )
     return node, pid
 
 

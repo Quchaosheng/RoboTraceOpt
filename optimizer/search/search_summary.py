@@ -44,7 +44,11 @@ def summarize_trial_records(
                 or not 0 <= rate <= 1
             ):
                 raise ValueError("invalid trial measurement")
-        best = min(valid, key=lambda row: float(row["objective_value_ns"])) if valid else None
+        best = (
+            min(valid, key=lambda row: float(row["objective_value_ns"]))
+            if valid
+            else None
+        )
         target = next(
             (
                 row
@@ -74,16 +78,24 @@ def summarize_trial_records(
     }
 
 
-def load_trial_records(root: Path, *, metric: str, quantile: str) -> list[dict[str, Any]]:
+def load_trial_records(
+    root: Path, *, metric: str, quantile: str
+) -> list[dict[str, Any]]:
     records: list[dict[str, Any]] = []
     by_strategy: dict[str, list[Path]] = defaultdict(list)
     for directory in sorted(path for path in root.iterdir() if path.is_dir()):
-        manifest = json.loads((directory / "trial_manifest.json").read_text(encoding="utf-8"))
+        manifest = json.loads(
+            (directory / "trial_manifest.json").read_text(encoding="utf-8")
+        )
         by_strategy[str(manifest["strategy"])].append(directory)
     for strategy, directories in sorted(by_strategy.items()):
         for index, directory in enumerate(sorted(directories), start=1):
-            manifest = json.loads((directory / "trial_manifest.json").read_text(encoding="utf-8"))
-            report = json.loads((directory / "trial_report.json").read_text(encoding="utf-8"))
+            manifest = json.loads(
+                (directory / "trial_manifest.json").read_text(encoding="utf-8")
+            )
+            report = json.loads(
+                (directory / "trial_report.json").read_text(encoding="utf-8")
+            )
             metrics = report.get("metrics_ns", {})
             values = metrics.get(metric) if isinstance(metrics, dict) else None
             value = values.get(quantile) if isinstance(values, dict) else None
@@ -119,7 +131,9 @@ def main() -> int:
     summary["metric"] = args.metric
     summary["quantile"] = args.quantile
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    args.output.write_text(
+        json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
     return 0
 
 

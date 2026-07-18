@@ -25,7 +25,9 @@ class DiagnosisOracle:
         if self.dataset_role not in {"calibration", "test"}:
             raise ValueError(f"invalid dataset role: {self.dataset_role}")
         if self.should_abstain == bool(self.true_cause_id):
-            raise ValueError("oracle must declare either a cause or required abstention")
+            raise ValueError(
+                "oracle must declare either a cause or required abstention"
+            )
         if not self.session_id:
             raise ValueError("oracle session_id is required")
 
@@ -65,14 +67,10 @@ def evaluate_diagnoses(
     if predictions_by_id.keys() != oracle_by_id.keys():
         missing = sorted(predictions_by_id.keys() - oracle_by_id.keys())
         extra = sorted(oracle_by_id.keys() - predictions_by_id.keys())
-        raise ValueError(
-            f"oracle coverage mismatch: missing={missing}, extra={extra}"
-        )
+        raise ValueError(f"oracle coverage mismatch: missing={missing}, extra={extra}")
 
     fault_ids = [
-        trace_id
-        for trace_id, label in oracle_by_id.items()
-        if not label.should_abstain
+        trace_id for trace_id, label in oracle_by_id.items() if not label.should_abstain
     ]
     top_1_correct = 0
     top_k_correct = 0
@@ -101,7 +99,9 @@ def evaluate_diagnoses(
                 (result.confidence, int(predicted_label == label.true_cause_id))
             )
 
-    cause_labels = sorted({oracle_by_id[trace_id].true_cause_id for trace_id in fault_ids})
+    cause_labels = sorted(
+        {oracle_by_id[trace_id].true_cause_id for trace_id in fault_ids}
+    )
     report_confusion = {
         true_label: dict(predicted_counts)
         for true_label, predicted_counts in confusion.items()
@@ -185,7 +185,9 @@ def _confidence_calibration(
 ) -> dict[str, object]:
     if not samples:
         return {"sample_count": 0, "brier_score": None, "ece": None, "bins": []}
-    brier = sum((confidence - correct) ** 2 for confidence, correct in samples) / len(samples)
+    brier = sum((confidence - correct) ** 2 for confidence, correct in samples) / len(
+        samples
+    )
     grouped: list[list[tuple[float, int]]] = [[] for _ in range(bins)]
     for confidence, correct in samples:
         grouped[min(int(confidence * bins), bins - 1)].append((confidence, correct))

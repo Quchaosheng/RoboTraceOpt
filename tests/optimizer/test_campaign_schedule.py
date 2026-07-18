@@ -80,13 +80,9 @@ class CampaignScheduleTest(unittest.TestCase):
             ],
         )
         for block in range(1, 6):
-            rows = [
-                row for row in first["trials"] if row["block_index"] == block
-            ]
+            rows = [row for row in first["trials"] if row["block_index"] == block]
             self.assertEqual(len({row["config_id"] for row in rows}), 4)
-            self.assertEqual(
-                {row["position_index"] for row in rows}, {1, 2, 3, 4}
-            )
+            self.assertEqual({row["position_index"] for row in rows}, {1, 2, 3, 4})
         for config in first["configurations"]:
             counts = list(config["position_counts"].values())
             self.assertLessEqual(max(counts) - min(counts), 1)
@@ -115,9 +111,7 @@ class CampaignScheduleTest(unittest.TestCase):
             row["config_id"] for row in first["trials"] if row["block_index"] == 1
         ]
         second_block = [
-            row["config_id"]
-            for row in second["trials"]
-            if row["block_index"] == 1
+            row["config_id"] for row in second["trials"] if row["block_index"] == 1
         ]
         self.assertNotEqual(first_block, second_block)
 
@@ -133,9 +127,7 @@ class CampaignScheduleTest(unittest.TestCase):
         broken = execution_schedule()
         broken["schema_version"] = "wrong"
         with self.assertRaisesRegex(ValueError, "execution schedule"):
-            build_repeated_schedule(
-                broken, repetitions=2, seed=1, campaign_name="x"
-            )
+            build_repeated_schedule(broken, repetitions=2, seed=1, campaign_name="x")
 
 
 if __name__ == "__main__":

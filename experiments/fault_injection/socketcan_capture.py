@@ -93,7 +93,11 @@ def wait_for_responder_ready(
         if path.is_file() and path.stat().st_size:
             records = _read_jsonl(path)
             ready = next(
-                (record for record in records if record.get("record_type") == "responder_ready"),
+                (
+                    record
+                    for record in records
+                    if record.get("record_type") == "responder_ready"
+                ),
                 None,
             )
             if ready is not None:
@@ -123,7 +127,11 @@ def capture_interface_state(interface: str) -> dict[str, Any]:
         records = json.loads(completed.stdout)
     except json.JSONDecodeError as error:
         raise RuntimeError("ip returned invalid JSON") from error
-    if not isinstance(records, list) or len(records) != 1 or not isinstance(records[0], dict):
+    if (
+        not isinstance(records, list)
+        or len(records) != 1
+        or not isinstance(records[0], dict)
+    ):
         raise RuntimeError(f"expected exactly one interface record for {interface}")
     record = records[0]
     if (
@@ -225,7 +233,9 @@ def start_socketcan_capture(
     )
 
 
-def stop_socketcan_capture(capture: SocketCanCapture, output_path: Path) -> dict[str, Any]:
+def stop_socketcan_capture(
+    capture: SocketCanCapture, output_path: Path
+) -> dict[str, Any]:
     responder_cleanup = stop_process(capture.responder_process, 3.0)
     candump_cleanup = stop_process(capture.candump_process, 3.0)
     capture.responder_log_handle.close()
@@ -308,7 +318,9 @@ def build_capture_manifest(
     if not candump_path.is_file() or candump_path.stat().st_size == 0:
         raise ValueError("candump evidence is empty")
     candump_lines = [
-        line for line in candump_path.read_text(encoding="utf-8").splitlines() if line.strip()
+        line
+        for line in candump_path.read_text(encoding="utf-8").splitlines()
+        if line.strip()
     ]
     if not candump_lines:
         raise ValueError("candump evidence is empty")
@@ -361,7 +373,9 @@ def _validate_profile(profile: dict[str, Any]) -> None:
         "ack_can_id_offset": 128,
         "responder_delay_ms": 5,
     }
-    if not isinstance(profile, dict) or any(profile.get(key) != value for key, value in expected.items()):
+    if not isinstance(profile, dict) or any(
+        profile.get(key) != value for key, value in expected.items()
+    ):
         raise ValueError("invalid F6 vcan capture profile")
     _validate_interface(str(profile.get("can_interface", "")))
     if profile.get("responder_policy") not in {"echo", "drop"}:

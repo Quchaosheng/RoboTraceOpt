@@ -28,8 +28,7 @@ def assess_session_integrity(
     runs = manifest.get("runs")
     dataset_role = manifest.get("dataset_role")
     if (
-        manifest.get("schema_version")
-        != "formal-experiment-session-manifest/v1"
+        manifest.get("schema_version") != "formal-experiment-session-manifest/v1"
         or not isinstance(runs, list)
         or not isinstance(dataset_role, str)
     ):
@@ -120,9 +119,7 @@ def assess_session_integrity(
     }
 
 
-def mark_interrupted_runs(
-    manifest: dict[str, Any], session_root: Path
-) -> list[str]:
+def mark_interrupted_runs(manifest: dict[str, Any], session_root: Path) -> list[str]:
     """Write interrupted results for started runs that lack terminal results."""
     root = session_root.resolve()
     dataset_role = manifest.get("dataset_role")
@@ -212,10 +209,7 @@ def _validate_result(
         role_record = _read_object(role_file, errors, "role_evidence_invalid")
         if role_record is None:
             return
-        if (
-            role_record.get("dataset_role")
-            != row.get("expected_child_dataset_role")
-        ):
+        if role_record.get("dataset_role") != row.get("expected_child_dataset_role"):
             errors.add("child_dataset_role_mismatch")
         _validate_nested_artifacts(row, root=root, seen=seen, errors=errors)
 
@@ -271,9 +265,7 @@ def _inside(root: Path, relative: Any) -> Path:
     return candidate
 
 
-def _read_object(
-    path: Path, errors: set[str], reason: str
-) -> dict[str, Any] | None:
+def _read_object(path: Path, errors: set[str], reason: str) -> dict[str, Any] | None:
     try:
         value = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):

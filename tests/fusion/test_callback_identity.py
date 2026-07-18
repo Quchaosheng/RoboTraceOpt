@@ -27,11 +27,17 @@ def trace_event(event_id: str, event_type: str, payload: dict) -> NormalizedEven
 class CallbackIdentityTest(unittest.TestCase):
     def test_resolves_subscription_callback_to_node_topic_and_symbol(self) -> None:
         events = [
-            trace_event("node", "ros2:rcl_node_init", {"node_handle": 1, "node_name": "planner"}),
+            trace_event(
+                "node", "ros2:rcl_node_init", {"node_handle": 1, "node_name": "planner"}
+            ),
             trace_event(
                 "rcl-sub",
                 "ros2:rcl_subscription_init",
-                {"subscription_handle": 2, "node_handle": 1, "topic_name": "/camera/frame"},
+                {
+                    "subscription_handle": 2,
+                    "node_handle": 1,
+                    "topic_name": "/camera/frame",
+                },
             ),
             trace_event(
                 "cpp-sub",
@@ -73,7 +79,9 @@ class CallbackIdentityTest(unittest.TestCase):
             ),
         ]
         callback = trace_event("callback", "ros2:callback_start", {"callback": 9})
-        callback = NormalizedEvent(**{**callback.to_dict(), "timestamp_ns": 150, "tid": 11})
+        callback = NormalizedEvent(
+            **{**callback.to_dict(), "timestamp_ns": 150, "tid": 11}
+        )
         runtime = [
             NormalizedEvent(
                 event_id="start",

@@ -3,7 +3,7 @@
   <name>service_runtime_demo</name>
   <version>0.1.0</version>
   <description>Request-response runtime evidence experiment for ROS 2.</description>
-  <maintainer email="maintainer@example.com">ROS2Probe Maintainer</maintainer>
+  <maintainer email="Quchaosheng@users.noreply.github.com">Quchaosheng</maintainer>
   <license>Apache-2.0</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>

@@ -294,9 +294,7 @@ def _case_result(
         elif role_record.get("dataset_role") != row["expected_child_dataset_role"]:
             reason = "child_dataset_role_mismatch"
         else:
-            artifact_path, artifact_reason = _validate_child_artifacts(
-                row, output_dir
-            )
+            artifact_path, artifact_reason = _validate_child_artifacts(row, output_dir)
             if artifact_path is not None:
                 paths.add(artifact_path)
             if artifact_reason:
@@ -312,9 +310,7 @@ def _case_result(
         "reason_code": reason,
         "return_code": return_code,
         "executor_error": executor_error,
-        "artifacts": [
-            _artifact(output_dir, path) for path in sorted(paths)
-        ],
+        "artifacts": [_artifact(output_dir, path) for path in sorted(paths)],
     }
 
 

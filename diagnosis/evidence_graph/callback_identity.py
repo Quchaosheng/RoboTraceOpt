@@ -31,7 +31,11 @@ def _payload(event: NormalizedEvent) -> Mapping[str, object]:
 
 def _handle(payload: Mapping[str, object], name: str) -> int | None:
     value = payload.get(name)
-    return value if isinstance(value, int) and not isinstance(value, bool) and value > 0 else None
+    return (
+        value
+        if isinstance(value, int) and not isinstance(value, bool) and value > 0
+        else None
+    )
 
 
 def build_callback_identities(
@@ -106,9 +110,7 @@ def build_callback_identities(
         service_name = ""
         if kind == "subscription":
             rcl_handle = cpp_subscriptions.get((pid, owner), 0)
-            node_handle, topic_name = rcl_subscriptions.get(
-                (pid, rcl_handle), (0, "")
-            )
+            node_handle, topic_name = rcl_subscriptions.get((pid, rcl_handle), (0, ""))
             node_name = nodes.get((pid, node_handle), "")
         elif kind == "timer":
             node_name = nodes.get((pid, timers.get((pid, owner), 0)), "")
@@ -116,10 +118,10 @@ def build_callback_identities(
             node_handle, service_name = services.get((pid, owner), (0, ""))
             node_name = nodes.get((pid, node_handle), "")
         symbol = symbols.get(key, "")
-        infrastructure = (
-            "rclcpp::ParameterService" in symbol
-            or topic_name in {"/parameter_events", "/rosout"}
-        )
+        infrastructure = "rclcpp::ParameterService" in symbol or topic_name in {
+            "/parameter_events",
+            "/rosout",
+        }
         identities[key] = CallbackIdentity(
             pid=pid,
             callback_handle=callback,

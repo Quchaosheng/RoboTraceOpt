@@ -22,8 +22,7 @@ def prediction(
         confidence=confidence,
         completeness=1.0,
         candidates=tuple(
-            CandidateDiagnosis(cause_id, "fixture", 1.0, "valid")
-            for cause_id in causes
+            CandidateDiagnosis(cause_id, "fixture", 1.0, "valid") for cause_id in causes
         ),
         reason_codes=("fixture",),
         scoring_profile_id="calibration-v1",
@@ -123,11 +122,7 @@ class PartitionIsolationTest(unittest.TestCase):
 
     def test_accepts_disjoint_role_correct_partitions(self) -> None:
         validate_partition_isolation(
-            [
-                DiagnosisOracle(
-                    "cal-1", "cause-a", False, "calibration", "cal-session"
-                )
-            ],
+            [DiagnosisOracle("cal-1", "cause-a", False, "calibration", "cal-session")],
             [DiagnosisOracle("test-1", "cause-a", False, "test", "test-session")],
         )
 
@@ -135,9 +130,7 @@ class PartitionIsolationTest(unittest.TestCase):
         calibration = [
             DiagnosisOracle("cal-1", "cause-a", False, "calibration", "same-session")
         ]
-        test = [
-            DiagnosisOracle("test-1", "cause-a", False, "test", "same-session")
-        ]
+        test = [DiagnosisOracle("test-1", "cause-a", False, "test", "same-session")]
 
         with self.assertRaisesRegex(ValueError, "session overlap"):
             validate_partition_isolation(calibration, test)

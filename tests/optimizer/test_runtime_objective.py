@@ -3,7 +3,9 @@ import unittest
 from optimizer.objectives.runtime_objective import runtime_objective
 
 
-def report(*, value: float = 100.0, complete_rate: float = 1.0, development: bool = False):
+def report(
+    *, value: float = 100.0, complete_rate: float = 1.0, development: bool = False
+):
     return {
         "schema_version": "service-blocking-evidence/v1",
         "development_only": development,
@@ -37,14 +39,18 @@ class RuntimeObjectiveTest(unittest.TestCase):
         del source["complete_trace_rate"]
         source["complete_trace_count"] = 8
         source["observed_trace_count"] = 10
-        objective = runtime_objective(source, metric="request_response_elapsed_ns", quantile="p95")
+        objective = runtime_objective(
+            source, metric="request_response_elapsed_ns", quantile="p95"
+        )
         self.assertEqual(objective["complete_trace_rate"], 0.8)
 
     def test_rejects_missing_or_invalid_measurements(self) -> None:
         broken = report()
         del broken["metrics_ns"]["request_response_elapsed_ns"]["p95"]
         with self.assertRaisesRegex(ValueError, "p95"):
-            runtime_objective(broken, metric="request_response_elapsed_ns", quantile="p95")
+            runtime_objective(
+                broken, metric="request_response_elapsed_ns", quantile="p95"
+            )
         with self.assertRaisesRegex(ValueError, "complete_trace_rate"):
             runtime_objective(
                 report(complete_rate=1.1),

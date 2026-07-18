@@ -141,7 +141,9 @@ class ScoringProfileTest(unittest.TestCase):
                 }
             )
 
-    def test_rejects_nonpositive_metric_values_and_out_of_range_completeness(self) -> None:
+    def test_rejects_nonpositive_metric_values_and_out_of_range_completeness(
+        self,
+    ) -> None:
         base = {
             "schema_version": "diagnosis-scoring/v1",
             "profile_id": "synthetic-calibration-v1",
@@ -181,7 +183,9 @@ class ScoringProfileTest(unittest.TestCase):
 
 
 class InferenceTest(unittest.TestCase):
-    def test_diagnoses_supported_application_delay_and_materializes_audit_edge(self) -> None:
+    def test_diagnoses_supported_application_delay_and_materializes_audit_edge(
+        self,
+    ) -> None:
         graph = graph_with_trace()
         graph.add_node(
             EvidenceNode(
@@ -214,6 +218,7 @@ class InferenceTest(unittest.TestCase):
                 for edge in graph.edges
             )
         )
+
     def test_abstains_when_top_candidates_are_not_separated(self) -> None:
         graph = graph_with_trace()
         graph.add_node(
@@ -238,8 +243,12 @@ class InferenceTest(unittest.TestCase):
             "trace-1",
             profile(("syscall_block_ns", "off_cpu_ns"), minimum_margin=0.5),
             {
-                NodeType.SYSCALL_INTERVAL: EvidenceAvailability("valid", "ebpf_complete"),
-                NodeType.SCHEDULING_INTERVAL: EvidenceAvailability("valid", "ebpf_complete"),
+                NodeType.SYSCALL_INTERVAL: EvidenceAvailability(
+                    "valid", "ebpf_complete"
+                ),
+                NodeType.SCHEDULING_INTERVAL: EvidenceAvailability(
+                    "valid", "ebpf_complete"
+                ),
             },
         )
 
@@ -253,7 +262,11 @@ class InferenceTest(unittest.TestCase):
             graph,
             "trace-1",
             profile(("syscall_block_ns",), minimum_completeness=1.0),
-            {NodeType.SYSCALL_INTERVAL: EvidenceAvailability("partial", "capture_truncated")},
+            {
+                NodeType.SYSCALL_INTERVAL: EvidenceAvailability(
+                    "partial", "capture_truncated"
+                )
+            },
         )
 
         self.assertEqual(result.status, "abstained")
@@ -360,8 +373,12 @@ class InferenceTest(unittest.TestCase):
             "trace-1",
             profile(("planner_compute_ns", "off_cpu_ns")),
             {
-                NodeType.STAGE_WINDOW: EvidenceAvailability("valid", "runtime_complete"),
-                NodeType.SCHEDULING_INTERVAL: EvidenceAvailability("valid", "ebpf_complete"),
+                NodeType.STAGE_WINDOW: EvidenceAvailability(
+                    "valid", "runtime_complete"
+                ),
+                NodeType.SCHEDULING_INTERVAL: EvidenceAvailability(
+                    "valid", "ebpf_complete"
+                ),
             },
         )
 

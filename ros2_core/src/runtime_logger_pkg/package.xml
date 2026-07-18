@@ -3,8 +3,8 @@
   <name>runtime_logger_pkg</name>
   <version>0.0.1</version>
   <description>RuntimeEvent JSONL logger for AI Robotics Runtime.</description>
-  <maintainer email="todo@example.com">todo</maintainer>
-  <license>TODO</license>
+  <maintainer email="Quchaosheng@users.noreply.github.com">Quchaosheng</maintainer>
+  <license>Apache-2.0</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 

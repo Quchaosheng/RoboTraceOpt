@@ -80,7 +80,9 @@ def adapt_jsonl(
                 )
             )
         except (json.JSONDecodeError, TypeError, ValueError) as error:
-            raise ValueError(f"invalid legacy RuntimeEvent at line {line_number}: {error}") from error
+            raise ValueError(
+                f"invalid legacy RuntimeEvent at line {line_number}: {error}"
+            ) from error
     return events
 
 
@@ -104,7 +106,9 @@ def main() -> int:
     args.output.parent.mkdir(parents=True, exist_ok=True)
     with args.output.open("w", encoding="utf-8") as handle:
         for event in events:
-            handle.write(json.dumps(event, ensure_ascii=False, separators=(",", ":")) + "\n")
+            handle.write(
+                json.dumps(event, ensure_ascii=False, separators=(",", ":")) + "\n"
+            )
     return 0
 
 

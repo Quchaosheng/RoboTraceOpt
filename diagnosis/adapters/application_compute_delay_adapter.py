@@ -44,9 +44,7 @@ def derive_application_compute_delay_evidence(
     ):
         raise ValueError("all source file paths are required")
 
-    variant, injection, reason_code = _validate_manifests(
-        run_manifest, oracle_manifest
-    )
+    variant, injection, reason_code = _validate_manifests(run_manifest, oracle_manifest)
     records = list(runtime_records)
     report: dict[str, Any] = {
         "schema_version": "application-compute-delay-evidence/v1",
@@ -86,7 +84,9 @@ def derive_application_compute_delay_evidence(
     metric_values: dict[str, list[int]] = {metric: [] for metric in METRICS}
     valid_rows: list[tuple[int, str, NormalizedEvent]] = []
     for trace_id, trace_events in by_trace.items():
-        missing = [event_name for event_name in EVENTS if event_name not in trace_events]
+        missing = [
+            event_name for event_name in EVENTS if event_name not in trace_events
+        ]
         if missing:
             missing_counts.update(missing)
             continue
@@ -96,26 +96,20 @@ def derive_application_compute_delay_evidence(
         if len(host_ids) != 1 or None in host_ids or clock_ids != {"monotonic"}:
             invalid_reasons["clock_or_host_mismatch"] += 1
             continue
-        sequence_ids = {
-            record.get("sequence_id") for record in event_records.values()
-        }
+        sequence_ids = {record.get("sequence_id") for record in event_records.values()}
         if len(sequence_ids) != 1 or not _integer(next(iter(sequence_ids))):
             invalid_reasons["trace_identity_mismatch"] += 1
             continue
-        timestamps = {
-            name: event_records[name].get("timestamp_ns") for name in EVENTS
-        }
+        timestamps = {name: event_records[name].get("timestamp_ns") for name in EVENTS}
         if any(not _integer(value) for value in timestamps.values()):
             invalid_reasons["invalid_timestamp"] += 1
             continue
         values = {
             "planner_processing_elapsed_ns": (
-                timestamps["planner_process_end"]
-                - timestamps["planner_process_start"]
+                timestamps["planner_process_end"] - timestamps["planner_process_start"]
             ),
             "camera_to_planner_publish_upper_bound_ns": (
-                timestamps["planner_publish"]
-                - timestamps["camera_frame_published"]
+                timestamps["planner_publish"] - timestamps["camera_frame_published"]
             ),
         }
         if any(value < 0 for value in values.values()):
@@ -151,16 +145,12 @@ def derive_application_compute_delay_evidence(
             provenance={
                 "adapter": "application_compute_delay_v1",
                 "runtime_source_file": runtime_source_file,
-                "record_indices": {
-                    name: trace_events[name][0] for name in EVENTS
-                },
+                "record_indices": {name: trace_events[name][0] for name in EVENTS},
                 "run_manifest_source_file": run_manifest_source_file,
                 "oracle_manifest_source_file": oracle_manifest_source_file,
             },
         )
-        valid_rows.append(
-            (int(timestamps["planner_process_start"]), trace_id, event)
-        )
+        valid_rows.append((int(timestamps["planner_process_start"]), trace_id, event))
         for metric, value in values.items():
             metric_values[metric].append(value)
 
@@ -201,9 +191,17 @@ def _validate_manifests(
         run.get(field) != oracle.get(field)
         for field in ("condition_id", "session_id", "dataset_role")
     ):
-        return str(oracle.get("condition_variant", "")), {}, "run_oracle_identity_mismatch"
+        return (
+            str(oracle.get("condition_variant", "")),
+            {},
+            "run_oracle_identity_mismatch",
+        )
     if run.get("dataset_role") != "development":
-        return str(oracle.get("condition_variant", "")), {}, "development_partition_required"
+        return (
+            str(oracle.get("condition_variant", "")),
+            {},
+            "development_partition_required",
+        )
     if run.get("workload") != "w1" or oracle.get("fault_id") != "F1":
         return str(oracle.get("condition_variant", "")), {}, "invalid_f1_profile"
     variant = oracle.get("condition_variant")
