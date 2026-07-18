@@ -63,3 +63,12 @@ adapter 使用 `clock.value * 1e9 / frequency` 生成 NormalizedEvent `timestamp
 - 隔离 overlay 是 WSL 开发补救，不代表原生 x86 或 RK3568 默认可用；
 - 当前只完成事件归一化，没有完成 node handle、callback、publisher/subscription 到 trace/stage 的关联；
 - 正式实验必须重新采集、生成 run manifest，并记录 provider 版本与 clock metadata。
+
+## Formal-session export boundary
+
+The bounded fixture exporter remains for small public regression fixtures.
+Formal F2/F3/F5 fault cases instead call `scripts/export_ros2_trace.py` after
+the CTF session stops. That command performs a full ROS 2 trace export for the
+frozen event allowlist, rejects missing fault-specific event categories, and
+records the CTF directory hash, host, clock classes, and event counts. Both the
+CTF directory and exported JSONL are required by `artifact_manifest.json`.

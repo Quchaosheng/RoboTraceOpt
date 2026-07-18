@@ -34,6 +34,19 @@ formal W1 eBPF fixture: blocked on native x86 or RK3568 run
 The collector and adapter reject this condition instead of matching by
 `comm` or emitting invented identities.
 
+## Formal fault-runner integration
+
+`scripts/run_fault_condition.py` invokes the existing collector for F3/F4
+after a live `process-manifest/v2` has been captured. The identity status must
+be `comparable`, at least one second must remain in the measurement window,
+and F3 must produce scheduler events while F4 must produce syscall events.
+The collector JSONL and summary are required roles in
+`artifact_manifest.json`; a failure or missing role prevents the fault case
+from becoming successful.
+
+This wiring is capture readiness, not a native-Linux or X5 result. WSL identity
+remains non-comparable where described above.
+
 ## Reproduction on a comparable host
 
 Run W1 long enough to capture a live v2 process manifest, then invoke:
