@@ -140,6 +140,50 @@ class SessionManifestTest(unittest.TestCase):
         self.assertEqual(pilot["expected_report"], "summary.json")
         self.assertEqual(pilot["role_evidence_path"], "run_manifest.json")
         self.assertEqual(pilot["expected_child_dataset_role"], "development")
+        self.assertEqual(
+            pilot["expected_artifact_manifest"], "artifact_manifest.json"
+        )
+        self.assertEqual(
+            pilot["expected_artifact_identity"],
+            {
+                "fault_id": "F3",
+                "condition_variant": "injected",
+                "dataset_role": "development",
+            },
+        )
+        self.assertEqual(
+            test["expected_artifact_identity"]["dataset_role"], "test"
+        )
+
+    def test_session_rows_freeze_fault_artifact_identity_only(self):
+        manifest = build(
+            MATRIX,
+            ["diagnosis_f1_control", "optimization_executor"],
+            role="test",
+        )
+        fault = next(
+            row for row in manifest["runs"] if row["runner_id"] == "fault_condition"
+        )
+        optimization = next(
+            row
+            for row in manifest["runs"]
+            if row["runner_id"] == "repeated_optimization"
+        )
+
+        self.assertEqual(
+            fault["expected_artifact_manifest"],
+            f"{fault['output_dir']}/artifact_manifest.json",
+        )
+        self.assertEqual(
+            fault["expected_artifact_identity"],
+            {
+                "fault_id": "F1",
+                "condition_variant": "control",
+                "dataset_role": "test",
+            },
+        )
+        self.assertNotIn("expected_artifact_manifest", optimization)
+        self.assertNotIn("expected_artifact_identity", optimization)
 
     def test_formal_optimization_command_contains_frozen_policy(self):
         case = next(row for row in MATRIX["cases"] if row["case_id"] == "optimization_executor")
