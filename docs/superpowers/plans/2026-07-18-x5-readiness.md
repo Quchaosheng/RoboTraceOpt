@@ -76,7 +76,7 @@
 - Create: `reporting/__init__.py`
 - Create: `reporting/experiment_report.py`
 - Create: `scripts/generate_experiment_report.py`
-- Create: `tests/reporting/test_experiment_report.py`
+- Create: `tests/report_projection/test_experiment_report.py`
 - Create: `docs/hardware/X5_RUNBOOK.md`
 - Modify: `README.md`
 
