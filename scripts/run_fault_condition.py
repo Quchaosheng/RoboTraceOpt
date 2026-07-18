@@ -79,7 +79,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--safe-root",
         type=Path,
-        default=Path.home() / ".cache" / "robotracert_fusion_build",
+        default=Path.home() / ".cache" / "robotraceopt_build",
     )
     parser.add_argument(
         "--tracing-overlay-root",

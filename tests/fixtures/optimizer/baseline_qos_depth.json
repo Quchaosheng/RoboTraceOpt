@@ -1,0 +1,7 @@
+{
+  "schema_version": "optimization-baseline-profile/v1",
+  "cause_id": "dds_communication_delay",
+  "baseline_config": {
+    "frame_qos_depth": 10
+  }
+}

@@ -5,11 +5,14 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 WORKSPACE_ROOT="${PROJECT_ROOT}/ros2_core"
 
-SAFE_ROOT="${ROS2_RUNTIME_SAFE_ROOT:-${HOME}/.cache/robotracert_fusion_build}"
+SAFE_ROOT="${ROS2_RUNTIME_SAFE_ROOT:-${HOME}/.cache/robotraceopt_build}"
 SAFE_WS="${SAFE_ROOT}/ws"
 BUILD_BASE="${SAFE_ROOT}/build"
 INSTALL_BASE="${SAFE_ROOT}/install"
 LOG_BASE="${SAFE_ROOT}/log"
+WORKSPACE_MARKER="${SAFE_ROOT}/workspace_root"
+CURRENT_WORKSPACE="$(realpath "${WORKSPACE_ROOT}")"
+CACHED_WORKSPACE=""
 
 if [[ -f /opt/ros/humble/setup.bash ]]; then
   set +u
@@ -22,6 +25,13 @@ else
 fi
 
 mkdir -p "${SAFE_ROOT}"
+if [[ -f "${WORKSPACE_MARKER}" ]]; then
+  CACHED_WORKSPACE="$(cat "${WORKSPACE_MARKER}")"
+fi
+if [[ ! -f "${WORKSPACE_MARKER}" ]] || [[ "${CACHED_WORKSPACE}" != "${CURRENT_WORKSPACE}" ]]; then
+  rm -rf -- "${BUILD_BASE}" "${INSTALL_BASE}"
+fi
+printf '%s\n' "${CURRENT_WORKSPACE}" > "${WORKSPACE_MARKER}"
 ln -sfn "${WORKSPACE_ROOT}" "${SAFE_WS}"
 
 cd "${SAFE_WS}"
