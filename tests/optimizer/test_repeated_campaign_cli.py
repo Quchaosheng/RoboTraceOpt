@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scripts.run_repeated_optimization_campaign import run_repeated_campaign
+from scripts.run_repeated_optimization_campaign import _git_commit, run_repeated_campaign
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -50,6 +50,20 @@ def campaign_args(directory):
     }
 
 
+def qualification(role):
+    return {
+        "schema_version": "formal-experiment-qualification/v1",
+        "status": "allowed",
+        "dataset_role": role,
+        "formal_experiment_allowed": role == "test",
+        "platform_label": "x86-native",
+        "matrix_sha256": "a" * 64,
+        "capability_sha256": "b" * 64,
+        "git_commit": _git_commit(),
+        "git_status": "",
+    }
+
+
 def command_config(command):
     for argument, action in (
         ("--executor-threads", "executor_threads"),
@@ -82,6 +96,99 @@ def write_report(output, config, objective, rate=1.0):
 
 
 class RepeatedCampaignCliTest(unittest.TestCase):
+    def test_default_role_remains_pilot(self):
+        def execute(command):
+            config = command_config(command)
+            output = Path(command[command.index("--output-dir") + 1])
+            write_report(output, config, 100.0)
+            return 0
+
+        with tempfile.TemporaryDirectory() as directory:
+            args = campaign_args(directory)
+            summary = run_repeated_campaign(
+                diagnosis(), baseline(), **args, execute_trial=execute
+            )
+
+        self.assertEqual(summary["dataset_role"], "pilot")
+        self.assertTrue(summary["development_only"])
+        self.assertFalse(summary["formal_optimization_allowed"])
+
+    def test_qualified_roles_are_validated_before_output_creation(self):
+        calls = []
+        with tempfile.TemporaryDirectory() as directory:
+            args = campaign_args(directory)
+            with self.assertRaisesRegex(ValueError, "qualification report"):
+                run_repeated_campaign(
+                    diagnosis(),
+                    baseline(),
+                    **args,
+                    dataset_role="test",
+                    execute_trial=lambda command: calls.append(command) or 0,
+                )
+            self.assertFalse(args["output_dir"].exists())
+
+            mismatch = qualification("calibration")
+            with self.assertRaisesRegex(ValueError, "campaign role"):
+                run_repeated_campaign(
+                    diagnosis(),
+                    baseline(),
+                    **args,
+                    dataset_role="test",
+                    qualification_report=mismatch,
+                    execute_trial=lambda command: calls.append(command) or 0,
+                )
+            self.assertFalse(args["output_dir"].exists())
+        self.assertEqual(calls, [])
+
+    def test_test_and_calibration_metadata_propagates_to_all_artifacts(self):
+        def execute(command):
+            config = command_config(command)
+            output = Path(command[command.index("--output-dir") + 1])
+            write_report(output, config, 100.0)
+            return 0
+
+        with tempfile.TemporaryDirectory() as directory:
+            test_args = campaign_args(directory)
+            run_repeated_campaign(
+                diagnosis(),
+                baseline(),
+                **test_args,
+                dataset_role="test",
+                qualification_report=qualification("test"),
+                execute_trial=execute,
+            )
+            paths = [
+                test_args["output_dir"] / "campaign_manifest.json",
+                test_args["output_dir"] / "decision.json",
+                test_args["output_dir"] / "summary.json",
+                *test_args["output_dir"].glob("trials/**/trial_result.json"),
+                *test_args["output_dir"].glob("candidate_validations/*.json"),
+            ]
+            artifacts = [
+                json.loads(path.read_text(encoding="utf-8")) for path in paths
+            ]
+
+            calibration_args = campaign_args(directory)
+            calibration_args["output_dir"] = Path(directory) / "calibration"
+            calibration = run_repeated_campaign(
+                diagnosis(),
+                baseline(),
+                **calibration_args,
+                dataset_role="calibration",
+                qualification_report=qualification("calibration"),
+                execute_trial=execute,
+            )
+
+        self.assertTrue(artifacts)
+        self.assertTrue(all(row["dataset_role"] == "test" for row in artifacts))
+        self.assertTrue(
+            all(row["formal_optimization_allowed"] is True for row in artifacts)
+        )
+        self.assertTrue(all(row["development_only"] is False for row in artifacts))
+        self.assertEqual(calibration["dataset_role"], "calibration")
+        self.assertFalse(calibration["formal_optimization_allowed"])
+        self.assertFalse(calibration["development_only"])
+
     def test_public_docs_freeze_pilot_command_and_ignore_boundaries(self):
         optimizer_readme = (ROOT / "optimizer/README.md").read_text(
             encoding="utf-8"
