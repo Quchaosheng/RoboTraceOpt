@@ -253,3 +253,18 @@ the decision SHA-256 is
 `40a2394b765e739de24c8fa06ab63fe5a64798de6ff74f83e44cc4126ecadd94`.
 These pilot intervals characterize WSL variability and conservative rollback
 behavior only; they are not native-Linux or X5 optimization conclusions.
+## Qualified experiment sessions
+
+`run_repeated_optimization_campaign.py` remains pilot-compatible by default.
+Its `development` and `pilot` roles cannot set
+`formal_optimization_allowed=true`. A `calibration` or `test` campaign requires
+`--qualification-report`; the report must allow the same role, match the
+current Git commit, and contain the frozen matrix and capability hashes.
+
+Use `scripts/run_formal_experiment_session.py` as the public entry point for
+qualified native Linux or X5 work. It supplies the qualification record to the
+repeated runner, retains every failed trial, and keeps paired-bootstrap
+acceptance rules unchanged. `test` is the held-out formal partition;
+calibration output may inform a frozen protocol but is not a formal superiority
+claim. The outer session also supports explicit `--resume` without replacing a
+failed or interrupted campaign.

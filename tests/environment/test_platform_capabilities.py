@@ -66,6 +66,7 @@ class PlatformCapabilityTest(unittest.TestCase):
                 "can_utils": True,
                 "cpu_governor_visible": True,
                 "time_sync_reported": True,
+                "scheduling_tools": True,
             }
         )
 
@@ -73,6 +74,7 @@ class PlatformCapabilityTest(unittest.TestCase):
         self.assertEqual(readiness["ebpf"]["path"], "libbpf_core")
         self.assertEqual(readiness["ros2_tracing"]["status"], "ready")
         self.assertEqual(readiness["socketcan"]["status"], "ready")
+        self.assertEqual(readiness["scheduling_tools"]["status"], "ready")
 
     def test_reports_tracefs_only_instead_of_claiming_ebpf_support(self) -> None:
         readiness = classify_readiness(
@@ -86,6 +88,7 @@ class PlatformCapabilityTest(unittest.TestCase):
                 "can_utils": False,
                 "cpu_governor_visible": False,
                 "time_sync_reported": False,
+                "scheduling_tools": False,
             }
         )
 
@@ -94,6 +97,7 @@ class PlatformCapabilityTest(unittest.TestCase):
         self.assertEqual(readiness["ros2_tracing"]["status"], "blocked")
         self.assertEqual(readiness["socketcan"]["status"], "blocked")
         self.assertEqual(readiness["cross_host_clock"]["status"], "blocked")
+        self.assertEqual(readiness["scheduling_tools"]["status"], "blocked")
 
     def test_markdown_exposes_evidence_and_does_not_hide_blocked_checks(self) -> None:
         report = {

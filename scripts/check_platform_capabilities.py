@@ -207,6 +207,19 @@ def classify_readiness(checks: dict[str, bool]) -> dict[str, dict[str, str]]:
     else:
         clock = item("blocked", "not_verified", "No host synchronization status was available; cross-host timestamps are not comparable.")
 
+    if checks["scheduling_tools"]:
+        scheduling = item(
+            "ready",
+            "stress_ng_taskset",
+            "stress-ng and taskset are available.",
+        )
+    else:
+        scheduling = item(
+            "blocked",
+            "unavailable",
+            "Install stress-ng and util-linux before F3 execution.",
+        )
+
     return {
         "runtime_event": runtime,
         "ros2_tracing": tracing,
@@ -214,6 +227,7 @@ def classify_readiness(checks: dict[str, bool]) -> dict[str, dict[str, str]]:
         "socketcan": socketcan,
         "cpu_control": cpu,
         "cross_host_clock": clock,
+        "scheduling_tools": scheduling,
     }
 
 
@@ -261,6 +275,9 @@ def collect_capabilities(label: str, can_interface: str = "vcan0") -> dict[str, 
         "can_utils": can_utils,
         "cpu_governor_visible": bool(governors),
         "time_sync_reported": timedatectl_synced or chrony_reported,
+        "scheduling_tools": bool(
+            shutil.which("stress-ng") and shutil.which("taskset")
+        ),
     }
     readiness = classify_readiness(checks)
     is_wsl = "microsoft" in proc_version.lower() or bool(os.environ.get("WSL_INTEROP"))
@@ -321,6 +338,10 @@ def collect_capabilities(label: str, can_interface: str = "vcan0") -> dict[str, 
             "cpu": {
                 "lscpu": commands["lscpu"],
                 "governors": governors,
+            },
+            "scheduling": {
+                "stress_ng": shutil.which("stress-ng") or "",
+                "taskset": shutil.which("taskset") or "",
             },
             "clock": {
                 "clocksource_current": read_text(Path("/sys/devices/system/clocksource/clocksource0/current_clocksource")),
