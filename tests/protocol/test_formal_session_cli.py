@@ -5,6 +5,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from experiments.evidence_capture.artifact_manifest import build_artifact_manifest
 from experiments.protocol.matrix import load_experiment_matrix
 from scripts.run_formal_experiment_session import run_formal_session
 from scripts.run_repeated_optimization_campaign import _git_commit
@@ -83,7 +84,34 @@ def execute_success(command):
     child_role = command[command.index("--dataset-role") + 1]
     write_json(output / "summary.json", {"status": "completed"})
     write_json(output / "run_manifest.json", {"dataset_role": child_role})
+    if "--fault-id" in command:
+        write_fault_artifact_manifest(command)
     return 0
+
+
+def write_fault_artifact_manifest(command):
+    output = Path(command[command.index("--output-dir") + 1])
+    fault_id = command[command.index("--fault-id") + 1]
+    variant = command[command.index("--condition-variant") + 1]
+    child_role = command[command.index("--dataset-role") + 1]
+    paths = {
+        "runtime_events": output / "runtime_events.jsonl",
+        "run_manifest": output / "run_manifest.json",
+        "oracle_manifest": output / "oracle_manifest.json",
+        "command_manifest": output / "command.json",
+        "fault_summary": output / "summary.json",
+    }
+    paths["runtime_events"].write_text("{}\n", encoding="utf-8")
+    write_json(paths["oracle_manifest"], {"fault_id": fault_id})
+    write_json(paths["command_manifest"], {"argv": command})
+    value = build_artifact_manifest(
+        fault_id=fault_id,
+        condition_variant=variant,
+        dataset_role=child_role,
+        case_root=output,
+        artifacts=paths,
+    )
+    write_json(output / "artifact_manifest.json", value)
 
 
 def write_terminal(session_root, row):
@@ -106,6 +134,10 @@ def write_terminal(session_root, row):
         {"dataset_role": row["expected_child_dataset_role"]},
     )
     files = {started, report, role_file}
+    if "expected_artifact_manifest" in row:
+        command = row["argv"]
+        write_fault_artifact_manifest(command)
+        files.add(session_root / row["expected_artifact_manifest"])
     write_json(
         output / "case_result.json",
         {
@@ -186,6 +218,80 @@ class FormalSessionCliTest(unittest.TestCase):
         self.assertEqual(calls, [])
         self.assertEqual(summary["status"], "denied")
         self.assertFalse(summary["formal_experiment_allowed"])
+
+    def test_successful_fault_case_records_artifact_manifest(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            matrix = root / "matrix.json"
+            capabilities = root / "capabilities.json"
+            output = root / "session"
+            write_matrix(matrix, case_count=1)
+            write_capabilities(capabilities)
+
+            summary = run_formal_session(
+                matrix_path=matrix,
+                capability_path=capabilities,
+                selected_case_ids=["diagnosis_f1_control"],
+                dataset_role="pilot",
+                session_name="artifact_success",
+                seed=7,
+                output_dir=output,
+                safe_root=root / "build",
+                dry_run=False,
+                resume=False,
+                execute_case=execute_success,
+            )
+            result_path = next(output.glob("cases/*/case_result.json"))
+            result = json.loads(result_path.read_text(encoding="utf-8"))
+
+        self.assertEqual(summary["status"], "completed")
+        self.assertEqual(result["status"], "successful")
+        self.assertTrue(
+            any(row["path"].endswith("/artifact_manifest.json") for row in result["artifacts"])
+        )
+
+    def test_missing_or_tampered_fault_artifacts_fail_the_case(self):
+        def missing(command):
+            output = Path(command[command.index("--output-dir") + 1])
+            child_role = command[command.index("--dataset-role") + 1]
+            write_json(output / "summary.json", {"status": "completed"})
+            write_json(output / "run_manifest.json", {"dataset_role": child_role})
+            return 0
+
+        def tampered(command):
+            execute_success(command)
+            output = Path(command[command.index("--output-dir") + 1])
+            (output / "runtime_events.jsonl").write_text("[]\n", encoding="utf-8")
+            return 0
+
+        for executor, expected_reason in (
+            (missing, "artifact_manifest_missing"),
+            (tampered, "artifact_hash_mismatch"),
+        ):
+            with self.subTest(reason=expected_reason), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                matrix = root / "matrix.json"
+                capabilities = root / "capabilities.json"
+                output = root / "session"
+                write_matrix(matrix, case_count=1)
+                write_capabilities(capabilities)
+                run_formal_session(
+                    matrix_path=matrix,
+                    capability_path=capabilities,
+                    selected_case_ids=["diagnosis_f1_control"],
+                    dataset_role="pilot",
+                    session_name="artifact_failure",
+                    seed=7,
+                    output_dir=output,
+                    safe_root=root / "build",
+                    dry_run=False,
+                    resume=False,
+                    execute_case=executor,
+                )
+                result_path = next(output.glob("cases/*/case_result.json"))
+                result = json.loads(result_path.read_text(encoding="utf-8"))
+            self.assertEqual(result["status"], "failed")
+            self.assertEqual(result["reason_code"], expected_reason)
 
     def test_manifest_exists_before_execution_and_failure_does_not_abort(self):
         calls = []
@@ -364,6 +470,12 @@ class FormalSessionCliTest(unittest.TestCase):
             "--resume",
             "WSL",
             "X5",
+            "artifact_manifest.json",
+            "F3/F4",
+            "F2/F3/F5",
+            "comparable",
+            "full ROS 2 trace export",
+            "does not establish X5 measurement results",
         ):
             with self.subTest(expected=expected):
                 self.assertIn(expected, readme + optimizer_readme)

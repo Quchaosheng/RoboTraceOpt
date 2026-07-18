@@ -77,8 +77,7 @@ def build_session_manifest(
         position = str(row["position_index"])
         counts = position_counts[case["case_id"]]
         counts[position] += 1
-        runs.append(
-            {
+        run = {
                 "sequence_index": sequence,
                 "run_id": run_id,
                 "case_id": case["case_id"],
@@ -100,7 +99,14 @@ def build_session_manifest(
                     "expected_child_dataset_role"
                 ],
             }
-        )
+        if "expected_artifact_manifest" in invocation:
+            run["expected_artifact_manifest"] = (
+                relative_output / invocation["expected_artifact_manifest"]
+            ).as_posix()
+            run["expected_artifact_identity"] = dict(
+                invocation["expected_artifact_identity"]
+            )
+        runs.append(run)
 
     return {
         "schema_version": SESSION_SCHEMA,
