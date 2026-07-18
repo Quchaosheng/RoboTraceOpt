@@ -15,7 +15,10 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from optimizer.experiments.campaign_schedule import build_repeated_schedule  # noqa: E402
+from optimizer.experiments.campaign_schedule import (  # noqa: E402
+    build_repeated_schedule,
+    validate_campaign_parameters,
+)
 from optimizer.integration.closed_loop import (  # noqa: E402
     build_execution_schedule,
     validate_baseline_profile,
@@ -58,6 +61,9 @@ def run_repeated_campaign(
 ) -> dict[str, Any]:
     if output_dir.exists():
         raise ValueError(f"campaign output already exists: {output_dir}")
+    validate_campaign_parameters(
+        repetitions=repetitions, seed=seed, campaign_name=campaign_name
+    )
     _validate_parameters(
         duration_seconds=duration_seconds,
         confidence_level=confidence_level,
