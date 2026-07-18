@@ -100,6 +100,19 @@ class ExperimentReportTest(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "symlink"):
                 build_experiment_report(source)
 
+    def test_rejects_symlinked_source_directory_when_supported(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            target = Path(temporary_directory) / "evidence"
+            target.mkdir()
+            link = Path(temporary_directory) / "linked-evidence"
+            try:
+                link.symlink_to(target, target_is_directory=True)
+            except OSError:
+                self.skipTest("directory symlink creation is unavailable")
+
+            with self.assertRaisesRegex(ValueError, "symlink"):
+                build_experiment_report(link)
+
 
 if __name__ == "__main__":
     unittest.main()
