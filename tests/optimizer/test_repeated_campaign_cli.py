@@ -6,6 +6,9 @@ from pathlib import Path
 from scripts.run_repeated_optimization_campaign import run_repeated_campaign
 
 
+ROOT = Path(__file__).resolve().parents[2]
+
+
 def diagnosis(cause="executor_queueing", status="diagnosed"):
     return {
         "schema_version": "diagnosis-report/v1",
@@ -79,6 +82,19 @@ def write_report(output, config, objective, rate=1.0):
 
 
 class RepeatedCampaignCliTest(unittest.TestCase):
+    def test_public_docs_freeze_pilot_command_and_ignore_boundaries(self):
+        optimizer_readme = (ROOT / "optimizer/README.md").read_text(
+            encoding="utf-8"
+        )
+        ignore = (ROOT / ".gitignore").read_text(encoding="utf-8")
+
+        self.assertIn("--repetitions 5", optimizer_readme)
+        self.assertIn("--confidence-level 0.95", optimizer_readme)
+        self.assertIn("data/raw/optimization/pilot/", optimizer_readme)
+        for pattern in ("data/raw/", "data/processed/", "*.docx", "*.pdf", "*.zip"):
+            with self.subTest(pattern=pattern):
+                self.assertIn(pattern, ignore)
+
     def test_runs_manifest_order_and_selects_stable_candidate(self):
         calls = []
 
