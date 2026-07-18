@@ -98,6 +98,12 @@ def _fault_invocation(
         "expected_report": "summary.json",
         "role_evidence_path": "run_manifest.json",
         "expected_child_dataset_role": child_role,
+        "expected_artifact_manifest": "artifact_manifest.json",
+        "expected_artifact_identity": {
+            "fault_id": fault_id,
+            "condition_variant": parameters["condition_variant"],
+            "dataset_role": child_role,
+        },
     }
 
 
