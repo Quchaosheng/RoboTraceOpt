@@ -348,5 +348,36 @@ class FormalSessionCliTest(unittest.TestCase):
             self.assertEqual(marker.read_text(encoding="utf-8"), "keep")
 
 
+    def test_public_docs_freeze_readiness_commands_and_data_boundaries(self):
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        optimizer_readme = (ROOT / "optimizer/README.md").read_text(
+            encoding="utf-8"
+        )
+        ignore = (ROOT / ".gitignore").read_text(encoding="utf-8")
+
+        for expected in (
+            "scripts/check_platform_capabilities.py",
+            "scripts/run_formal_experiment_session.py",
+            "--dataset-role pilot",
+            "--dataset-role test",
+            "--dry-run",
+            "--resume",
+            "WSL",
+            "X5",
+        ):
+            with self.subTest(expected=expected):
+                self.assertIn(expected, readme + optimizer_readme)
+        for pattern in (
+            "data/raw/",
+            "data/processed/",
+            "data/reports/",
+            "*.docx",
+            "*.pdf",
+            "*.zip",
+        ):
+            with self.subTest(pattern=pattern):
+                self.assertIn(pattern, ignore)
+        self.assertIn("does not contain measurement evidence", readme)
+
 if __name__ == "__main__":
     unittest.main()

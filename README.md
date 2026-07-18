@@ -90,3 +90,59 @@ RoboTraceOpt consolidates engineering work from
 [ROS2Probe](https://github.com/Quchaosheng/ROS2Probe) and
 [RoboTraceRT](https://github.com/Quchaosheng/RoboTraceRT) into one maintained
 codebase.
+## Formal experiment readiness
+
+The formal-session protocol freezes selected Chapter 6 cases before any ROS 2
+process starts. Generate a read-only platform report after sourcing ROS 2 and
+the built workspace:
+
+```bash
+python3 scripts/check_platform_capabilities.py \
+  --label x86-wsl \
+  --output-json data/raw/environment/x86-wsl.json
+```
+
+Current WSL development can rehearse only the cases whose reported
+requirements are ready. This command writes a 42-run plan for F1, mock F6, and
+the two optimization campaigns without starting a workload:
+
+```bash
+python3 scripts/run_formal_experiment_session.py \
+  --matrix experiments/protocol/formal_experiment_matrix.json \
+  --capability-report data/raw/environment/x86-wsl.json \
+  --case diagnosis_f1_control \
+  --case diagnosis_f1_injected \
+  --case diagnosis_f6_control \
+  --case diagnosis_f6_injected \
+  --case optimization_executor \
+  --case optimization_qos \
+  --dataset-role pilot \
+  --session-name readiness_dry_run_20260718_01 \
+  --seed 20260718 \
+  --output-dir data/raw/experiments/pilot/readiness_dry_run_20260718_01 \
+  --dry-run
+```
+
+This dry-run does not contain measurement evidence. WSL is denied for
+`calibration` and held-out `test` roles even when individual tools appear
+available.
+
+On the actual X5, first generate a new report with `--label rdk-x5`. After the
+report allows every selected requirement and Git is clean, the held-out entry
+is:
+
+```bash
+python3 scripts/run_formal_experiment_session.py \
+  --matrix experiments/protocol/formal_experiment_matrix.json \
+  --capability-report data/raw/environment/rdk-x5.json \
+  --dataset-role test \
+  --session-name x5_test_01 \
+  --seed 20260718 \
+  --output-dir data/raw/experiments/test/x5_test_01
+```
+
+An interrupted session is continued with the same frozen arguments plus
+`--resume`. Resume verifies the manifest sidecar, matrix, capability report,
+Git commit, role, seed, and session name. Successful, failed, and interrupted
+cases are terminal and are never rerun in place; a new measurement attempt
+uses a new session name. Physical CAN is not part of this first formal matrix.
