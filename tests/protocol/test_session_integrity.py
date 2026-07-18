@@ -5,6 +5,7 @@ import unittest
 from copy import deepcopy
 from pathlib import Path
 
+from experiments.evidence_capture.artifact_manifest import build_artifact_manifest
 from experiments.protocol.session_integrity import (
     assess_session_integrity,
     mark_interrupted_runs,
@@ -176,6 +177,74 @@ class SessionIntegrityTest(unittest.TestCase):
             role_audit = assess_session_integrity(role_manifest, root)
         self.assertEqual(role_audit["status"], "invalid")
         self.assertIn("result_dataset_role_mismatch", role_audit["errors"])
+
+    def test_nested_fault_artifacts_are_revalidated_from_the_manifest(self):
+        value = manifest()
+        row = value["runs"][0]
+        value["runs"] = [row]
+        output_relative = row["output_dir"]
+        row["role_evidence_path"] = f"{output_relative}/run_manifest.json"
+        row["expected_child_dataset_role"] = "development"
+        row["expected_artifact_manifest"] = (
+            f"{output_relative}/artifact_manifest.json"
+        )
+        row["expected_artifact_identity"] = {
+            "fault_id": "F1",
+            "condition_variant": "control",
+            "dataset_role": "development",
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            output = root / output_relative
+            started = write_started(root, row)
+            summary = output / "summary.json"
+            run_manifest = output / "run_manifest.json"
+            runtime_events = output / "runtime_events.jsonl"
+            oracle = output / "oracle_manifest.json"
+            command = output / "command.json"
+            write_json(summary, {"status": "completed"})
+            write_json(run_manifest, {"dataset_role": "development"})
+            runtime_events.write_text("{}\n", encoding="utf-8")
+            write_json(oracle, {"fault_id": "F1"})
+            write_json(command, {"argv": ["test"]})
+            child_manifest = build_artifact_manifest(
+                fault_id="F1",
+                condition_variant="control",
+                dataset_role="development",
+                case_root=output,
+                artifacts={
+                    "runtime_events": runtime_events,
+                    "run_manifest": run_manifest,
+                    "oracle_manifest": oracle,
+                    "command_manifest": command,
+                    "fault_summary": summary,
+                },
+            )
+            child_manifest_path = output / "artifact_manifest.json"
+            write_json(child_manifest_path, child_manifest)
+            write_json(
+                output / "case_result.json",
+                {
+                    "schema_version": "formal-experiment-case-result/v1",
+                    "run_id": row["run_id"],
+                    "dataset_role": "pilot",
+                    "status": "successful",
+                    "reason_code": "",
+                    "return_code": 0,
+                    "artifacts": [
+                        artifact(root, path)
+                        for path in (started, summary, run_manifest, child_manifest_path)
+                    ],
+                },
+            )
+
+            before = assess_session_integrity(value, root)
+            runtime_events.write_text("[]\n", encoding="utf-8")
+            after = assess_session_integrity(value, root)
+
+        self.assertEqual(before["status"], "complete")
+        self.assertEqual(after["status"], "invalid")
+        self.assertIn("nested_artifact_hash_mismatch", after["errors"])
 
 
 if __name__ == "__main__":
