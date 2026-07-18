@@ -88,10 +88,14 @@ def require_capabilities(
     required = set(spec.required_capabilities)
     if spec.fault_id != "F6" and f6_transport_profile != "mock":
         raise ValueError("F6 transport profile is only valid for F6")
-    if spec.fault_id == "F6" and f6_transport_profile == "vcan":
+    if spec.fault_id == "F6" and f6_transport_profile in {"vcan", "physical"}:
         if dataset_role != "development":
-            raise ValueError("F6 vcan transport profile is development-only")
-        required.add("socketcan_vcan")
+            raise ValueError(
+                f"F6 {f6_transport_profile} transport profile is development-only"
+            )
+        required.add(
+            "socketcan_vcan" if f6_transport_profile == "vcan" else "socketcan_physical"
+        )
     missing = sorted(required - set(available))
     if missing:
         raise ValueError(f"missing required capabilities: {', '.join(missing)}")
@@ -104,6 +108,9 @@ def build_launch_command(
     condition_variant: str = "injected",
     target_cpu: int | None = None,
     f6_transport_profile: str = "mock",
+    f6_can_interface: str | None = None,
+    f6_responder_interface: str | None = None,
+    f6_bitrate: int | None = None,
 ) -> list[str]:
     if spec.implementation_status != "ready":
         raise ValueError(
@@ -215,7 +222,12 @@ def build_launch_command(
         ]
     if spec.fault_id == "F6":
         injection = materialize_f6_injection(
-            spec, condition_variant, f6_transport_profile
+            spec,
+            condition_variant,
+            f6_transport_profile,
+            can_interface=f6_can_interface,
+            responder_interface=f6_responder_interface,
+            bitrate=f6_bitrate,
         )
         command = [
             "ros2",

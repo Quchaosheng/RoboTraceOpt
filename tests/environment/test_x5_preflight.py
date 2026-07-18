@@ -78,9 +78,7 @@ class X5PreflightTest(unittest.TestCase):
 
     def test_physical_mode_requires_distinct_real_can_links(self) -> None:
         report = capability_report()
-        report["evidence"]["can"]["interfaces"][1]["linkinfo"]["info_kind"] = (
-            "vcan"
-        )
+        report["evidence"]["can"]["interfaces"][1]["linkinfo"]["info_kind"] = "vcan"
 
         result = evaluate_x5_readiness(
             report,

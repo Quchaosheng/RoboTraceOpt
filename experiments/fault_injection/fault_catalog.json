@@ -107,6 +107,18 @@
           "responder_delay_ms": 5,
           "injected_responder_policy": "drop",
           "control_responder_policy": "echo"
+        },
+        "physical_profile": {
+          "transport_profile": "physical",
+          "ack_mode": "socketcan",
+          "mock_mode": false,
+          "can_interface": "can0",
+          "responder_interface": "can1",
+          "bitrate": 500000,
+          "ack_can_id_offset": 128,
+          "responder_delay_ms": 5,
+          "injected_responder_policy": "drop",
+          "control_responder_policy": "echo"
         }
       }
     }
