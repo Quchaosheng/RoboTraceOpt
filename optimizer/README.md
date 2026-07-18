@@ -131,11 +131,33 @@ python3 scripts/run_closed_loop_optimization.py \
   --baseline-profile tests/fixtures/optimizer/baseline_executor_threads.json \
   --strategy guided \
   --budget 4 \
-  --seed 20260717 \
+  --seed 20260718 \
   --duration-seconds 8 \
   --minimum-confidence 0.6 \
-  --output-dir data/raw/optimization/development/executor_closed_loop_20260718_01
+  --output-dir data/raw/optimization/development/executor_closed_loop_20260718_02
 ```
+
+The retained Executor closed-loop run at commit `9defdc1` validated all three
+nonbaseline candidates. Its p95 dispatch upper bound was 19.283 ms for the
+one-thread baseline and 51.571, 60.551, and 67.635 ms for two, three, and four
+threads. The decision therefore rejected every candidate and restored
+`executor_threads=1`. The summary SHA-256 is
+`f5020ba649bbde56f1de8a5359822f2bf056eb6e66f3e2e2767eaca613e86619`;
+the decision SHA-256 is
+`7ed2c5ffef0936e29f3993bfca3e1fdfde02f07005acd60fe060bba957ac2ed9`.
+An earlier `_01` run is retained locally as invalid development evidence: its
+ROS build cache still referred to another worktree, so the requested candidate
+thread counts did not reach the installed launch file and no candidate report
+was accepted.
+
+The retained QoS closed-loop run used the same commit and seed. Its depth-10
+baseline measured 0.811 ms p95, while depths 1, 4, and 7 measured 0.901, 0.939,
+and 0.904 ms. All candidate reports were valid, but none improved the primary
+objective, so the decision restored `frame_qos_depth=10`. The summary SHA-256
+is `f8fb0dcd3912b821268345b6cd7cc20aa1a5e19d35204a5b9df71355fa63a45e`;
+the decision SHA-256 is
+`3a191c0af627744756701b6bd8198c49ca2889a64ea137830750a8062292ea35`.
+Both runs are development-only WSL measurements, not general tuning claims.
 
 The committed diagnosis fixtures are synthetic orchestration inputs. They
 carry no oracle fields and do not provide diagnosis-accuracy evidence. The
