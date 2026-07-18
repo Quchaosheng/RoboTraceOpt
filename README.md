@@ -127,6 +127,28 @@ This dry-run does not contain measurement evidence. WSL is denied for
 `calibration` and held-out `test` roles even when individual tools appear
 available.
 
+### Fault evidence commit point
+
+A successful formal fault case writes `artifact_manifest.json` last. The
+manifest names the required RuntimeEvent, run/oracle/command, identity,
+tracing, eBPF, scheduler, and summary artifacts for that fault and records a
+SHA-256 for every file or CTF directory. The outer session verifies this
+manifest before accepting the case and revalidates its nested artifacts during
+every integrity reconstruction. A missing or changed artifact makes the case
+failed or the session invalid; it is preserved and is never silently replaced.
+
+F3/F4 now invoke the eBPF collector during the workload window instead of only
+checking that the tool is installed. Capture starts only when the live
+`process-manifest/v2` reports `ebpf_identity_status=comparable`; the runner
+does not match tasks by process name as a fallback. F2/F3/F5 perform a full ROS 2 trace export
+after CTF capture, retaining every selected event rather
+than the bounded sampling used by public fixtures.
+
+This integration closes the evidence contract but does not establish X5 measurement results.
+WSL dry-runs and synthetic tests remain readiness checks;
+formal conclusions still require a qualified native Linux or X5 `test`
+session with real artifacts.
+
 On the actual X5, first generate a new report with `--label rdk-x5`. After the
 report allows every selected requirement and Git is clean, the held-out entry
 is:
