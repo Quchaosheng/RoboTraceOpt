@@ -2,6 +2,8 @@ import json
 import unittest
 from pathlib import Path
 
+from scripts.run_closed_loop_optimization import build_trial_invocation
+from scripts.run_optimization_trial import _trial_evidence
 from optimizer.trials.runtime_trial import (
     build_trial_command,
     build_trial_manifest,
@@ -51,6 +53,38 @@ class RuntimeTrialTest(unittest.TestCase):
         self.assertFalse(manifest["formal_optimization_allowed"])
         self.assertEqual(manifest["candidate_config"], {"planner_delay_ms": 25})
 
+    def test_builds_test_trial_manifest_and_invocation(self) -> None:
+        manifest = build_trial_manifest(
+            cause_id="executor_queueing",
+            candidate_config={"executor_threads": 2},
+            trial_id="formal-executor",
+            strategy="guided",
+            seed=7,
+            git_commit="a" * 40,
+            command=["ros2", "launch"],
+            dataset_role="test",
+        )
+        command = build_trial_invocation(
+            trial_id="formal-executor",
+            strategy="guided",
+            seed=7,
+            cause_id="executor_queueing",
+            candidate_config={"executor_threads": 2},
+            duration_seconds=8,
+            output_dir=Path("trial"),
+            safe_root=Path("build"),
+            dataset_role="test",
+            qualification_path=Path("qualification.json"),
+        )
+
+        self.assertEqual(manifest["dataset_role"], "test")
+        self.assertFalse(manifest["development_only"])
+        self.assertTrue(manifest["formal_optimization_allowed"])
+        self.assertEqual(command[command.index("--dataset-role") + 1], "test")
+        self.assertEqual(
+            command[command.index("--qualification-report") + 1],
+            "qualification.json",
+        )
     def test_manifest_accepts_unguided_and_rejects_unknown_strategy(self) -> None:
         manifest = build_trial_manifest(
             cause_id="dds_communication_delay",
@@ -73,6 +107,28 @@ class RuntimeTrialTest(unittest.TestCase):
                 command=["ros2"],
             )
 
+    def test_trial_evidence_requires_qualification_for_test_role(self) -> None:
+        pilot = _trial_evidence("pilot", None, "a" * 40)
+        qualification = {
+            "schema_version": "formal-experiment-qualification/v1",
+            "status": "allowed",
+            "dataset_role": "test",
+            "formal_experiment_allowed": True,
+            "matrix_sha256": "b" * 64,
+            "capability_sha256": "c" * 64,
+            "git_commit": "a" * 40,
+            "git_status": "",
+        }
+        formal = _trial_evidence("test", qualification, "a" * 40)
+
+        self.assertEqual(pilot["dataset_role"], "pilot")
+        self.assertTrue(pilot["development_only"])
+        self.assertFalse(pilot["formal_optimization_allowed"])
+        self.assertEqual(formal["dataset_role"], "test")
+        self.assertFalse(formal["development_only"])
+        self.assertTrue(formal["formal_optimization_allowed"])
+        with self.assertRaisesRegex(ValueError, "qualification"):
+            _trial_evidence("test", None, "a" * 40)
     def test_builds_arbitrary_f4_candidate_command(self) -> None:
         command = build_trial_command(
             "blocking_syscall_io", {"server_delay_ms": 50}, Path("events.jsonl")

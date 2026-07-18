@@ -42,8 +42,10 @@ def build_trial_invocation(
     duration_seconds: int,
     output_dir: Path,
     safe_root: Path,
+    dataset_role: str = "development",
+    qualification_path: Path | None = None,
 ) -> list[str]:
-    return [
+    command = [
         sys.executable,
         str(ROOT / "scripts" / "run_optimization_trial.py"),
         "--trial-id",
@@ -52,6 +54,8 @@ def build_trial_invocation(
         strategy,
         "--seed",
         str(seed),
+        "--dataset-role",
+        dataset_role,
         *candidate_cli_arguments(cause_id, candidate_config),
         "--duration-seconds",
         str(duration_seconds),
@@ -60,6 +64,11 @@ def build_trial_invocation(
         "--safe-root",
         str(safe_root),
     ]
+    if dataset_role in {"calibration", "test"}:
+        if qualification_path is None:
+            raise ValueError("qualified trial requires qualification_path")
+        command.extend(["--qualification-report", str(qualification_path)])
+    return command
 
 
 def run_closed_loop(
