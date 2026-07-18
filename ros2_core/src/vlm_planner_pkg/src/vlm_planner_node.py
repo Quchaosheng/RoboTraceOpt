@@ -23,19 +23,29 @@ class VlmPlannerNode(Node):
         super().__init__("vlm_planner_node")
 
         self._planner_backend = (
-            self.declare_parameter("planner_backend", "mock").get_parameter_value().string_value
-        ).strip().lower() or "mock"
-        self._planner_mode = (
-            self.declare_parameter("planner_mode", "mock").get_parameter_value().string_value
-        )
-        self._planner_delay_ms = (
-            self.declare_parameter("planner_delay_ms", 50).get_parameter_value().integer_value
-        )
-        self._planner_delay_mode = (
-            self.declare_parameter("planner_delay_mode", "sleep")
+            self.declare_parameter("planner_backend", "mock")
             .get_parameter_value()
             .string_value
-        ).strip().lower()
+        ).strip().lower() or "mock"
+        self._planner_mode = (
+            self.declare_parameter("planner_mode", "mock")
+            .get_parameter_value()
+            .string_value
+        )
+        self._planner_delay_ms = (
+            self.declare_parameter("planner_delay_ms", 50)
+            .get_parameter_value()
+            .integer_value
+        )
+        self._planner_delay_mode = (
+            (
+                self.declare_parameter("planner_delay_mode", "sleep")
+                .get_parameter_value()
+                .string_value
+            )
+            .strip()
+            .lower()
+        )
         self._executor_contention_enabled = (
             self.declare_parameter("executor_contention_enabled", False)
             .get_parameter_value()
@@ -64,22 +74,32 @@ class VlmPlannerNode(Node):
             .bool_value
         )
         self._frame_qos_depth = int(
-            self.declare_parameter("frame_qos_depth", 10).get_parameter_value().integer_value
+            self.declare_parameter("frame_qos_depth", 10)
+            .get_parameter_value()
+            .integer_value
         )
         self._frame_qos_reliability = (
-            self.declare_parameter("frame_qos_reliability", "reliable")
-            .get_parameter_value()
-            .string_value
-        ).strip().lower()
+            (
+                self.declare_parameter("frame_qos_reliability", "reliable")
+                .get_parameter_value()
+                .string_value
+            )
+            .strip()
+            .lower()
+        )
         if self._frame_qos_depth <= 0:
             raise ValueError("frame_qos_depth must be positive")
         if self._frame_qos_reliability not in {"reliable", "best_effort"}:
             raise ValueError("frame_qos_reliability must be reliable or best_effort")
         self._llm_provider = (
-            self.declare_parameter("llm_provider", "openai_compatible")
-            .get_parameter_value()
-            .string_value
-        ).strip().lower()
+            (
+                self.declare_parameter("llm_provider", "openai_compatible")
+                .get_parameter_value()
+                .string_value
+            )
+            .strip()
+            .lower()
+        )
         self._llm_api_base = (
             self.declare_parameter("llm_api_base", os.environ.get("LLM_API_BASE", ""))
             .get_parameter_value()
@@ -96,10 +116,14 @@ class VlmPlannerNode(Node):
             .string_value
         )
         self._llm_timeout_s = (
-            self.declare_parameter("llm_timeout_s", 3.0).get_parameter_value().double_value
+            self.declare_parameter("llm_timeout_s", 3.0)
+            .get_parameter_value()
+            .double_value
         )
         self._fallback_to_mock = (
-            self.declare_parameter("fallback_to_mock", True).get_parameter_value().bool_value
+            self.declare_parameter("fallback_to_mock", True)
+            .get_parameter_value()
+            .bool_value
         )
 
         if self._planner_mode not in ("", "mock"):
@@ -185,7 +209,9 @@ class VlmPlannerNode(Node):
         )
 
         try:
-            decision, used_fallback, effective_backend, fallback_reason = self._plan(frame)
+            decision, used_fallback, effective_backend, fallback_reason = self._plan(
+                frame
+            )
         except Exception as exc:
             self.get_logger().error(f"planner backend failed without fallback: {exc}")
             return
@@ -314,7 +340,9 @@ class VlmPlannerNode(Node):
         fallback_reason: str = "",
         extra: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
-        startup_fallback = self._planner_backend != "mock" and self._active_backend == "mock"
+        startup_fallback = (
+            self._planner_backend != "mock" and self._active_backend == "mock"
+        )
         if startup_fallback:
             used_fallback = True
             fallback_reason = fallback_reason or self._startup_fallback_reason

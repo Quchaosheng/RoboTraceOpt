@@ -211,7 +211,10 @@ def _validate_structure(
     if camera_handle is None:
         return base, "camera_node_trace_not_observed"
     if planner_handle is None:
-        return {**base, "camera_node_handle": camera_handle}, "planner_node_trace_not_observed"
+        return {
+            **base,
+            "camera_node_handle": camera_handle,
+        }, "planner_node_trace_not_observed"
 
     publishers = _topic_endpoints(
         tracing_records,
@@ -249,13 +252,17 @@ def _validate_structure(
 
 
 def _single_process_pid(processes: Any, node: str) -> int | None:
-    matches = [
-        process.get("pid")
-        for process in processes
-        if isinstance(process, dict)
-        and process.get("node") == node
-        and _integer(process.get("pid"))
-    ] if isinstance(processes, list) else []
+    matches = (
+        [
+            process.get("pid")
+            for process in processes
+            if isinstance(process, dict)
+            and process.get("node") == node
+            and _integer(process.get("pid"))
+        ]
+        if isinstance(processes, list)
+        else []
+    )
     return int(matches[0]) if len(matches) == 1 else None
 
 
@@ -299,7 +306,10 @@ def _sequence_gap_count(records: dict[str, tuple[int, dict[str, Any]]]) -> int:
             if _integer(record.get("sequence_id"))
         }
     )
-    return sum(max(0, current - previous - 1) for previous, current in zip(sequence_ids, sequence_ids[1:]))
+    return sum(
+        max(0, current - previous - 1)
+        for previous, current in zip(sequence_ids, sequence_ids[1:])
+    )
 
 
 def _describe(values: list[int]) -> dict[str, float | int] | None:

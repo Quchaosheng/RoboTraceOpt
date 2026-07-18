@@ -46,8 +46,10 @@ class F5PressureComparisonTest(unittest.TestCase):
         self.assertEqual(comparison["sequence_gap_delta"], 0)
         self.assertEqual(
             comparison["depths"],
-            {"injected": {"publisher": 1, "subscriber": 1},
-             "control": {"publisher": 10, "subscriber": 10}},
+            {
+                "injected": {"publisher": 1, "subscriber": 1},
+                "control": {"publisher": 10, "subscriber": 10},
+            },
         )
 
     def test_rejects_a_non_depth_profile_difference(self) -> None:

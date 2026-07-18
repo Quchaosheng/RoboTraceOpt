@@ -40,11 +40,36 @@ class SocketCanResponderTest(unittest.TestCase):
 
     def test_rejects_invalid_frame_or_policy(self) -> None:
         cases = (
-            {"can_id": 0x0FF, "payload": b"", "policy": "echo", "ack_can_id_offset": 128},
-            {"can_id": 0x180, "payload": b"", "policy": "echo", "ack_can_id_offset": 128},
-            {"can_id": 0x123, "payload": b"123456789", "policy": "echo", "ack_can_id_offset": 128},
-            {"can_id": 0x123, "payload": b"", "policy": "success", "ack_can_id_offset": 128},
-            {"can_id": 0x123, "payload": b"", "policy": "echo", "ack_can_id_offset": 0x700},
+            {
+                "can_id": 0x0FF,
+                "payload": b"",
+                "policy": "echo",
+                "ack_can_id_offset": 128,
+            },
+            {
+                "can_id": 0x180,
+                "payload": b"",
+                "policy": "echo",
+                "ack_can_id_offset": 128,
+            },
+            {
+                "can_id": 0x123,
+                "payload": b"123456789",
+                "policy": "echo",
+                "ack_can_id_offset": 128,
+            },
+            {
+                "can_id": 0x123,
+                "payload": b"",
+                "policy": "success",
+                "ack_can_id_offset": 128,
+            },
+            {
+                "can_id": 0x123,
+                "payload": b"",
+                "policy": "echo",
+                "ack_can_id_offset": 0x700,
+            },
         )
         for values in cases:
             with self.subTest(values=values), self.assertRaises(ValueError):

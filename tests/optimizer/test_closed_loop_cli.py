@@ -37,9 +37,7 @@ def write_report(output: Path, objective: float) -> None:
                 "formal_inference_allowed": False,
                 "complete_trace_rate": 1.0,
                 "complete_trace_count": 2,
-                "metrics_ns": {
-                    "callback_dispatch_upper_bound_ns": {"p95": objective}
-                },
+                "metrics_ns": {"callback_dispatch_upper_bound_ns": {"p95": objective}},
             }
         ),
         encoding="utf-8",

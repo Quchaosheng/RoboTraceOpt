@@ -47,11 +47,11 @@ class F3PressureComparisonTest(unittest.TestCase):
 
         self.assertTrue(comparison["development_only"])
         self.assertFalse(comparison["formal_inference_allowed"])
-        self.assertEqual(comparison["complete_trace_rates"], {"injected": 0.8, "control": 0.8})
+        self.assertEqual(
+            comparison["complete_trace_rates"], {"injected": 0.8, "control": 0.8}
+        )
         for metric in METRICS:
-            self.assertEqual(
-                comparison["metrics_ns"][metric]["median"]["ratio"], 3.0
-            )
+            self.assertEqual(comparison["metrics_ns"][metric]["median"]["ratio"], 3.0)
 
     def test_rejects_a_non_matched_target_cpu(self) -> None:
         control = report("control")

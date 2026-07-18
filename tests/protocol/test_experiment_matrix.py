@@ -15,14 +15,10 @@ class ExperimentMatrixTest(unittest.TestCase):
     def test_public_matrix_freezes_diagnosis_and_optimization_cases(self):
         matrix = load_experiment_matrix(MATRIX)
 
-        self.assertEqual(
-            matrix["schema_version"], "formal-experiment-matrix/v1"
-        )
+        self.assertEqual(matrix["schema_version"], "formal-experiment-matrix/v1")
         self.assertEqual(len(matrix["cases"]), 14)
         fault_cases = [
-            row
-            for row in matrix["cases"]
-            if row["runner_id"] == "fault_condition"
+            row for row in matrix["cases"] if row["runner_id"] == "fault_condition"
         ]
         self.assertEqual(len(fault_cases), 12)
         self.assertEqual(
@@ -45,10 +41,7 @@ class ExperimentMatrixTest(unittest.TestCase):
             {"optimization_executor", "optimization_qos"},
         )
         self.assertEqual(
-            {
-                row["parameters"]["campaign_repetitions"]
-                for row in optimization_cases
-            },
+            {row["parameters"]["campaign_repetitions"] for row in optimization_cases},
             {20},
         )
 

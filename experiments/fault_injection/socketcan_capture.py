@@ -17,6 +17,10 @@ from experiments.fault_injection.scheduling_pressure import (
     start_isolated_process,
     stop_process,
 )
+from experiments.physical_can.interfaces import (
+    inspect_physical_can_pair,
+    validate_physical_can_pair,
+)
 
 
 INTERFACE_PATTERN = re.compile(r"^[A-Za-z0-9_.:-]+$")
@@ -39,6 +43,7 @@ class SocketCanCapture:
     candump_handle: TextIO
     interface_state: dict[str, Any]
     candump_identity: dict[str, Any]
+    interface_pair_before: dict[str, Any] | None
 
 
 def build_candump_command(interface: str) -> list[str]:
@@ -57,7 +62,7 @@ def build_responder_command(
         "-m",
         "experiments.fault_injection.socketcan_responder",
         "--interface",
-        str(profile["can_interface"]),
+        str(profile.get("responder_interface", profile["can_interface"])),
         "--policy",
         str(profile["responder_policy"]),
         "--ack-can-id-offset",
@@ -93,7 +98,11 @@ def wait_for_responder_ready(
         if path.is_file() and path.stat().st_size:
             records = _read_jsonl(path)
             ready = next(
-                (record for record in records if record.get("record_type") == "responder_ready"),
+                (
+                    record
+                    for record in records
+                    if record.get("record_type") == "responder_ready"
+                ),
                 None,
             )
             if ready is not None:
@@ -123,7 +132,11 @@ def capture_interface_state(interface: str) -> dict[str, Any]:
         records = json.loads(completed.stdout)
     except json.JSONDecodeError as error:
         raise RuntimeError("ip returned invalid JSON") from error
-    if not isinstance(records, list) or len(records) != 1 or not isinstance(records[0], dict):
+    if (
+        not isinstance(records, list)
+        or len(records) != 1
+        or not isinstance(records[0], dict)
+    ):
         raise RuntimeError(f"expected exactly one interface record for {interface}")
     record = records[0]
     if (
@@ -172,8 +185,19 @@ def start_socketcan_capture(
         if path.exists():
             raise ValueError(f"SocketCAN capture output already exists: {path}")
 
-    interface = str(profile["can_interface"])
-    interface_state = capture_interface_state(interface)
+    runtime_interface = str(profile["can_interface"])
+    interface_pair_before = None
+    if profile["transport_profile"] == "physical":
+        interface_pair_before = inspect_physical_can_pair(
+            runtime_interface=runtime_interface,
+            peer_interface=str(profile["responder_interface"]),
+            bitrate=int(profile["bitrate"]),
+        )
+        interface = str(profile["responder_interface"])
+        interface_state = interface_pair_before["peer"]
+    else:
+        interface = runtime_interface
+        interface_state = capture_interface_state(interface)
     candump_identity = capture_candump_identity()
     candump_command = build_candump_command(interface)
     responder_command = build_responder_command(profile, responder_path, session_id)
@@ -222,14 +246,24 @@ def start_socketcan_capture(
         candump_handle=candump_handle,
         interface_state=interface_state,
         candump_identity=candump_identity,
+        interface_pair_before=interface_pair_before,
     )
 
 
-def stop_socketcan_capture(capture: SocketCanCapture, output_path: Path) -> dict[str, Any]:
+def stop_socketcan_capture(
+    capture: SocketCanCapture, output_path: Path
+) -> dict[str, Any]:
     responder_cleanup = stop_process(capture.responder_process, 3.0)
     candump_cleanup = stop_process(capture.candump_process, 3.0)
     capture.responder_log_handle.close()
     capture.candump_handle.close()
+    interface_pair_after = None
+    if capture.profile["transport_profile"] == "physical":
+        interface_pair_after = inspect_physical_can_pair(
+            runtime_interface=str(capture.profile["can_interface"]),
+            peer_interface=str(capture.profile["responder_interface"]),
+            bitrate=int(capture.profile["bitrate"]),
+        )
     manifest = build_capture_manifest(
         session_id=capture.session_id,
         condition_variant=capture.condition_variant,
@@ -244,6 +278,8 @@ def stop_socketcan_capture(capture: SocketCanCapture, output_path: Path) -> dict
         candump_cleanup_status=candump_cleanup,
         interface_state=capture.interface_state,
         candump_identity=capture.candump_identity,
+        interface_pair_before=capture.interface_pair_before,
+        interface_pair_after=interface_pair_after,
     )
     if output_path.exists():
         raise ValueError(f"SocketCAN capture manifest already exists: {output_path}")
@@ -268,8 +304,23 @@ def build_capture_manifest(
     candump_cleanup_status: str,
     interface_state: dict[str, Any],
     candump_identity: dict[str, Any],
+    interface_pair_before: dict[str, Any] | None = None,
+    interface_pair_after: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     _validate_profile(capture_profile)
+    physical = capture_profile["transport_profile"] == "physical"
+    if physical:
+        if interface_pair_before is None or interface_pair_after is None:
+            raise ValueError(
+                "physical CAN evidence requires before and after link state"
+            )
+        for pair in (interface_pair_before, interface_pair_after):
+            validate_physical_can_pair(
+                [pair.get("runtime"), pair.get("peer")],
+                runtime_interface=str(capture_profile["can_interface"]),
+                peer_interface=str(capture_profile["responder_interface"]),
+                bitrate=int(capture_profile["bitrate"]),
+            )
     if condition_variant not in {"injected", "control"}:
         raise ValueError("invalid F6 condition variant")
     if responder_cleanup_status != "graceful_sigint":
@@ -281,7 +332,7 @@ def build_capture_manifest(
     records = _read_jsonl(responder_path)
     expected_identity = (
         session_id,
-        capture_profile["can_interface"],
+        capture_profile.get("responder_interface", capture_profile["can_interface"]),
         capture_profile["responder_policy"],
     )
     if any(
@@ -308,26 +359,34 @@ def build_capture_manifest(
     if not candump_path.is_file() or candump_path.stat().st_size == 0:
         raise ValueError("candump evidence is empty")
     candump_lines = [
-        line for line in candump_path.read_text(encoding="utf-8").splitlines() if line.strip()
+        line
+        for line in candump_path.read_text(encoding="utf-8").splitlines()
+        if line.strip()
     ]
     if not candump_lines:
         raise ValueError("candump evidence is empty")
-    if interface_state.get("ifname") != capture_profile["can_interface"]:
+    capture_interface = capture_profile.get(
+        "responder_interface", capture_profile["can_interface"]
+    )
+    if interface_state.get("ifname") != capture_interface:
         raise ValueError("capture interface identity mismatch")
-    if interface_state.get("linkinfo", {}).get("info_kind") != "vcan":
-        raise ValueError("capture interface is not vcan")
+    expected_kind = "can" if physical else "vcan"
+    if interface_state.get("linkinfo", {}).get("info_kind") != expected_kind:
+        raise ValueError(f"capture interface is not {expected_kind}")
     if not candump_identity.get("path") or not candump_identity.get("help_sha256"):
         raise ValueError("candump identity is incomplete")
     responder_script = Path(__file__).with_name("socketcan_responder.py")
-    return {
-        "schema_version": "socketcan-capture/v1",
+    result = {
+        "schema_version": "socketcan-capture/v2"
+        if physical
+        else "socketcan-capture/v1",
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
         "session_id": session_id,
         "condition_variant": condition_variant,
         "capture_profile": dict(capture_profile),
         "socketcan_evidence": True,
-        "virtual_can_bus": True,
-        "physical_can_evidence": False,
+        "virtual_can_bus": not physical,
+        "physical_can_evidence": physical,
         "interface_state": interface_state,
         "candump_identity": candump_identity,
         "responder": {
@@ -351,19 +410,36 @@ def build_capture_manifest(
             "line_count": len(candump_lines),
         },
     }
+    if physical:
+        result["interface_pair"] = {
+            "before": interface_pair_before,
+            "after": interface_pair_after,
+        }
+    return result
 
 
 def _validate_profile(profile: dict[str, Any]) -> None:
-    expected = {
-        "transport_profile": "vcan",
+    common = {
         "ack_mode": "socketcan",
         "mock_mode": False,
         "ack_can_id_offset": 128,
         "responder_delay_ms": 5,
     }
-    if not isinstance(profile, dict) or any(profile.get(key) != value for key, value in expected.items()):
-        raise ValueError("invalid F6 vcan capture profile")
+    if not isinstance(profile, dict) or any(
+        profile.get(key) != value for key, value in common.items()
+    ):
+        raise ValueError("invalid F6 SocketCAN capture profile")
+    transport = profile.get("transport_profile")
+    if transport not in {"vcan", "physical"}:
+        raise ValueError("invalid F6 SocketCAN transport profile")
     _validate_interface(str(profile.get("can_interface", "")))
+    if transport == "physical":
+        _validate_interface(str(profile.get("responder_interface", "")))
+        if profile.get("can_interface") == profile.get("responder_interface"):
+            raise ValueError("physical CAN interfaces must be distinct")
+        bitrate = profile.get("bitrate")
+        if not isinstance(bitrate, int) or isinstance(bitrate, bool) or bitrate <= 0:
+            raise ValueError("physical CAN bitrate must be positive")
     if profile.get("responder_policy") not in {"echo", "drop"}:
         raise ValueError("invalid F6 responder policy")
 

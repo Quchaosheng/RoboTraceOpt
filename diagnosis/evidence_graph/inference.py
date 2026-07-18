@@ -70,7 +70,9 @@ class SourceAvailability:
 
 
 def load_root_cause_catalog(path: Path | None = None) -> tuple[RootCauseRule, ...]:
-    catalog_path = path or Path(__file__).parents[1] / "rules" / "root_cause_catalog.yaml"
+    catalog_path = (
+        path or Path(__file__).parents[1] / "rules" / "root_cause_catalog.yaml"
+    )
     record = json.loads(catalog_path.read_text(encoding="utf-8"))
     if record.get("schema_version") != "root-cause-catalog/v1":
         raise ValueError("unsupported root-cause catalog schema")
@@ -104,7 +106,9 @@ def _metric_from_dict(record: object) -> MetricRule:
     try:
         node_type = NodeType(str(record["node_type"]))
     except ValueError as error:
-        raise ValueError(f"unknown metric node type: {record.get('node_type')}") from error
+        raise ValueError(
+            f"unknown metric node type: {record.get('node_type')}"
+        ) from error
     return MetricRule(
         metric_id=str(record["metric_id"]),
         node_type=node_type,
@@ -138,7 +142,9 @@ def infer_trace(
             reason_code=value.reason_code,
             provenance=dict(value.provenance or {}),
         )
-        for node_type, value in sorted(availability.items(), key=lambda item: item[0].value)
+        for node_type, value in sorted(
+            availability.items(), key=lambda item: item[0].value
+        )
     )
     validation = graph.validations.get(trace_id)
     if validation is None:
@@ -159,9 +165,7 @@ def infer_trace(
 
     rules = catalog or load_root_cause_catalog()
     metric_rules = {
-        metric.metric_id: metric
-        for cause in rules
-        for metric in cause.metrics
+        metric.metric_id: metric for cause in rules for metric in cause.metrics
     }
     unknown_metrics = sorted(profile.thresholds.keys() - metric_rules.keys())
     if unknown_metrics:
@@ -327,7 +331,11 @@ def _score_cause(
             NodeType.CANDIDATE_CAUSE,
             trace_id=trace_id,
             evidence_state=state,
-            attributes={"cause_id": cause.cause_id, "layer": cause.layer, "score": score},
+            attributes={
+                "cause_id": cause.cause_id,
+                "layer": cause.layer,
+                "score": score,
+            },
         )
     )
     for node_id, metric_id, value, threshold, weight in support_details:
@@ -414,7 +422,9 @@ def _apply_cross_cause_conflicts(
         if not cross_nodes or not candidate.support_node_ids:
             updated.append(candidate)
             continue
-        score = max(0.0, candidate.score - conflict_penalty * len(conflicting_candidates))
+        score = max(
+            0.0, candidate.score - conflict_penalty * len(conflicting_candidates)
+        )
         conflict_nodes = tuple(dict.fromkeys(candidate.conflict_node_ids + cross_nodes))
         reasons = tuple(
             dict.fromkeys(candidate.reason_codes + ("alternative_system_explanation",))

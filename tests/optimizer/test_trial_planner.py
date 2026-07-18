@@ -24,7 +24,12 @@ class TrialPlannerTest(unittest.TestCase):
         )
         self.assertEqual(first, second)
         self.assertEqual(len(first["trials"]), 5)
-        self.assertTrue(all("planner_delay_ms" in trial["candidate_config"] for trial in first["trials"]))
+        self.assertTrue(
+            all(
+                "planner_delay_ms" in trial["candidate_config"]
+                for trial in first["trials"]
+            )
+        )
 
     def test_guided_small_domain_plan_preserves_requested_budget(self) -> None:
         plan = build_trial_plan(

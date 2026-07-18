@@ -32,13 +32,14 @@ def build_trial_plan(
     if strategy == "guided":
         configs = sample_candidates(cause_id, limit=budget, seed=seed)
         configs = [configs[index % len(configs)] for index in range(budget)]
-        selected = [
-            (next(iter(config)), config) for config in configs
-        ]
+        selected = [(next(iter(config)), config) for config in configs]
     elif strategy == "random":
         action = relevant[0]
         selected = [
-            (str(action["action_id"]), {str(action["action_id"]): _random_value(action, rng)})
+            (
+                str(action["action_id"]),
+                {str(action["action_id"]): _random_value(action, rng)},
+            )
             for _ in range(budget)
         ]
     else:
@@ -46,7 +47,10 @@ def build_trial_plan(
         rng.shuffle(actions)
         selected_actions = [actions[index % len(actions)] for index in range(budget)]
         selected = [
-            (str(action["action_id"]), {str(action["action_id"]): _random_value(action, rng)})
+            (
+                str(action["action_id"]),
+                {str(action["action_id"]): _random_value(action, rng)},
+            )
             for action in selected_actions
         ]
 
@@ -93,7 +97,9 @@ def main() -> int:
         seed=args.seed,
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(plan, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    args.output.write_text(
+        json.dumps(plan, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
     return 0
 
 

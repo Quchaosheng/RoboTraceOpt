@@ -35,20 +35,31 @@ def build_stage_windows(events: Iterable[NormalizedEvent]) -> list[StageWindow]:
         if not event.trace_id or not event.stage or event.pid <= 0 or event.tid <= 0:
             raise ValueError(f"incomplete RuntimeEvent identity: {event.event_id}")
 
-    key = lambda event: (
-        event.trace_id,
-        event.sequence_id,
-        event.pid,
-        event.host_id,
-        event.clock_id,
-    )
+    def event_key(event: NormalizedEvent) -> tuple[object, ...]:
+        return (
+            event.trace_id,
+            event.sequence_id,
+            event.pid,
+            event.host_id,
+            event.clock_id,
+        )
+
     windows: list[StageWindow] = []
-    for _, grouped in groupby(sorted(runtime_events, key=lambda item: (*key(item), item.timestamp_ns)), key=key):
+    for _, grouped in groupby(
+        sorted(runtime_events, key=lambda item: (*event_key(item), item.timestamp_ns)),
+        key=event_key,
+    ):
         process_events = list(grouped)
         for index, start_event in enumerate(process_events):
-            next_event = process_events[index + 1] if index + 1 < len(process_events) else None
+            next_event = (
+                process_events[index + 1] if index + 1 < len(process_events) else None
+            )
             duration_ns = start_event.attributes.get("duration_ns", 0)
-            if isinstance(duration_ns, bool) or not isinstance(duration_ns, int) or duration_ns < 0:
+            if (
+                isinstance(duration_ns, bool)
+                or not isinstance(duration_ns, int)
+                or duration_ns < 0
+            ):
                 raise ValueError(f"invalid duration_ns: {start_event.event_id}")
             end_ns = (
                 next_event.timestamp_ns
@@ -72,7 +83,9 @@ def build_stage_windows(events: Iterable[NormalizedEvent]) -> list[StageWindow]:
                     end_ns=end_ns,
                     start_event_id=start_event.event_id,
                     end_event_id=(
-                        next_event.event_id if next_event is not None else start_event.event_id
+                        next_event.event_id
+                        if next_event is not None
+                        else start_event.event_id
                     ),
                 )
             )

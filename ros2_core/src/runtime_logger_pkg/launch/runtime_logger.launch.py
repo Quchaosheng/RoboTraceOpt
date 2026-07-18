@@ -18,28 +18,32 @@ def generate_launch_description():
     output_path = LaunchConfiguration("output_path")
     flush_every_event = LaunchConfiguration("flush_every_event")
 
-    return LaunchDescription([
-        DeclareLaunchArgument(
-            "output_path",
-            default_value="logs/runtime_events.jsonl",
-            description="JSONL file path for RuntimeEvent records.",
-        ),
-        DeclareLaunchArgument(
-            "flush_every_event",
-            default_value="true",
-            description="Flush the JSONL file after every event.",
-        ),
-        Node(
-            package="runtime_logger_pkg",
-            executable="runtime_event_logger_node",
-            name="runtime_event_logger_node",
-            output="screen",
-            parameters=[
-                config_file,
-                {
-                    "output_path": ParameterValue(output_path, value_type=str),
-                    "flush_every_event": ParameterValue(flush_every_event, value_type=bool),
-                },
-            ],
-        ),
-    ])
+    return LaunchDescription(
+        [
+            DeclareLaunchArgument(
+                "output_path",
+                default_value="logs/runtime_events.jsonl",
+                description="JSONL file path for RuntimeEvent records.",
+            ),
+            DeclareLaunchArgument(
+                "flush_every_event",
+                default_value="true",
+                description="Flush the JSONL file after every event.",
+            ),
+            Node(
+                package="runtime_logger_pkg",
+                executable="runtime_event_logger_node",
+                name="runtime_event_logger_node",
+                output="screen",
+                parameters=[
+                    config_file,
+                    {
+                        "output_path": ParameterValue(output_path, value_type=str),
+                        "flush_every_event": ParameterValue(
+                            flush_every_event, value_type=bool
+                        ),
+                    },
+                ],
+            ),
+        ]
+    )

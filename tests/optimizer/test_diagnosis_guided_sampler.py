@@ -8,7 +8,10 @@ class DiagnosisGuidedSamplerTest(unittest.TestCase):
         first = sample_candidates("blocking_syscall_io", limit=3, seed=7)
         second = sample_candidates("blocking_syscall_io", limit=3, seed=7)
         self.assertEqual(first, second)
-        self.assertEqual(first, [{"server_delay_ms": 0}, {"server_delay_ms": 50}, {"server_delay_ms": 100}])
+        self.assertEqual(
+            first,
+            [{"server_delay_ms": 0}, {"server_delay_ms": 50}, {"server_delay_ms": 100}],
+        )
 
     def test_executor_candidates_cover_thread_bounds(self) -> None:
         self.assertEqual(

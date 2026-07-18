@@ -108,12 +108,16 @@ class ApplicationComputeDelayAdapterTest(unittest.TestCase):
             report["metrics_ns"]["camera_to_planner_publish_upper_bound_ns"]["median"],
             101_000_300,
         )
-        self.assertEqual(report["measurement_semantics"], "runtime_event_elapsed_interval")
+        self.assertEqual(
+            report["measurement_semantics"], "runtime_event_elapsed_interval"
+        )
         self.assertFalse(report["formal_cpu_time_measurement"])
         self.assertTrue(report["development_only"])
         self.assertEqual(len(events), 2)
         self.assertEqual(events[0].event_type, "application_compute_delay_interval")
-        self.assertEqual(events[0].attributes["planner_processing_elapsed_ns"], 100_000_000)
+        self.assertEqual(
+            events[0].attributes["planner_processing_elapsed_ns"], 100_000_000
+        )
 
     def test_accepts_zero_duration_busy_compute_control(self) -> None:
         events, report = derive(
@@ -198,9 +202,7 @@ class ApplicationComputeDelayAdapterTest(unittest.TestCase):
         events, report = derive(records)
 
         self.assertEqual(events, [])
-        self.assertEqual(
-            report["invalid_pair_reason_counts"], {"invalid_timestamp": 1}
-        )
+        self.assertEqual(report["invalid_pair_reason_counts"], {"invalid_timestamp": 1})
 
 
 if __name__ == "__main__":

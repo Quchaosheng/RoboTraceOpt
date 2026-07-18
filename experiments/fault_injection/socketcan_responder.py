@@ -62,7 +62,9 @@ def decide_response(
     )
 
 
-def encode_can_frame(can_id: int, payload: bytes, *, allow_flags: bool = False) -> bytes:
+def encode_can_frame(
+    can_id: int, payload: bytes, *, allow_flags: bool = False
+) -> bytes:
     if not isinstance(can_id, int) or isinstance(can_id, bool):
         raise ValueError("CAN ID must be an integer")
     if not isinstance(payload, bytes) or len(payload) > 8:

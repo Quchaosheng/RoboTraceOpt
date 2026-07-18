@@ -6,6 +6,7 @@ log/
 # Python
 __pycache__/
 *.py[cod]
+*.egg-info/
 .pytest_cache/
 .venv/
 
@@ -30,4 +31,3 @@ data/reports/
 docs/plans/
 docs/provenance/
 docs/superpowers/
-

@@ -12,7 +12,7 @@ PLANNER_SOURCE = (
 )
 sys.path.insert(0, str(PLANNER_SOURCE))
 
-from planner_clients.delay import apply_delay
+from planner_clients.delay import apply_delay  # noqa: E402
 
 
 class PlannerDelayTest(unittest.TestCase):
