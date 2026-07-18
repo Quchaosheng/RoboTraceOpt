@@ -91,6 +91,15 @@ class X5PreflightTest(unittest.TestCase):
         self.assertEqual(result["status"], "blocked")
         self.assertIn("physical_can_pair", result["failed_checks"])
 
+    def test_physical_mode_requires_socketcan_tools(self) -> None:
+        report = capability_report()
+        report["readiness"]["socketcan"]["status"] = "blocked"
+
+        result = evaluate_x5_readiness(report, mode="physical-can")
+
+        self.assertEqual(result["status"], "blocked")
+        self.assertIn("socketcan", result["failed_checks"])
+
     def test_markdown_keeps_blocking_reasons_visible(self) -> None:
         report = capability_report()
         report["host"]["machine"] = "x86_64"

@@ -75,6 +75,10 @@ def evaluate_x5_readiness(
         checks.append(_check(name, status == "ready", "ready", status))
 
     if mode == "physical-can":
+        socketcan_status = str(readiness.get("socketcan", {}).get("status", "missing"))
+        checks.append(
+            _check("socketcan", socketcan_status == "ready", "ready", socketcan_status)
+        )
         interfaces = evidence.get("can", {}).get("interfaces", [])
         try:
             validate_physical_can_pair(
