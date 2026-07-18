@@ -470,6 +470,12 @@ class FormalSessionCliTest(unittest.TestCase):
             "--resume",
             "WSL",
             "X5",
+            "artifact_manifest.json",
+            "F3/F4",
+            "F2/F3/F5",
+            "comparable",
+            "full ROS 2 trace export",
+            "does not establish X5 measurement results",
         ):
             with self.subTest(expected=expected):
                 self.assertIn(expected, readme + optimizer_readme)
