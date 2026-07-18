@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -89,6 +91,17 @@ class ExportRos2TraceTest(unittest.TestCase):
                 required_events={"ros2:callback_start"},
                 generated_at_utc="2026-07-18T00:00:00+00:00",
             )
+
+    def test_direct_script_entrypoint_loads_repository_modules(self) -> None:
+        script = Path(__file__).resolve().parents[2] / "scripts" / "export_ros2_trace.py"
+        completed = subprocess.run(
+            [sys.executable, str(script), "--help"],
+            cwd=self.root,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        self.assertIn("Export all selected ROS 2 CTF events", completed.stdout)
 
         self.output.write_text("existing\n", encoding="utf-8")
         with self.assertRaisesRegex(ValueError, "already exists"):

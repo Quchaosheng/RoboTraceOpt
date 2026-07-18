@@ -39,11 +39,16 @@ class FaultEvidenceCaptureTest(unittest.TestCase):
             {"process_manifest": True, "ebpf": False, "ros2_export": True},
         )
         self.assertEqual(
-            fault_capture_plan("F3", {"runtime_event", "ros2_tracing", "ebpf"}),
+            fault_capture_plan(
+                "F3",
+                {"ros2_runtime", "ros2_tracing", "identity_comparable_ebpf"},
+            ),
             {"process_manifest": True, "ebpf": True, "ros2_export": True},
         )
         self.assertEqual(
-            fault_capture_plan("F4", {"runtime_event", "ebpf"}),
+            fault_capture_plan(
+                "F4", {"ros2_runtime", "identity_comparable_ebpf"}
+            ),
             {"process_manifest": True, "ebpf": True, "ros2_export": False},
         )
 
@@ -198,7 +203,7 @@ class FaultEvidenceCaptureTest(unittest.TestCase):
             output,
             safe_root,
             8,
-            {"runtime_event", "ebpf"},
+            {"ros2_runtime", "identity_comparable_ebpf"},
             self.root / "tracing_overlay",
             condition_variant="control",
         )

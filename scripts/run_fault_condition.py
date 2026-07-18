@@ -76,7 +76,10 @@ def fault_capture_plan(
     fault_id: str, capabilities: set[str]
 ) -> dict[str, bool]:
     tracing = "ros2_tracing" in capabilities and fault_id in FAULT_REQUIRED_EVENTS
-    ebpf = "ebpf" in capabilities and fault_id in {"F3", "F4"}
+    ebpf = bool({"ebpf", "identity_comparable_ebpf"} & capabilities) and fault_id in {
+        "F3",
+        "F4",
+    }
     return {
         "process_manifest": needs_process_manifest(
             ({"ros2_tracing"} if tracing else set()) | ({"ebpf"} if ebpf else set())
