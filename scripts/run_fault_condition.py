@@ -310,8 +310,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--capability", action="append", default=[])
     parser.add_argument("--duration-seconds", type=int, default=8)
     parser.add_argument(
-        "--f6-transport-profile", choices=("mock", "vcan"), default="mock"
+        "--f6-transport-profile",
+        choices=("mock", "vcan", "physical"),
+        default="mock",
     )
+    parser.add_argument("--f6-can-interface", default="can0")
+    parser.add_argument("--f6-responder-interface", default="can1")
+    parser.add_argument("--f6-bitrate", type=int, default=500_000)
     parser.add_argument(
         "--safe-root",
         type=Path,
@@ -389,6 +394,9 @@ def main() -> int:
         condition_variant=args.condition_variant,
         target_cpu=target_cpu,
         f6_transport_profile=args.f6_transport_profile,
+        f6_can_interface=args.f6_can_interface,
+        f6_responder_interface=args.f6_responder_interface,
+        f6_bitrate=args.f6_bitrate,
     )
     events_path = args.output_dir / "runtime_events.jsonl"
     command = build_launch_command(
@@ -397,6 +405,9 @@ def main() -> int:
         condition_variant=args.condition_variant,
         target_cpu=target_cpu,
         f6_transport_profile=args.f6_transport_profile,
+        f6_can_interface=args.f6_can_interface,
+        f6_responder_interface=args.f6_responder_interface,
+        f6_bitrate=args.f6_bitrate,
     )
     paths = write_condition_bundle(
         args.output_dir,
@@ -453,10 +464,10 @@ def start_f6_socketcan_capture(
     session_id: str,
     condition_variant: str,
 ) -> SocketCanCapture | None:
-    if f6_transport_profile != "vcan":
+    if f6_transport_profile not in {"vcan", "physical"}:
         return None
     if fault_id != "F6" or f6_injection is None:
-        raise ValueError("F6 vcan execution requires the frozen oracle profile")
+        raise ValueError("F6 SocketCAN execution requires the frozen oracle profile")
     return start_socketcan_capture(
         f6_injection,
         output_dir,
