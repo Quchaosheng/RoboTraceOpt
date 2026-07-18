@@ -116,3 +116,28 @@ with SHA-256
 This single WSL development sweep does not support a general QoS depth
 recommendation. Repeated runs with randomized order and native Linux are
 still required.
+
+The closed-loop runner connects a diagnosis report to the existing gate,
+constrained trial planner, runtime trial reports, candidate validator, and
+rollback decision. A baseline profile is supplied as a JSON file so its cause,
+configuration, path, and SHA-256 remain auditable. The runner executes the
+baseline once, skips duplicate or inapplicable candidates, evaluates the
+remaining candidates serially, and writes `decision.json` without changing a
+live system.
+
+```bash
+python3 scripts/run_closed_loop_optimization.py \
+  --diagnosis-report tests/fixtures/optimizer/diagnosis_executor_queueing.json \
+  --baseline-profile tests/fixtures/optimizer/baseline_executor_threads.json \
+  --strategy guided \
+  --budget 4 \
+  --seed 20260717 \
+  --duration-seconds 8 \
+  --minimum-confidence 0.6 \
+  --output-dir data/raw/optimization/development/executor_closed_loop_20260718_01
+```
+
+The committed diagnosis fixtures are synthetic orchestration inputs. They
+carry no oracle fields and do not provide diagnosis-accuracy evidence. The
+runtime trials remain real development measurements. Diagnosed causes without
+an executable runtime profile are denied before any ROS process starts.
