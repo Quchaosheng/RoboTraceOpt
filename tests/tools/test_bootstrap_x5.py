@@ -23,6 +23,7 @@ class BootstrapX5Test(unittest.TestCase):
         self.assertIn("can-utils", result.stdout)
         self.assertIn("bpftool", result.stdout)
         self.assertIn("clang", result.stdout)
+        self.assertIn("python3-colcon-common-extensions", result.stdout)
         self.assertNotIn("Executing apt-get", result.stdout)
 
 

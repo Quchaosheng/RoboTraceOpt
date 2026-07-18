@@ -37,7 +37,7 @@ packages=(
 printf 'apt-get install -y'
 printf ' %q' "${packages[@]}"
 printf '\n'
-echo "Optional ROS packages: ros-humble-ros-base ros-humble-ros2-tracing ros-humble-tracetools ros-humble-rmw-cyclonedds-cpp"
+echo "Optional ROS packages: python3-colcon-common-extensions ros-humble-ros-base ros-humble-ros2-tracing ros-humble-tracetools ros-humble-rmw-cyclonedds-cpp"
 
 if [[ "$mode" == "--dry-run" ]]; then
   exit 0
@@ -59,6 +59,7 @@ sudo apt-get update
 sudo apt-get install -y "${packages[@]}"
 
 ros_packages=(
+  python3-colcon-common-extensions
   ros-humble-ros-base
   ros-humble-ros2-tracing
   ros-humble-tracetools

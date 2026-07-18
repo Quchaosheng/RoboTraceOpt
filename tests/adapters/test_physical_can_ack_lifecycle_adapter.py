@@ -20,6 +20,20 @@ def physical_sources():
             "bitrate": 500000,
         }
     )
+
+    def link(name: str) -> dict:
+        return {
+            "ifname": name,
+            "flags": ["UP", "LOWER_UP"],
+            "linkinfo": {
+                "info_kind": "can",
+                "info_data": {
+                    "state": "ERROR-ACTIVE",
+                    "bittiming": {"bitrate": 500000},
+                },
+            },
+        }
+
     capture.update(
         {
             "schema_version": "socketcan-capture/v2",
@@ -27,8 +41,8 @@ def physical_sources():
             "virtual_can_bus": False,
             "physical_can_evidence": True,
             "interface_pair": {
-                "before": {"runtime": {"ifname": "can0"}, "peer": {"ifname": "can1"}},
-                "after": {"runtime": {"ifname": "can0"}, "peer": {"ifname": "can1"}},
+                "before": {"runtime": link("can0"), "peer": link("can1")},
+                "after": {"runtime": link("can0"), "peer": link("can1")},
             },
         }
     )
@@ -75,6 +89,28 @@ class PhysicalCanAckLifecycleAdapterTest(unittest.TestCase):
     def test_rejects_physical_profile_with_virtual_capture_flags(self) -> None:
         run, oracle, capture, runtime, responder, candump = physical_sources()
         capture["virtual_can_bus"] = True
+
+        events, report = derive_socketcan_ack_lifecycle_evidence(
+            runtime,
+            responder,
+            candump,
+            run,
+            oracle,
+            capture,
+            runtime_source_file="runtime.jsonl",
+            responder_source_file="responder.jsonl",
+            candump_source_file="candump.log",
+            run_manifest_source_file="run.json",
+            oracle_manifest_source_file="oracle.json",
+            capture_manifest_source_file="capture.json",
+        )
+
+        self.assertEqual(events, [])
+        self.assertEqual(report["reason_code"], "invalid_capture_manifest")
+
+    def test_rejects_virtual_peer_hidden_inside_physical_manifest(self) -> None:
+        run, oracle, capture, runtime, responder, candump = physical_sources()
+        capture["interface_pair"]["after"]["peer"]["linkinfo"]["info_kind"] = "vcan"
 
         events, report = derive_socketcan_ack_lifecycle_evidence(
             runtime,

@@ -12,6 +12,8 @@ from typing import Any
 
 
 def build_experiment_report(source: Path) -> dict[str, Any]:
+    if source.is_symlink():
+        raise ValueError(f"symlinked evidence source is forbidden: {source}")
     root = source.resolve()
     if not root.is_dir():
         raise ValueError(f"evidence source is not a directory: {source}")
