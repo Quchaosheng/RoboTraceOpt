@@ -163,3 +163,93 @@ The committed diagnosis fixtures are synthetic orchestration inputs. They
 carry no oracle fields and do not provide diagnosis-accuracy evidence. The
 runtime trials remain real development measurements. Diagnosed causes without
 an executable runtime profile are denied before any ROS process starts.
+
+## Repeated pilot campaigns
+
+The repeated campaign runner evaluates whether a single-run decision remains
+supported across balanced repeats. Each block contains the baseline and every
+unique candidate once. A seeded initial permutation is cyclically rotated so
+that no configuration is permanently assigned to the cold-start or final
+position. Candidate comparisons use only the baseline measured in the same
+block.
+
+The validator bootstraps the median paired improvement ratio and complete-trace
+rate delta with the Python standard library. A candidate is accepted only when
+all planned pairs succeed, the latency-improvement confidence lower bound
+meets the frozen threshold, and the completeness-delta lower bound does not
+cross its allowed regression threshold. Failed and invalid trials remain in
+the campaign and prevent acceptance; the runner never retries or replaces
+them.
+
+Run the five-block Executor pilot:
+
+```bash
+python3 scripts/run_repeated_optimization_campaign.py \
+  --diagnosis-report tests/fixtures/optimizer/diagnosis_executor_queueing.json \
+  --baseline-profile tests/fixtures/optimizer/baseline_executor_threads.json \
+  --campaign-name executor_repeated_20260718_01 \
+  --strategy guided \
+  --budget 4 \
+  --seed 20260718 \
+  --repetitions 5 \
+  --duration-seconds 8 \
+  --minimum-confidence 0.6 \
+  --minimum-completeness 1.0 \
+  --minimum-improvement-ratio 0.0 \
+  --minimum-complete-trace-rate-delta 0.0 \
+  --confidence-level 0.95 \
+  --bootstrap-resamples 10000 \
+  --output-dir data/raw/optimization/pilot/executor_repeated_20260718_01
+```
+
+Run the matching QoS pilot by using
+`diagnosis_dds_communication_delay.json`, `baseline_qos_depth.json`, campaign
+name `qos_repeated_20260718_01`, and output
+`data/raw/optimization/pilot/qos_repeated_20260718_01` with the same seed,
+budget, repetitions, duration, thresholds, and bootstrap settings.
+
+The output freezes the schedule before execution and retains one terminal
+record per planned trial:
+
+```text
+campaign_manifest.json
+trials/block_NN/position_NN_cfg_HASH/{trial_report,trial_result}.json
+candidate_validations/cfg_HASH.json
+decision.json
+summary.json
+```
+
+These commands always produce `dataset_role=pilot`, `development_only=true`,
+and `formal_optimization_allowed=false`. WSL measurements are protocol and
+variance checks, not formal superiority evidence. Native Linux and X5 use the
+same CLI and schemas but must write separate datasets and environment
+manifests; pilot and formal results must not be pooled.
+
+Both five-block WSL pilots were executed at commit `40b7e96` with 20 planned,
+20 terminal, and 20 successful reports each. Over five blocks, every one of
+the four configurations occupied each position once, with the fifth placement
+distributed one per configuration. There were no failed or invalid trials.
+
+The Executor pilot restored `executor_threads=1`. Median paired improvement
+estimates for two, three, and four threads were -1.868, -2.518, and -2.372;
+their 95% intervals were [-3.031, -1.141], [-3.330, -0.941], and
+[-4.000, -0.923]. All three completeness-delta intervals also had negative
+lower bounds, so no candidate satisfied the joint acceptance rule. The
+retained local summary is
+`data/raw/optimization/pilot/executor_repeated_20260718_01/summary.json` with
+SHA-256
+`522a4511a11d6253fed9e31b46920d0e0408ff51779e504b34ec2d2190644dce`;
+the decision SHA-256 is
+`8c6a65edc8689ac49452cc0377da12d61d692ae1e0f0ab5c8439397eb1e432cc`.
+
+The QoS pilot restored `frame_qos_depth=10`. Depth 4 had a median paired
+improvement estimate of 0.032, but its 95% interval [-0.242, 0.336] crossed
+zero and its completeness-delta lower bound was -0.0176. Depths 1 and 7 also
+lacked joint support. The retained local summary is
+`data/raw/optimization/pilot/qos_repeated_20260718_01/summary.json` with
+SHA-256
+`b0012f409a1870ca63c0309ed3381d3986ec047a5c79c9b23c76fe4747f9f43c`;
+the decision SHA-256 is
+`40a2394b765e739de24c8fa06ab63fe5a64798de6ff74f83e44cc4126ecadd94`.
+These pilot intervals characterize WSL variability and conservative rollback
+behavior only; they are not native-Linux or X5 optimization conclusions.

@@ -20,6 +20,7 @@ cause.
 - A bounded action registry and reproducible guided, random, and unguided
   search protocols.
 - Candidate validation and offline rollback decisions.
+- Balanced repeated campaigns with paired bootstrap confidence bounds.
 - Development experiment runners for F1-F6 fault characterization.
 
 ## Repository layout
@@ -66,7 +67,10 @@ python3 -m unittest \
   tests.optimizer.test_diagnosis_gate \
   tests.optimizer.test_runtime_profiles \
   tests.optimizer.test_closed_loop \
-  tests.optimizer.test_closed_loop_cli -q
+  tests.optimizer.test_closed_loop_cli \
+  tests.optimizer.test_campaign_schedule \
+  tests.optimizer.test_paired_bootstrap \
+  tests.optimizer.test_repeated_campaign_cli -q
 ```
 
 ## Evidence boundaries
