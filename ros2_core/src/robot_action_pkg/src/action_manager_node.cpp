@@ -267,7 +267,8 @@ void ActionManagerNode::publish_result_command(
   PlannerCommand result_command = command;
   result_command.header.source_node = this->get_name();
   result_command.header.stage = "action_result";
-  result_command.header.timestamp_ns = result.end_timestamp_ns > 0 ? result.end_timestamp_ns : steady_now_ns();
+  // Preserve the originating command timestamp so CAN TTL covers the complete action path.
+  result_command.header.timestamp_ns = command.header.timestamp_ns;
   result_command.confidence = result.success ? command.confidence : 0.0F;
   result_command.reason = result.message;
   result_publisher_->publish(result_command);

@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <mutex>
 #include <thread>
+#include <unordered_map>
 #include <vector>
 #include <string>
 
@@ -28,12 +29,28 @@ private:
 
   struct EncodedCanFrame
   {
+    bool encoded{false};
     uint32_t can_id{0};
     std::array<uint8_t, 8> payload{};
     std::string payload_hex;
   };
 
   void on_planner_command(const PlannerCommand::SharedPtr command);
+  bool validate_command(
+    const PlannerCommand & command,
+    int64_t now_ns,
+    std::string * reason_code,
+    std::string * detail) const;
+  bool admit_request(
+    const PlannerCommand & command,
+    int64_t now_ns,
+    std::string * reason_code,
+    std::string * detail);
+  void publish_command_rejection(
+    const PlannerCommand & command,
+    const std::string & reason_code,
+    const std::string & detail,
+    uint32_t retry_count = 0) const;
   EncodedCanFrame encode_command(const PlannerCommand & command) const;
   bool send_frame(const EncodedCanFrame & frame, std::string * detail) const;
   bool send_socketcan_frame(const EncodedCanFrame & frame, std::string * detail) const;
@@ -74,7 +91,8 @@ private:
     const std::string & send_detail,
     bool ack_success = false,
     uint32_t retry_count = 0,
-    const std::string & terminal_status = "") const;
+    const std::string & terminal_status = "",
+    const std::string & reason_code = "") const;
   void publish_probe_completion(const PlannerCommand & command, bool send_success) const;
 
   std::string make_extra_json(
@@ -84,9 +102,12 @@ private:
     const std::string & send_detail,
     bool ack_success,
     uint32_t retry_count,
-    const std::string & terminal_status) const;
+    const std::string & terminal_status,
+    const std::string & reason_code) const;
 
   static int64_t steady_now_ns();
+  static bool is_allowed_action(const std::string & action);
+  static std::string request_key(const PlannerCommand & command);
   static uint32_t hash_string(const std::string & value);
   static std::string can_id_to_hex(uint32_t can_id);
   static std::string payload_to_hex(const std::array<uint8_t, 8> & payload);
@@ -109,11 +130,17 @@ private:
   int64_t retry_backoff_ms_{10};
   int64_t mock_ack_delay_ms_{5};
   int64_t ack_can_id_offset_{0x80};
+  int64_t command_ttl_ms_{1000};
+  int64_t command_max_future_skew_ms_{100};
+  int64_t command_dedup_window_ms_{10000};
+  double max_command_speed_{1.0};
   uint32_t max_retries_{2};
   std::vector<rclcpp::TimerBase::SharedPtr> ack_timers_;
   std::vector<std::thread> ack_threads_;
   std::atomic_bool shutting_down_{false};
   std::mutex ack_threads_mutex_;
+  std::mutex command_dedup_mutex_;
+  std::unordered_map<std::string, int64_t> admitted_request_ns_;
 };
 
 }  // namespace can_bridge_pkg
