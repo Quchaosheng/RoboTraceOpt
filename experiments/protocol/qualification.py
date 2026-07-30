@@ -155,7 +155,10 @@ def _role_errors(case: dict[str, Any], dataset_role: str) -> list[str]:
         return []
     parameters = case["parameters"]
     errors = []
-    if parameters["condition_variant"] == "control":
+    if (
+        parameters["condition_variant"] == "control"
+        and parameters["fault_id"] not in {"F3", "F4"}
+    ):
         errors.append("control_variant_development_only")
     if parameters["fault_id"] == "F5":
         errors.append("f5_development_only")

@@ -19,10 +19,16 @@ class BootstrapX5Test(unittest.TestCase):
         )
 
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("apt-get install", result.stdout)
-        self.assertIn("can-utils", result.stdout)
-        self.assertIn("bpftool", result.stdout)
-        self.assertIn("clang", result.stdout)
+        install_line = result.stdout.splitlines()[0]
+        self.assertIn("apt-get install", install_line)
+        self.assertIn("can-utils", install_line)
+        self.assertIn("lttng-tools", install_line)
+        self.assertIn("python3-bt2", install_line)
+        self.assertNotIn("bpftool", install_line)
+        self.assertNotIn("clang", install_line)
+        self.assertNotIn("llvm", install_line)
+        self.assertIn("ros-humble-ros2trace", result.stdout)
+        self.assertNotIn("ros-humble-ros2-tracing", result.stdout)
         self.assertIn("python3-colcon-common-extensions", result.stdout)
         self.assertNotIn("Executing apt-get", result.stdout)
 

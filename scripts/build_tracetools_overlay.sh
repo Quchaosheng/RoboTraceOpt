@@ -25,7 +25,7 @@ fi
 
 set +u
 # shellcheck disable=SC1091
-source /opt/ros/humble/setup.bash
+source "/opt/ros/${ROS_DISTRO:-humble}/setup.bash"
 set -u
 
 cd "${OVERLAY_ROOT}"
