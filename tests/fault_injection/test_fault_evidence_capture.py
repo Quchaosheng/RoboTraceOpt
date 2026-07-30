@@ -18,6 +18,7 @@ from scripts.run_fault_condition import (
     export_ros2_evidence,
     fault_capture_plan,
     finalize_fault_artifacts,
+    workload_exit_is_expected,
 )
 
 
@@ -28,6 +29,14 @@ class FaultEvidenceCaptureTest(unittest.TestCase):
 
     def tearDown(self) -> None:
         self.temporary.cleanup()
+
+    def test_accepts_only_documented_timeout_shutdown_statuses(self) -> None:
+        for return_code in (124, 130, 137):
+            with self.subTest(return_code=return_code):
+                self.assertTrue(workload_exit_is_expected(return_code))
+        for return_code in (0, 1, 2, 143):
+            with self.subTest(return_code=return_code):
+                self.assertFalse(workload_exit_is_expected(return_code))
 
     def test_capture_plan_matches_fault_capabilities(self) -> None:
         self.assertEqual(

@@ -190,6 +190,22 @@ class SessionManifestTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "dataset role"):
             build(MATRIX, ["diagnosis_f1_control"], role="test")
 
+    def test_session_manifest_allows_paired_f3_f4_controls_for_test(self):
+        manifest = build(
+            MATRIX,
+            ["diagnosis_f3_control", "diagnosis_f4_control"],
+            role="test",
+        )
+
+        self.assertEqual(len(manifest["runs"]), 20)
+        self.assertTrue(manifest["formal_experiment_allowed"])
+        self.assertTrue(
+            all(
+                row["expected_child_dataset_role"] == "test"
+                for row in manifest["runs"]
+            )
+        )
+
     def test_formal_optimization_command_contains_frozen_policy(self):
         case = next(
             row for row in MATRIX["cases"] if row["case_id"] == "optimization_executor"
