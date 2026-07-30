@@ -89,6 +89,24 @@ class PhysicalCanCaptureTest(unittest.TestCase):
             )
             candump.write_text("(1.000001) can1 123#01\n", encoding="utf-8")
             pair = {"runtime": link("can0"), "peer": link("can1"), "bitrate": 500000}
+            for record in (pair["runtime"], pair["peer"]):
+                record["linkinfo"]["info_data"]["bittiming"]["bitrate"] = 0
+            pair["bitrate_evidence"] = {
+                "runtime": {
+                    "source": "slcand",
+                    "pid": 100,
+                    "speed_code": "s6",
+                    "bitrate": 500000,
+                    "argv": ["slcand", "-o", "-c", "-s6", "/dev/tty0", "can0"],
+                },
+                "peer": {
+                    "source": "slcand",
+                    "pid": 101,
+                    "speed_code": "s6",
+                    "bitrate": 500000,
+                    "argv": ["slcand", "-o", "-c", "-s6", "/dev/tty1", "can1"],
+                },
+            }
 
             manifest = build_capture_manifest(
                 session_id="session-1",

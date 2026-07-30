@@ -18,7 +18,10 @@ from diagnosis.adapters.mock_ack_lifecycle_adapter import (
     _valid_success,
 )
 from diagnosis.schema import NormalizedEvent
-from experiments.physical_can.interfaces import validate_physical_can_pair
+from experiments.physical_can.interfaces import (
+    slcand_process_lines_from_bitrate_evidence,
+    validate_physical_can_pair,
+)
 
 
 EVENTS = {
@@ -497,6 +500,9 @@ def _physical_pair_identity_matches(value: Any, injection: dict[str, Any]) -> bo
                 runtime_interface=str(injection["can_interface"]),
                 peer_interface=str(injection["responder_interface"]),
                 bitrate=int(injection["bitrate"]),
+                slcand_processes=slcand_process_lines_from_bitrate_evidence(
+                    pair.get("bitrate_evidence")
+                ),
             )
         except ValueError:
             return False
