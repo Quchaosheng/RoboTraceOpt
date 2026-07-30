@@ -122,3 +122,14 @@ tail -f logs/runtime_events.jsonl
 ```bash
 python3 -m json.tool < <(tail -n 1 logs/runtime_events.jsonl)
 ```
+
+## Latency probe
+
+`latency_probe_node` pairs commands from its configured `input_topic` with
+completion messages from `/probe/can_frame_sent`. It writes bounded,
+append-only CSV samples containing the trace identity, input and completion
+stages, monotonic timestamps, latency in nanoseconds, and send status.
+
+The main bringup starts this node when `probe_enabled:=true` and automatically
+selects `/planner/command` or `/action_manager/command_result` to match the
+active command path. Use `probe_output_path` to choose the CSV destination.

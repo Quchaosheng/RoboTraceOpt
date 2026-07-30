@@ -537,6 +537,16 @@ def generate_launch_description():
                 condition=IfCondition(probe_enabled),
                 parameters=[
                     {
+                        "input_topic": ParameterValue(
+                            PythonExpression(
+                                [
+                                    "'/action_manager/command_result' if '",
+                                    action_manager_enabled,
+                                    "' == 'true' else '/planner/command'",
+                                ]
+                            ),
+                            value_type=str,
+                        ),
                         "output_path": ParameterValue(
                             probe_output_path, value_type=str
                         ),
