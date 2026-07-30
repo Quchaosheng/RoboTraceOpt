@@ -38,7 +38,9 @@ docs/          public schemas, environment notes, and migration references
 
 X5 setup, two-adapter physical CAN wiring, pilot execution, the short defense
 demonstration, and recovery steps are documented in
-[`docs/hardware/X5_RUNBOOK.md`](docs/hardware/X5_RUNBOOK.md).
+[`docs/hardware/X5_RUNBOOK.md`](docs/hardware/X5_RUNBOOK.md). The required
+capture artifacts, CANable/SLCAN branch, and claim boundaries are documented in
+[`docs/hardware/PHYSICAL_CAN_EVIDENCE.md`](docs/hardware/PHYSICAL_CAN_EVIDENCE.md).
 
 Preview package installation and run the read-only software preflight:
 
@@ -59,8 +61,11 @@ python3 scripts/run_x5_demo.py \
   --output-dir data/raw/demos/x5_plan_01
 ```
 
-Physical CAN output remains development evidence and is not substituted for the
-frozen native X5 tracing/eBPF matrix.
+The current physical result is a two-interface SocketCAN smoke with a responder
+peer. It is development evidence, not an ECU HIL result or a substitute for the
+frozen native X5 tracing/eBPF matrix. A retained normal/drop pair with the
+required capture artifacts is necessary before reporting an F6 diagnosis or
+performance conclusion.
 
 ## Environment
 
@@ -106,7 +111,9 @@ Generated raw and processed experiment data is intentionally excluded from
 Git. Development evidence is kept separate from calibration and held-out test
 partitions. RuntimeEvent-only and vcan results are labeled as proxy evidence
 and are not presented as formal syscall, scheduler, or physical CAN
-attribution.
+attribution. A `physical_can_evidence=true` capture establishes only the
+recorded physical SocketCAN transport path; by itself it is not an ECU HIL,
+functional-safety, actuator, or formal experiment result.
 
 The repository contains implementation and public technical documentation
 only. Private research documents and local experiment data are excluded.
