@@ -20,8 +20,20 @@ ament_target_dependencies(runtime_event_logger_node
   ai_robot_runtime_interfaces
 )
 
+add_executable(latency_probe_node src/latency_probe_node.cpp)
+target_include_directories(latency_probe_node PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+)
+target_compile_features(latency_probe_node PUBLIC cxx_std_17)
+ament_target_dependencies(latency_probe_node
+  rclcpp
+  ai_robot_runtime_interfaces
+)
+
 install(TARGETS
   runtime_event_logger_node
+  latency_probe_node
   DESTINATION lib/${PROJECT_NAME}
 )
 

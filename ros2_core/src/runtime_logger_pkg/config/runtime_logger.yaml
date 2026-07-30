@@ -2,3 +2,11 @@ runtime_event_logger_node:
   ros__parameters:
     output_path: "logs/runtime_events.jsonl"
     flush_every_event: false
+
+latency_probe_node:
+  ros__parameters:
+    input_topic: "/planner/command"
+    completion_topic: "/probe/can_frame_sent"
+    output_path: "logs/probe_latency.csv"
+    flush_every_sample: false
+    max_pending_samples: 4096

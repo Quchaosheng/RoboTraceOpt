@@ -34,6 +34,18 @@ class PackageMetadataTest(unittest.TestCase):
         self.assertIn('license="Apache-2.0"', setup)
         self.assertNotIn("TODO", setup)
 
+    def test_runtime_logger_builds_every_bringup_executable(self) -> None:
+        cmake = (
+            ROOT / "ros2_core/src/runtime_logger_pkg/CMakeLists.txt"
+        ).read_text(encoding="utf-8")
+        launch = (
+            ROOT / "ros2_core/src/runtime_bringup/launch/ai_runtime.launch.py"
+        ).read_text(encoding="utf-8")
+        for executable in ("runtime_event_logger_node", "latency_probe_node"):
+            with self.subTest(executable=executable):
+                self.assertIn(f"add_executable({executable} ", cmake)
+                self.assertIn(f'executable="{executable}"', launch)
+
 
 if __name__ == "__main__":
     unittest.main()
