@@ -72,6 +72,50 @@ class PhysicalCanInterfaceTest(unittest.TestCase):
                 bitrate=500000,
             )
 
+    def test_accepts_unreported_slcan_bitrate_with_process_evidence(self) -> None:
+        runtime = can_link("can1")
+        peer = can_link("can2")
+        runtime["linkinfo"]["info_data"]["bittiming"]["bitrate"] = 0
+        peer["linkinfo"]["info_data"]["bittiming"]["bitrate"] = 0
+
+        pair = validate_physical_can_pair(
+            [runtime, peer],
+            runtime_interface="can1",
+            peer_interface="can2",
+            bitrate=500000,
+            slcand_processes=[
+                "9348 slcand -o -c -s6 /dev/ttyACM0 can1",
+                "9351 slcand -o -c -s6 /dev/ttyACM1 can2",
+            ],
+        )
+
+        self.assertEqual(pair["bitrate_evidence"]["runtime"]["source"], "slcand")
+        self.assertEqual(pair["bitrate_evidence"]["peer"]["speed_code"], "s6")
+
+    def test_rejects_wrong_or_ambiguous_slcan_process_evidence(self) -> None:
+        runtime = can_link("can1")
+        peer = can_link("can2")
+        for link in (runtime, peer):
+            link["linkinfo"]["info_data"]["bittiming"]["bitrate"] = 0
+        base = ["9351 slcand -o -c -s6 /dev/ttyACM1 can2"]
+        for processes in (
+            ["9348 slcand -o -c -s5 /dev/ttyACM0 can1", *base],
+            [
+                "9348 slcand -o -c -s6 /dev/ttyACM0 can1",
+                "9349 slcand -o -c -s6 /dev/ttyACM2 can1",
+                *base,
+            ],
+        ):
+            with self.subTest(processes=processes):
+                with self.assertRaisesRegex(ValueError, "slcand process"):
+                    validate_physical_can_pair(
+                        [runtime, peer],
+                        runtime_interface="can1",
+                        peer_interface="can2",
+                        bitrate=500000,
+                        slcand_processes=processes,
+                    )
+
 
 if __name__ == "__main__":
     unittest.main()

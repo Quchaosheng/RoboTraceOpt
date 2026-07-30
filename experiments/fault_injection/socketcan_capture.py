@@ -19,6 +19,7 @@ from experiments.fault_injection.scheduling_pressure import (
 )
 from experiments.physical_can.interfaces import (
     inspect_physical_can_pair,
+    slcand_process_lines_from_bitrate_evidence,
     validate_physical_can_pair,
 )
 
@@ -320,6 +321,9 @@ def build_capture_manifest(
                 runtime_interface=str(capture_profile["can_interface"]),
                 peer_interface=str(capture_profile["responder_interface"]),
                 bitrate=int(capture_profile["bitrate"]),
+                slcand_processes=slcand_process_lines_from_bitrate_evidence(
+                    pair.get("bitrate_evidence")
+                ),
             )
     if condition_variant not in {"injected", "control"}:
         raise ValueError("invalid F6 condition variant")
