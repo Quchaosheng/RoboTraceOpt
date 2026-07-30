@@ -14,13 +14,14 @@ WORKSPACE_MARKER="${SAFE_ROOT}/workspace_root"
 CURRENT_WORKSPACE="$(realpath "${WORKSPACE_ROOT}")"
 CACHED_WORKSPACE=""
 
-if [[ -f /opt/ros/humble/setup.bash ]]; then
+ROS_DISTRO="${ROS_DISTRO:-humble}"
+if [[ -f "/opt/ros/${ROS_DISTRO}/setup.bash" ]]; then
   set +u
   # shellcheck disable=SC1091
-  source /opt/ros/humble/setup.bash
+  source "/opt/ros/${ROS_DISTRO}/setup.bash"
   set -u
 else
-  echo "error: /opt/ros/humble/setup.bash not found. Please install or source ROS2 Humble first." >&2
+  echo "error: /opt/ros/${ROS_DISTRO}/setup.bash not found. Install the requested ROS 2 distro first." >&2
   exit 1
 fi
 

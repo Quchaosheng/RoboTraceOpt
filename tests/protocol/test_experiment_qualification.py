@@ -75,6 +75,20 @@ class ExperimentQualificationTest(unittest.TestCase):
         self.assertEqual(f5["status"], "denied")
         self.assertIn("case_not_allowed_for_dataset_role", f5["reason_codes"])
 
+    def test_native_formal_roles_allow_paired_f3_f4_controls(self):
+        report = capability_report(label="x86-native", is_wsl=False)
+        result = qualify(
+            report,
+            role="test",
+            selected=("diagnosis_f3_control", "diagnosis_f4_control"),
+        )
+
+        self.assertEqual(result["status"], "allowed")
+        self.assertTrue(result["formal_experiment_allowed"])
+        self.assertEqual(
+            [row["role_errors"] for row in result["cases"]], [[], []]
+        )
+
     def test_wsl_allows_pilot_but_denies_test(self):
         pilot = qualify(capability_report())
         self.assertEqual(pilot["status"], "allowed")

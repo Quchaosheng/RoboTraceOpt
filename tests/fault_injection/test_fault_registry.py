@@ -315,15 +315,16 @@ class FaultRegistryTest(unittest.TestCase):
             control_oracle["injection"]["blocking_primitive"], "clock_nanosleep"
         )
         self.assertNotIn("control_delay_ms", control_oracle["injection"])
-        with self.assertRaisesRegex(ValueError, "development-only"):
-            create_fault_manifests(
-                spec,
-                dataset_role="test",
-                session_id="f4-formal-control",
-                condition_id="opaque-f4-formal-control",
-                git_commit="a" * 40,
-                condition_variant="control",
-            )
+        formal_public, formal_oracle = create_fault_manifests(
+            spec,
+            dataset_role="test",
+            session_id="f4-formal-control",
+            condition_id="opaque-f4-formal-control",
+            git_commit="a" * 40,
+            condition_variant="control",
+        )
+        self.assertEqual(formal_public["dataset_role"], "test")
+        self.assertEqual(formal_oracle["condition_variant"], "control")
 
     def test_rejects_unknown_condition_variant(self) -> None:
         with self.assertRaisesRegex(ValueError, "invalid condition variant"):
