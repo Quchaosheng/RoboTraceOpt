@@ -105,6 +105,16 @@ python3 -m unittest \
   tests.optimizer.test_repeated_campaign_cli -q
 ```
 
+## AI planner reliability
+
+The AI planner supports explicit mock, OpenAI-compatible, and deterministic
+replay backends through one versioned request/result contract. It records only
+normalized decision evidence when configured, rejects stale/duplicate output,
+and fails closed before the final CAN guard. Configuration, replay, fault
+campaign semantics, and the distinction between command delivery and task
+success are documented in
+[docs/ai/OPENAI_COMPATIBLE_PROXY_SETUP.md](docs/ai/OPENAI_COMPATIBLE_PROXY_SETUP.md).
+
 ## Evidence boundaries
 
 Generated raw and processed experiment data is intentionally excluded from

@@ -2,7 +2,9 @@
 
 #include <algorithm>
 #include <chrono>
+#include <fstream>
 #include <iomanip>
+#include <iterator>
 #include <memory>
 #include <sstream>
 #include <stdexcept>
@@ -24,6 +26,10 @@ CameraMockNode::CameraMockNode()
   const auto frame_qos_depth = this->declare_parameter<int64_t>("frame_qos_depth", 10);
   const auto frame_qos_reliability =
     this->declare_parameter<std::string>("frame_qos_reliability", "reliable");
+  image_file_ = this->declare_parameter<std::string>("image_file", "");
+  fixed_trace_id_ = this->declare_parameter<std::string>("fixed_trace_id", "");
+  fixed_oracle_id_ = this->declare_parameter<std::string>("fixed_oracle_id", "");
+  const auto fixed_sequence_id = this->declare_parameter<int64_t>("fixed_sequence_id", 0);
   encoding_ = this->declare_parameter<std::string>("encoding", "mock");
   source_id_ = this->declare_parameter<std::string>("source_id", "camera_a");
   runtime_events_enabled_ = this->declare_parameter<bool>("runtime_events_enabled", true);
@@ -37,6 +43,12 @@ CameraMockNode::CameraMockNode()
   if (frame_payload_bytes < 0) {
     throw std::invalid_argument("frame_payload_bytes must be non-negative");
   }
+  if (fixed_sequence_id < 0) {
+    throw std::invalid_argument("fixed_sequence_id must be non-negative");
+  }
+  if (!image_file_.empty() && frame_payload_bytes != 0) {
+    throw std::invalid_argument("image_file and frame_payload_bytes are mutually exclusive");
+  }
   if (frame_qos_depth <= 0) {
     throw std::invalid_argument("frame_qos_depth must be positive");
   }
@@ -44,6 +56,23 @@ CameraMockNode::CameraMockNode()
   width_ = static_cast<uint32_t>(std::max<int64_t>(width_param, 1));
   height_ = static_cast<uint32_t>(std::max<int64_t>(height_param, 1));
   frame_payload_bytes_ = static_cast<size_t>(frame_payload_bytes);
+  fixed_sequence_id_ = static_cast<uint64_t>(fixed_sequence_id);
+  if (!image_file_.empty()) {
+    std::ifstream image_stream(image_file_, std::ios::binary);
+    if (!image_stream.is_open()) {
+      throw std::invalid_argument("image_file cannot be opened: " + image_file_);
+    }
+    fixed_frame_payload_.assign(
+      std::istreambuf_iterator<char>(image_stream), std::istreambuf_iterator<char>());
+    if (fixed_frame_payload_.empty()) {
+      throw std::invalid_argument("image_file is empty: " + image_file_);
+    }
+    if (encoding_ != "jpeg" && encoding_ != "jpg" && encoding_ != "png" &&
+      encoding_ != "webp")
+    {
+      throw std::invalid_argument("image_file requires jpeg, jpg, png, or webp encoding");
+    }
+  }
   if (source_id_.empty()) {
     source_id_ = this->get_name();
   }
@@ -72,21 +101,29 @@ void CameraMockNode::publish_frame()
 {
   const uint64_t sequence_id = ++sequence_id_;
   const int64_t frame_timestamp_ns = steady_now_ns();
-  const std::string trace_id = make_trace_id(sequence_id, frame_timestamp_ns);
+  const uint64_t emitted_sequence_id = fixed_sequence_id_ == 0 ? sequence_id : fixed_sequence_id_;
+  const std::string trace_id = fixed_trace_id_.empty() ?
+    make_trace_id(emitted_sequence_id, frame_timestamp_ns) : fixed_trace_id_;
+  const std::string oracle_id = fixed_oracle_id_.empty() ? make_oracle_id() : fixed_oracle_id_;
 
   CameraFrame frame;
   frame.header.trace_id = trace_id;
-  frame.header.oracle_id = make_oracle_id();
-  frame.header.sequence_id = sequence_id;
+  frame.header.oracle_id = oracle_id;
+  frame.header.sequence_id = emitted_sequence_id;
   frame.header.source_node = this->get_name();
   frame.header.stage = "camera_publish";
   frame.header.timestamp_ns = frame_timestamp_ns;
-  frame.image_path = "fake_image_" + std::to_string(sequence_id) + ".jpg";
-  frame.frame_id = static_cast<uint32_t>(sequence_id);
+  frame.image_path = image_file_.empty() ?
+    "fake_image_" + std::to_string(sequence_id) + ".jpg" : image_file_;
+  frame.frame_id = static_cast<uint32_t>(emitted_sequence_id);
   frame.encoding = encoding_;
   frame.width = width_;
   frame.height = height_;
-  frame.payload.assign(frame_payload_bytes_, static_cast<uint8_t>(sequence_id & 0xffU));
+  if (fixed_frame_payload_.empty()) {
+    frame.payload.assign(frame_payload_bytes_, static_cast<uint8_t>(sequence_id & 0xffU));
+  } else {
+    frame.payload = fixed_frame_payload_;
+  }
 
   RuntimeEvent event;
   event.header = frame.header;
@@ -134,6 +171,10 @@ std::string CameraMockNode::make_event_extra_json(const CameraFrame & frame) con
          << ",\"source_id\":\"" << source_id_ << "\""
          << ",\"width\":" << frame.width
          << ",\"height\":" << frame.height
+         << ",\"encoding\":\"" << frame.encoding << "\""
+         << ",\"payload_bytes\":" << frame.payload.size()
+         << ",\"fixed_identity\":"
+         << ((!fixed_trace_id_.empty() || !fixed_oracle_id_.empty() || fixed_sequence_id_ != 0) ? "true" : "false")
          << "}";
   return stream.str();
 }
