@@ -1,14 +1,13 @@
 # RoboTraceOpt
 
-RoboTraceOpt is a ROS 2 runtime analysis project for cross-layer tracing,
-evidence-graph diagnosis, and diagnosis-guided configuration optimization in
-robotic systems.
+RoboTraceOpt analyzes ROS 2 runtime behavior across application, middleware,
+and Linux layers. It combines cross-layer tracing, evidence-graph diagnosis,
+and constrained configuration optimization for robotic systems.
 
-It combines application-level RuntimeEvent records with ROS 2 tracing and
-Linux runtime evidence through explicit adapters. The diagnosis layer builds
-typed evidence graphs, reports uncertainty instead of forcing a root-cause
-label, and constrains optimization trials to actions that match the diagnosed
-cause.
+Explicit adapters unify application-level RuntimeEvent records, ROS 2 traces,
+and Linux runtime evidence. The diagnosis layer builds typed evidence graphs,
+reports uncertainty instead of forcing a root-cause label, and only allows
+optimization trials whose actions match the diagnosed cause.
 
 ## What is included
 
