@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <random>
 #include <string>
+#include <vector>
 
 #include "ai_robot_runtime_interfaces/msg/camera_frame.hpp"
 #include "ai_robot_runtime_interfaces/msg/runtime_event.hpp"
@@ -38,6 +39,11 @@ private:
   uint32_t width_{640};
   uint32_t height_{480};
   size_t frame_payload_bytes_{0};
+  std::vector<uint8_t> fixed_frame_payload_;
+  std::string image_file_;
+  std::string fixed_trace_id_;
+  std::string fixed_oracle_id_;
+  uint64_t fixed_sequence_id_{0};
   std::string encoding_{"mock"};
   std::string source_id_{"camera_a"};
   bool runtime_events_enabled_{true};
