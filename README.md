@@ -142,6 +142,10 @@ by the session is retained at commit `384b215` and local archival tag
 
 ![F4 control and injected request-response latency](docs/figures/native-f4-formal.svg)
 
+The sanitized [native F3/F4 evidence package](docs/evidence/native-f3f4-formal-v3/)
+contains qualification metadata, source hashes, run-level metrics, statistics,
+and both result figures.
+
 These runs establish native collection and the reported F3/F4 effects. They do
 not yet establish held-out multi-class diagnosis accuracy, abstention quality,
 runtime overhead, optimization benefit, ECU HIL behavior, or actuator safety.
@@ -166,6 +170,28 @@ record a dirty source tree at commit `65273ea`; their input hashes and source
 tree hash are retained. They are therefore reported separately from the clean,
 native F3/F4 formal session and do not close the held-out diagnosis or formal
 optimization gaps.
+
+The complete sanitized [run-held-out association package](docs/evidence/wsl-heldout-association-20260731/)
+includes the frozen evaluator, aggregate scoring outputs, split manifest, and
+input-artifact hashes. Row-level predictions remain in the private audit copy.
+
+## Limited supporting evidence
+
+Two overlooked campaigns are now preserved with narrower claim boundaries:
+
+- The [WSL2 RuntimeEvent proxy-overhead package](docs/evidence/wsl-runtimeevent-overhead-20260712/)
+  contains 60 whole-run summaries: disabled, buffered, and per-event flush at
+  nominal 5 Hz and stress 20 Hz. Median process CPU was 2.037%, 3.476%, and
+  3.250% at 5 Hz, and 4.075%, 7.607%, and 7.253% at 20 Hz. This block-ordered,
+  dirty-tree WSL2 campaign is not native or four-mode tracing/fused evidence.
+- The [X5 physical-CAN smoke package](docs/evidence/x5-physical-can-smoke-20260727/)
+  preserves one 40-second arm64 PREEMPT_RT capture with 34 sends, 34 matched
+  ACKs, 100% payload matching, and 6.039 ms / 6.238 ms send-to-ACK P50/P95.
+  The planner was mock and no drop/timeout comparator exists, so this is neither
+  ECU HIL nor evidence for the current fail-closed model runtime.
+
+See the [public evidence index](docs/evidence/) for package manifests and the
+claim boundary of every published result.
 
 ## Project lineage
 

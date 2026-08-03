@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="430" viewBox="0 0 980 430">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<style>text{font-family:Arial,sans-serif;fill:#202124;letter-spacing:0}.title{font-size:21px;font-weight:700}.label{font-size:13px}.small{font-size:11px;fill:#555}.axis{stroke:#777}.grid{stroke:#e3e6e8}.med{stroke:#0072B2;stroke-width:2}.p95{stroke:#D55E00;stroke-width:2;stroke-dasharray:6 4}</style>
+<text x="55" y="34" class="title">X5 dual-CANable normal-ACK smoke</text>
+<line x1="75" y1="330.0" x2="910" y2="330.0" class="grid"/>
+<text x="65" y="334.0" text-anchor="end" class="small">5.72</text>
+<line x1="75" y1="278.0" x2="910" y2="278.0" class="grid"/>
+<text x="65" y="282.0" text-anchor="end" class="small">5.91</text>
+<line x1="75" y1="226.0" x2="910" y2="226.0" class="grid"/>
+<text x="65" y="230.0" text-anchor="end" class="small">6.10</text>
+<line x1="75" y1="174.0" x2="910" y2="174.0" class="grid"/>
+<text x="65" y="178.0" text-anchor="end" class="small">6.29</text>
+<line x1="75" y1="122.0" x2="910" y2="122.0" class="grid"/>
+<text x="65" y="126.0" text-anchor="end" class="small">6.48</text>
+<line x1="75" y1="70.0" x2="910" y2="70.0" class="grid"/>
+<text x="65" y="74.0" text-anchor="end" class="small">6.67</text>
+<circle cx="75.0" cy="212.2" r="4" fill="#009E73"/>
+<circle cx="100.3" cy="226.6" r="4" fill="#009E73"/>
+<circle cx="125.6" cy="249.0" r="4" fill="#009E73"/>
+<circle cx="150.9" cy="254.0" r="4" fill="#009E73"/>
+<circle cx="176.2" cy="111.1" r="4" fill="#009E73"/>
+<circle cx="201.5" cy="198.3" r="4" fill="#009E73"/>
+<circle cx="226.8" cy="260.1" r="4" fill="#009E73"/>
+<circle cx="252.1" cy="243.2" r="4" fill="#009E73"/>
+<circle cx="277.4" cy="179.8" r="4" fill="#009E73"/>
+<circle cx="302.7" cy="252.7" r="4" fill="#009E73"/>
+<circle cx="328.0" cy="259.1" r="4" fill="#009E73"/>
+<circle cx="353.3" cy="250.4" r="4" fill="#009E73"/>
+<circle cx="378.6" cy="251.2" r="4" fill="#009E73"/>
+<circle cx="403.9" cy="256.6" r="4" fill="#009E73"/>
+<circle cx="429.2" cy="270.0" r="4" fill="#009E73"/>
+<circle cx="454.5" cy="223.1" r="4" fill="#009E73"/>
+<circle cx="479.8" cy="259.8" r="4" fill="#009E73"/>
+<circle cx="505.2" cy="229.4" r="4" fill="#009E73"/>
+<circle cx="530.5" cy="219.0" r="4" fill="#009E73"/>
+<circle cx="555.8" cy="246.6" r="4" fill="#009E73"/>
+<circle cx="581.1" cy="235.3" r="4" fill="#009E73"/>
+<circle cx="606.4" cy="260.7" r="4" fill="#009E73"/>
+<circle cx="631.7" cy="243.3" r="4" fill="#009E73"/>
+<circle cx="657.0" cy="247.4" r="4" fill="#009E73"/>
+<circle cx="682.3" cy="252.0" r="4" fill="#009E73"/>
+<circle cx="707.6" cy="193.5" r="4" fill="#009E73"/>
+<circle cx="732.9" cy="202.2" r="4" fill="#009E73"/>
+<circle cx="758.2" cy="288.9" r="4" fill="#009E73"/>
+<circle cx="783.5" cy="235.8" r="4" fill="#009E73"/>
+<circle cx="808.8" cy="231.9" r="4" fill="#009E73"/>
+<circle cx="834.1" cy="213.3" r="4" fill="#009E73"/>
+<circle cx="859.4" cy="250.5" r="4" fill="#009E73"/>
+<circle cx="884.7" cy="237.8" r="4" fill="#009E73"/>
+<circle cx="910.0" cy="243.4" r="4" fill="#009E73"/>
+<line x1="75" y1="243.4" x2="910" y2="243.4" class="med"/>
+<text x="906" y="237.4" text-anchor="end" class="small">median 6.039 ms</text>
+<line x1="75" y1="188.7" x2="910" y2="188.7" class="p95"/>
+<text x="906" y="182.7" text-anchor="end" class="small">empirical p95 6.238 ms</text>
+<line x1="75" y1="70" x2="75" y2="330" class="axis"/>
+<line x1="75" y1="330" x2="910" y2="330" class="axis"/>
+<text x="492.5" y="368" text-anchor="middle" class="label">Trace sequence (n=34)</text>
+<text x="18" y="200.0" transform="rotate(-90 18 200.0)" text-anchor="middle" class="label">CAN send-to-ACK latency (ms)</text>
+<text x="55" y="404" class="small">Single 40 s normal-ACK session; no drop/timeout comparator and no ECU HIL claim.</text>
+</svg>
