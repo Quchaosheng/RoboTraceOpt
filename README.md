@@ -128,6 +128,45 @@ functional-safety, actuator, or formal experiment result.
 The repository contains implementation and public technical documentation
 only. Private research documents and local experiment data are excluded.
 
+## Native Linux F3/F4 formal results
+
+The frozen Ubuntu 24.04 / ROS 2 Jazzy test partition completed 40/40 runs:
+ten balanced control/injected pairs for F3 and ten for F4. The exact code used
+by the session is retained at commit `384b215` and local archival tag
+`experiment-native-f3f4-formal-v3-20260729`.
+
+| Case | Control | Injected | Defensible conclusion |
+| --- | ---: | ---: | --- |
+| F3 scheduling pressure | 95.30% complete lifecycle recovery | 67.56% | Pressure reduces complete-path recovery; complete samples are selection-biased, so this is not scheduler-causality evidence. |
+| F4 100 ms service blocking | 0.875 ms request-response median | 101.212 ms | The application-level blocking effect is recovered with a paired median increase of about 100.337 ms. |
+
+![F4 control and injected request-response latency](docs/figures/native-f4-formal.svg)
+
+These runs establish native collection and the reported F3/F4 effects. They do
+not yet establish held-out multi-class diagnosis accuracy, abstention quality,
+runtime overhead, optimization benefit, ECU HIL behavior, or actuator safety.
+Those claims require separate frozen datasets and paired campaigns.
+
+## WSL2 run-held-out association evaluation
+
+The earlier WSL2 / Ubuntu 22.04 / ROS 2 Humble overlap logs also support a
+separate run-held-out evaluation of path association. Runs 01-05 calibrate the
+timestamp baseline and runs 06-10 are held out for testing in each scenario.
+The predictor receives only event identity, trace ID, sequence ID, stage, and
+timestamp; oracle identity is joined only after public groups are generated.
+
+| Held-out scenario | Oracle traces | `trace_id_contract` precision | Recall | F1 | Run-bootstrap 95% F1 CI |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Dual 10 Hz | 6,024 | 1.0000 | 0.9772 | 0.9884 | [0.9793, 0.9939] |
+| Dual mixed-rate | 5,178 | 1.0000 | 1.0000 | 1.0000 | [1.0000, 1.0000] |
+
+This is association and path-validity evidence, not F1-F6 root-cause
+classification. The runs share one host and boot, use mock-mode delays, and
+record a dirty source tree at commit `65273ea`; their input hashes and source
+tree hash are retained. They are therefore reported separately from the clean,
+native F3/F4 formal session and do not close the held-out diagnosis or formal
+optimization gaps.
+
 ## Project lineage
 
 RoboTraceOpt consolidates engineering work from
