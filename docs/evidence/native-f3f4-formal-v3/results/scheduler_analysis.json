@@ -1,0 +1,576 @@
+{
+  "clock_id": "monotonic",
+  "condition_rows": {
+    "control": {
+      "latency_ns": {
+        "count": 7970,
+        "mean": 76334.67013801757,
+        "median": 57988.5,
+        "p90": 185554.70000000007,
+        "p95": 219644.64999999997,
+        "p99": 311101.1399999999
+      },
+      "matched_wakeup_switch": 7970,
+      "runs": 10,
+      "wakeups": 7971
+    },
+    "injected": {
+      "latency_ns": {
+        "count": 2745,
+        "mean": 53503.96612021858,
+        "median": 9100.0,
+        "p90": 127870.0,
+        "p95": 174686.9999999999,
+        "p99": 399996.5599999998
+      },
+      "matched_wakeup_switch": 2745,
+      "runs": 10,
+      "wakeups": 2745
+    }
+  },
+  "dataset_role": "test",
+  "formal_experiment_allowed": true,
+  "git_commit": "384b21556d12e572ef8e490c1ab7cfef0c328203",
+  "identity_join": "process_manifest.kernel_pid == eBPF tid/next_tid",
+  "measurement": "planner_main_thread_sched_wakeup_to_sched_switch",
+  "pooled_event_comparison": {
+    "median_absolute_delta_ns": -48888.5,
+    "median_ratio": 0.15692766669253386
+  },
+  "run_level_paired_comparison": {
+    "analysis_unit": "run",
+    "exact_two_sided_sign_p": 0.021484375,
+    "negative_differences": 9,
+    "pair_count": 10,
+    "paired_difference_median_ns": -46114.5,
+    "pairs": [
+      {
+        "control_median_ns": 58590.5,
+        "difference_ns": 7397.5,
+        "injected_median_ns": 65988.0,
+        "run": 1
+      },
+      {
+        "control_median_ns": 61553.5,
+        "difference_ns": -47468.5,
+        "injected_median_ns": 14085.0,
+        "run": 2
+      },
+      {
+        "control_median_ns": 62728.5,
+        "difference_ns": -39580.5,
+        "injected_median_ns": 23148.0,
+        "run": 3
+      },
+      {
+        "control_median_ns": 59841.0,
+        "difference_ns": -658.0,
+        "injected_median_ns": 59183.0,
+        "run": 4
+      },
+      {
+        "control_median_ns": 53679.5,
+        "difference_ns": -36801.5,
+        "injected_median_ns": 16878.0,
+        "run": 5
+      },
+      {
+        "control_median_ns": 57618.0,
+        "difference_ns": -51091.0,
+        "injected_median_ns": 6527.0,
+        "run": 6
+      },
+      {
+        "control_median_ns": 64206.0,
+        "difference_ns": -47196.0,
+        "injected_median_ns": 17010.0,
+        "run": 7
+      },
+      {
+        "control_median_ns": 53666.0,
+        "difference_ns": -45033.0,
+        "injected_median_ns": 8633.0,
+        "run": 8
+      },
+      {
+        "control_median_ns": 55092.0,
+        "difference_ns": -49792.5,
+        "injected_median_ns": 5299.5,
+        "run": 9
+      },
+      {
+        "control_median_ns": 57048.0,
+        "difference_ns": -51787.0,
+        "injected_median_ns": 5261.0,
+        "run": 10
+      }
+    ],
+    "positive_differences": 1,
+    "zero_differences": 0
+  },
+  "runs": [
+    {
+      "capture_duration_s": 5.625,
+      "case": "001_native_x86_2404_jazzy_f3f4_20260729_070205_diagnosis_f3_control_r01",
+      "duplicate_wakeups_while_pending": 0,
+      "invalid_intervals": 0,
+      "latency_ns": {
+        "count": 732,
+        "mean": 80927.85928961748,
+        "median": 58590.5,
+        "p90": 196777.59999999998,
+        "p95": 250458.7999999998,
+        "p99": 348852.3399999995
+      },
+      "match_rate": 1.0,
+      "matched_wakeup_switch": 732,
+      "planner_tid": 132334,
+      "run": 1,
+      "switches_to_planner": 11864,
+      "target_cpu": 23,
+      "unmatched_final_wakeup": 0,
+      "variant": "control",
+      "wakeups": 732
+    },
+    {
+      "capture_duration_s": 2.212,
+      "case": "002_native_x86_2404_jazzy_f3f4_20260729_070205_diagnosis_f3_injected_r01",
+      "duplicate_wakeups_while_pending": 0,
+      "invalid_intervals": 0,
+      "latency_ns": {
+        "count": 208,
+        "mean": 82582.85096153847,
+        "median": 65988.0,
+        "p90": 190552.00000000003,
+        "p95": 240624.3,
+        "p99": 430992.98
+      },
+      "match_rate": 1.0,
+      "matched_wakeup_switch": 208,
+      "planner_tid": 132961,
+      "run": 1,
+      "switches_to_planner": 2442,
+      "target_cpu": 23,
+      "unmatched_final_wakeup": 0,
+      "variant": "injected",
+      "wakeups": 208
+    },
+    {
+      "capture_duration_s": 2.202,
+      "case": "005_native_x86_2404_jazzy_f3f4_20260729_070205_diagnosis_f3_injected_r02",
+      "duplicate_wakeups_while_pending": 0,
+      "invalid_intervals": 0,
+      "latency_ns": {
+        "count": 208,
+        "mean": 46221.480769230766,
+        "median": 14085.0,
+        "p90": 120650.90000000002,
+        "p95": 146166.84999999974,
+        "p99": 241168.34000000008
+      },
+      "match_rate": 1.0,
+      "matched_wakeup_switch": 208,
+      "planner_tid": 135368,
+      "run": 2,
+      "switches_to_planner": 2359,
+      "target_cpu": 23,
+      "unmatched_final_wakeup": 0,
+      "variant": "injected",
+      "wakeups": 208
+    },
+    {
+      "capture_duration_s": 5.831,
+      "case": "008_native_x86_2404_jazzy_f3f4_20260729_070205_diagnosis_f3_control_r02",
+      "duplicate_wakeups_while_pending": 0,
+      "invalid_intervals": 0,
+      "latency_ns": {
+        "count": 788,
+        "mean": 82121.67766497462,
+        "median": 61553.5,
+        "p90": 193165.3,
+        "p95": 230372.79999999993,
+        "p99": 336499.99
+      },
+      "match_rate": 1.0,
+      "matched_wakeup_switch": 788,
+      "planner_tid": 138395,
+      "run": 2,
+      "switches_to_planner": 12454,
+      "target_cpu": 23,
+      "unmatched_final_wakeup": 0,
+      "variant": "control",
+      "wakeups": 788
+    },
+    {
+      "capture_duration_s": 5.838,
+      "case": "011_native_x86_2404_jazzy_f3f4_20260729_070205_diagnosis_f3_control_r03",
+      "duplicate_wakeups_while_pending": 0,
+      "invalid_intervals": 0,
+      "latency_ns": {
+        "count": 838,
+        "mean": 85643.1014319809,
+        "median": 62728.5,
+        "p90": 196330.50000000003,
+        "p95": 240807.3,
+        "p99": 306529.68999999994
+      },
+      "match_rate": 1.0,
+      "matched_wakeup_switch": 838,
+      "planner_tid": 138985,
+      "run": 3,
+      "switches_to_planner": 13113,
+      "target_cpu": 23,
+      "unmatched_final_wakeup": 0,
+      "variant": "control",
+      "wakeups": 838
+    },
+    {
+      "capture_duration_s": 2.21,
+      "case": "012_native_x86_2404_jazzy_f3f4_20260729_070205_diagnosis_f3_injected_r03",
+      "duplicate_wakeups_while_pending": 0,
+      "invalid_intervals": 0,
+      "latency_ns": {
+        "count": 212,
+        "mean": 70071.54716981133,
+        "median": 23148.0,
+        "p90": 146874.5,
+        "p95": 211524.25,
+        "p99": 498932.8999999989
+      },
+      "match_rate": 1.0,
+      "matched_wakeup_switch": 212,
+      "planner_tid": 141410,
+      "run": 3,
+      "switches_to_planner": 2501,
+      "target_cpu": 23,
+      "unmatched_final_wakeup": 0,
+      "variant": "injected",
+      "wakeups": 212
+    },
+    {
+      "capture_duration_s": 5.632,
+      "case": "014_native_x86_2404_jazzy_f3f4_20260729_070205_diagnosis_f3_control_r04",
+      "duplicate_wakeups_while_pending": 0,
+      "invalid_intervals": 0,
+      "latency_ns": {
+        "count": 761,
+        "mean": 80202.60315374508,
+        "median": 59841.0,
+        "p90": 206515.0,
+        "p95": 237799.0,
+        "p99": 329952.79999999993
+      },
+      "match_rate": 1.0,
+      "matched_wakeup_switch": 761,
+      "planner_tid": 142170,
+      "run": 4,
+      "switches_to_planner": 12130,
+      "target_cpu": 23,
+      "unmatched_final_wakeup": 0,
+      "variant": "control",
+      "wakeups": 761
+    },
+    {
+      "capture_duration_s": 2.005,
+      "case": "015_native_x86_2404_jazzy_f3f4_20260729_070205_diagnosis_f3_injected_r04",
+      "duplicate_wakeups_while_pending": 0,
+      "invalid_intervals": 0,
+      "latency_ns": {
+        "count": 191,
+        "mean": 96760.49738219896,
+        "median": 59183.0,
+        "p90": 193487.0,
+        "p95": 296308.5,
+        "p99": 608374.6999999979
+      },
+      "match_rate": 1.0,
+      "matched_wakeup_switch": 191,
+      "planner_tid": 142455,
+      "run": 4,
+      "switches_to_planner": 2142,
+      "target_cpu": 23,
+      "unmatched_final_wakeup": 0,
+      "variant": "injected",
+      "wakeups": 191
+    },
+    {
+      "capture_duration_s": 5.832,
+      "case": "017_native_x86_2404_jazzy_f3f4_20260729_070205_diagnosis_f3_control_r05",
+      "duplicate_wakeups_while_pending": 0,
+      "invalid_intervals": 0,
+      "latency_ns": {
+        "count": 740,
+        "mean": 75058.30405405405,
+        "median": 53679.5,
+        "p90": 193137.20000000004,
+        "p95": 228679.04999999996,
+        "p99": 320184.54000000015
+      },
+      "match_rate": 0.9986504723346828,
+      "matched_wakeup_switch": 740,
+      "planner_tid": 143340,
+      "run": 5,
+      "switches_to_planner": 12060,
+      "target_cpu": 23,
+      "unmatched_final_wakeup": 1,
+      "variant": "control",
+      "wakeups": 741
+    },
+    {
+      "capture_duration_s": 2.29,
+      "case": "018_native_x86_2404_jazzy_f3f4_20260729_070205_diagnosis_f3_injected_r05",
+      "duplicate_wakeups_while_pending": 0,
+      "invalid_intervals": 0,
+      "latency_ns": {
+        "count": 215,
+        "mean": 70586.78139534884,
+        "median": 16878.0,
+        "p90": 141945.19999999998,
+        "p95": 258327.19999999972,
+        "p99": 560414.2199999997
+      },
+      "match_rate": 1.0,
+      "matched_wakeup_switch": 215,
+      "planner_tid": 144750,
+      "run": 5,
+      "switches_to_planner": 2175,
+      "target_cpu": 23,
+      "unmatched_final_wakeup": 0,
+      "variant": "injected",
+      "wakeups": 215
+    },
+    {
+      "capture_duration_s": 2.212,
+      "case": "021_native_x86_2404_jazzy_f3f4_20260729_070205_diagnosis_f3_injected_r06",
+      "duplicate_wakeups_while_pending": 0,
+      "invalid_intervals": 0,
+      "latency_ns": {
+        "count": 207,
+        "mean": 47975.555555555555,
+        "median": 6527.0,
+        "p90": 120394.6,
+        "p95": 161133.19999999995,
+        "p99": 313951.95999999985
+      },
+      "match_rate": 1.0,
+      "matched_wakeup_switch": 207,
+      "planner_tid": 145090,
+      "run": 6,
+      "switches_to_planner": 2039,
+      "target_cpu": 23,
+      "unmatched_final_wakeup": 0,
+      "variant": "injected",
+      "wakeups": 207
+    },
+    {
+      "capture_duration_s": 5.828,
+      "case": "024_native_x86_2404_jazzy_f3f4_20260729_070205_diagnosis_f3_control_r06",
+      "duplicate_wakeups_while_pending": 0,
+      "invalid_intervals": 0,
+      "latency_ns": {
+        "count": 793,
+        "mean": 71831.9924337957,
+        "median": 57618.0,
+        "p90": 186415.2,
+        "p95": 220400.59999999998,
+        "p99": 305832.92000000057
+      },
+      "match_rate": 1.0,
+      "matched_wakeup_switch": 793,
+      "planner_tid": 145458,
+      "run": 6,
+      "switches_to_planner": 12473,
+      "target_cpu": 23,
+      "unmatched_final_wakeup": 0,
+      "variant": "control",
+      "wakeups": 793
+    },
+    {
+      "capture_duration_s": 5.832,
+      "case": "027_native_x86_2404_jazzy_f3f4_20260729_070205_diagnosis_f3_control_r07",
+      "duplicate_wakeups_while_pending": 0,
+      "invalid_intervals": 0,
+      "latency_ns": {
+        "count": 823,
+        "mean": 84857.56500607534,
+        "median": 64206.0,
+        "p90": 201019.00000000006,
+        "p95": 224840.09999999998,
+        "p99": 303079.9399999999
+      },
+      "match_rate": 1.0,
+      "matched_wakeup_switch": 823,
+      "planner_tid": 145830,
+      "run": 7,
+      "switches_to_planner": 12023,
+      "target_cpu": 23,
+      "unmatched_final_wakeup": 0,
+      "variant": "control",
+      "wakeups": 823
+    },
+    {
+      "capture_duration_s": 2.295,
+      "case": "028_native_x86_2404_jazzy_f3f4_20260729_070205_diagnosis_f3_injected_r07",
+      "duplicate_wakeups_while_pending": 0,
+      "invalid_intervals": 0,
+      "latency_ns": {
+        "count": 214,
+        "mean": 60167.94859813084,
+        "median": 17010.0,
+        "p90": 129233.8,
+        "p95": 165185.5,
+        "p99": 378995.83000000013
+      },
+      "match_rate": 1.0,
+      "matched_wakeup_switch": 214,
+      "planner_tid": 145973,
+      "run": 7,
+      "switches_to_planner": 2231,
+      "target_cpu": 23,
+      "unmatched_final_wakeup": 0,
+      "variant": "injected",
+      "wakeups": 214
+    },
+    {
+      "capture_duration_s": 5.839,
+      "case": "030_native_x86_2404_jazzy_f3f4_20260729_070205_diagnosis_f3_control_r08",
+      "duplicate_wakeups_while_pending": 0,
+      "invalid_intervals": 0,
+      "latency_ns": {
+        "count": 753,
+        "mean": 70783.60557768925,
+        "median": 53666.0,
+        "p90": 169896.8,
+        "p95": 223603.59999999986,
+        "p99": 306242.5200000001
+      },
+      "match_rate": 1.0,
+      "matched_wakeup_switch": 753,
+      "planner_tid": 146234,
+      "run": 8,
+      "switches_to_planner": 10989,
+      "target_cpu": 23,
+      "unmatched_final_wakeup": 0,
+      "variant": "control",
+      "wakeups": 753
+    },
+    {
+      "capture_duration_s": 2.197,
+      "case": "031_native_x86_2404_jazzy_f3f4_20260729_070205_diagnosis_f3_injected_r08",
+      "duplicate_wakeups_while_pending": 0,
+      "invalid_intervals": 0,
+      "latency_ns": {
+        "count": 205,
+        "mean": 53757.76585365854,
+        "median": 8633.0,
+        "p90": 112355.19999999998,
+        "p95": 176694.59999999966,
+        "p99": 351503.4400000002
+      },
+      "match_rate": 1.0,
+      "matched_wakeup_switch": 205,
+      "planner_tid": 146378,
+      "run": 8,
+      "switches_to_planner": 2327,
+      "target_cpu": 23,
+      "unmatched_final_wakeup": 0,
+      "variant": "injected",
+      "wakeups": 205
+    },
+    {
+      "capture_duration_s": 5.841,
+      "case": "033_native_x86_2404_jazzy_f3f4_20260729_070205_diagnosis_f3_control_r09",
+      "duplicate_wakeups_while_pending": 0,
+      "invalid_intervals": 0,
+      "latency_ns": {
+        "count": 811,
+        "mean": 61591.46609124538,
+        "median": 55092.0,
+        "p90": 147526.0,
+        "p95": 169477.0,
+        "p99": 210160.99999999994
+      },
+      "match_rate": 1.0,
+      "matched_wakeup_switch": 811,
+      "planner_tid": 146625,
+      "run": 9,
+      "switches_to_planner": 12051,
+      "target_cpu": 23,
+      "unmatched_final_wakeup": 0,
+      "variant": "control",
+      "wakeups": 811
+    },
+    {
+      "capture_duration_s": 5.439,
+      "case": "034_native_x86_2404_jazzy_f3f4_20260729_070205_diagnosis_f3_injected_r09",
+      "duplicate_wakeups_while_pending": 0,
+      "invalid_intervals": 0,
+      "latency_ns": {
+        "count": 544,
+        "mean": 37900.75367647059,
+        "median": 5299.5,
+        "p90": 102047.29999999999,
+        "p95": 114802.75,
+        "p99": 261341.4300000001
+      },
+      "match_rate": 1.0,
+      "matched_wakeup_switch": 544,
+      "planner_tid": 146786,
+      "run": 9,
+      "switches_to_planner": 5085,
+      "target_cpu": 23,
+      "unmatched_final_wakeup": 0,
+      "variant": "injected",
+      "wakeups": 544
+    },
+    {
+      "capture_duration_s": 5.432,
+      "case": "037_native_x86_2404_jazzy_f3f4_20260729_070205_diagnosis_f3_injected_r10",
+      "duplicate_wakeups_while_pending": 0,
+      "invalid_intervals": 0,
+      "latency_ns": {
+        "count": 541,
+        "mean": 31643.756007393717,
+        "median": 5261.0,
+        "p90": 101026.0,
+        "p95": 116369.0,
+        "p99": 192110.20000000033
+      },
+      "match_rate": 1.0,
+      "matched_wakeup_switch": 541,
+      "planner_tid": 147108,
+      "run": 10,
+      "switches_to_planner": 4371,
+      "target_cpu": 23,
+      "unmatched_final_wakeup": 0,
+      "variant": "injected",
+      "wakeups": 541
+    },
+    {
+      "capture_duration_s": 6.054,
+      "case": "040_native_x86_2404_jazzy_f3f4_20260729_070205_diagnosis_f3_control_r10",
+      "duplicate_wakeups_while_pending": 0,
+      "invalid_intervals": 0,
+      "latency_ns": {
+        "count": 931,
+        "mean": 70933.1052631579,
+        "median": 57048.0,
+        "p90": 159146.0,
+        "p95": 171426.0,
+        "p99": 214080.3000000001
+      },
+      "match_rate": 1.0,
+      "matched_wakeup_switch": 931,
+      "planner_tid": 147429,
+      "run": 10,
+      "switches_to_planner": 13867,
+      "target_cpu": 23,
+      "unmatched_final_wakeup": 0,
+      "variant": "control",
+      "wakeups": 931
+    }
+  ],
+  "schema_version": "f3-identity-bound-scheduler-analysis/v1",
+  "source_session": "<EXPERIMENT_ROOT>",
+  "trace_level_attribution": false
+}
