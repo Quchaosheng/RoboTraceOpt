@@ -61,6 +61,14 @@ from scripts.export_ros2_trace import (  # noqa: E402
 from scripts.export_tracetools_fixture import directory_sha256  # noqa: E402
 
 
+# GNU timeout: deadline, SIGINT termination, and --kill-after SIGKILL termination.
+EXPECTED_TIMEOUT_EXIT_CODES = {124, 130, 137}
+
+
+def workload_exit_is_expected(return_code: int) -> bool:
+    return return_code in EXPECTED_TIMEOUT_EXIT_CODES
+
+
 def try_snapshot_runtime_processes(
     events_path: Path, *, minimum_processes: int, target_cpu: int
 ) -> dict[str, dict[str, object]] | None:
@@ -275,7 +283,7 @@ def validate_formal_qualification(
         raise ValueError("qualification report git commit does not match")
     if qualification.get("git_status") or git_status:
         raise ValueError("formal fault requires a clean worktree")
-    if condition_variant == "control":
+    if condition_variant == "control" and fault_id not in {"F3", "F4"}:
         raise ValueError("control variant is development-only")
     if fault_id == "F5":
         raise ValueError("F5 is development-only until its profile is frozen")
@@ -325,7 +333,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--tracing-overlay-root",
         type=Path,
-        default=Path.home() / ".cache" / "robotracert_tracing_overlay",
+        default=Path(
+            os.environ.get(
+                "TRACETOOLS_OVERLAY_ROOT",
+                str(Path.home() / ".cache" / "robotracert_tracing_overlay"),
+            )
+        ),
     )
     parser.add_argument("--execute", action="store_true")
     return parser.parse_args()
@@ -505,6 +518,8 @@ def execute_condition(
     trace_session = f"fault_{fault_id.lower()}_{os.getpid()}"
     trace_dir = output_dir / "ctf"
     tracing_setup = tracing_overlay_root / "install" / "setup.bash"
+    if not tracing_setup.is_file():
+        tracing_setup = tracing_overlay_root / "setup.bash"
     if tracing and not tracing_setup.is_file():
         raise FileNotFoundError(f"tracetools overlay is missing: {tracing_setup}")
     if tracing:
@@ -696,7 +711,7 @@ def execute_condition(
                 json.dumps(scheduler_manifest, indent=2, sort_keys=True) + "\n",
                 encoding="utf-8",
             )
-    if return_code not in {124, 130}:
+    if not workload_exit_is_expected(return_code):
         raise RuntimeError(
             f"fault launch failed with status {return_code}; see {launch_log}"
         )

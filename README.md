@@ -38,7 +38,9 @@ docs/          public schemas, environment notes, and migration references
 
 X5 setup, two-adapter physical CAN wiring, pilot execution, the short defense
 demonstration, and recovery steps are documented in
-[`docs/hardware/X5_RUNBOOK.md`](docs/hardware/X5_RUNBOOK.md).
+[`docs/hardware/X5_RUNBOOK.md`](docs/hardware/X5_RUNBOOK.md). The required
+capture artifacts, CANable/SLCAN branch, and claim boundaries are documented in
+[`docs/hardware/PHYSICAL_CAN_EVIDENCE.md`](docs/hardware/PHYSICAL_CAN_EVIDENCE.md).
 
 Preview package installation and run the read-only software preflight:
 
@@ -59,8 +61,11 @@ python3 scripts/run_x5_demo.py \
   --output-dir data/raw/demos/x5_plan_01
 ```
 
-Physical CAN output remains development evidence and is not substituted for the
-frozen native X5 tracing/eBPF matrix.
+The current physical result is a two-interface SocketCAN smoke with a responder
+peer. It is development evidence, not an ECU HIL result or a substitute for the
+frozen native X5 tracing/eBPF matrix. A retained normal/drop pair with the
+required capture artifacts is necessary before reporting an F6 diagnosis or
+performance conclusion.
 
 ## Environment
 
@@ -100,16 +105,93 @@ python3 -m unittest \
   tests.optimizer.test_repeated_campaign_cli -q
 ```
 
+## AI planner reliability
+
+The AI planner supports explicit mock, OpenAI-compatible, and deterministic
+replay backends through one versioned request/result contract. It records only
+normalized decision evidence when configured, rejects stale/duplicate output,
+and fails closed before the final CAN guard. Configuration, replay, fault
+campaign semantics, and the distinction between command delivery and task
+success are documented in
+[docs/ai/OPENAI_COMPATIBLE_PROXY_SETUP.md](docs/ai/OPENAI_COMPATIBLE_PROXY_SETUP.md).
+
 ## Evidence boundaries
 
 Generated raw and processed experiment data is intentionally excluded from
 Git. Development evidence is kept separate from calibration and held-out test
 partitions. RuntimeEvent-only and vcan results are labeled as proxy evidence
 and are not presented as formal syscall, scheduler, or physical CAN
-attribution.
+attribution. A `physical_can_evidence=true` capture establishes only the
+recorded physical SocketCAN transport path; by itself it is not an ECU HIL,
+functional-safety, actuator, or formal experiment result.
 
 The repository contains implementation and public technical documentation
 only. Private research documents and local experiment data are excluded.
+
+## Native Linux F3/F4 formal results
+
+The frozen Ubuntu 24.04 / ROS 2 Jazzy test partition completed 40/40 runs:
+ten balanced control/injected pairs for F3 and ten for F4. The exact code used
+by the session is retained at commit `384b215` and local archival tag
+`experiment-native-f3f4-formal-v3-20260729`.
+
+| Case | Control | Injected | Defensible conclusion |
+| --- | ---: | ---: | --- |
+| F3 scheduling pressure | 95.30% complete lifecycle recovery | 67.56% | Pressure reduces complete-path recovery; complete samples are selection-biased, so this is not scheduler-causality evidence. |
+| F4 100 ms service blocking | 0.875 ms request-response median | 101.212 ms | The application-level blocking effect is recovered with a paired median increase of about 100.337 ms. |
+
+![F4 control and injected request-response latency](docs/figures/native-f4-formal.svg)
+
+The sanitized [native F3/F4 evidence package](docs/evidence/native-f3f4-formal-v3/)
+contains qualification metadata, source hashes, run-level metrics, statistics,
+and both result figures.
+
+These runs establish native collection and the reported F3/F4 effects. They do
+not yet establish held-out multi-class diagnosis accuracy, abstention quality,
+runtime overhead, optimization benefit, ECU HIL behavior, or actuator safety.
+Those claims require separate frozen datasets and paired campaigns.
+
+## WSL2 run-held-out association evaluation
+
+The earlier WSL2 / Ubuntu 22.04 / ROS 2 Humble overlap logs also support a
+separate run-held-out evaluation of path association. Runs 01-05 calibrate the
+timestamp baseline and runs 06-10 are held out for testing in each scenario.
+The predictor receives only event identity, trace ID, sequence ID, stage, and
+timestamp; oracle identity is joined only after public groups are generated.
+
+| Held-out scenario | Oracle traces | `trace_id_contract` precision | Recall | F1 | Run-bootstrap 95% F1 CI |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Dual 10 Hz | 6,024 | 1.0000 | 0.9772 | 0.9884 | [0.9793, 0.9939] |
+| Dual mixed-rate | 5,178 | 1.0000 | 1.0000 | 1.0000 | [1.0000, 1.0000] |
+
+This is association and path-validity evidence, not F1-F6 root-cause
+classification. The runs share one host and boot, use mock-mode delays, and
+record a dirty source tree at commit `65273ea`; their input hashes and source
+tree hash are retained. They are therefore reported separately from the clean,
+native F3/F4 formal session and do not close the held-out diagnosis or formal
+optimization gaps.
+
+The complete sanitized [run-held-out association package](docs/evidence/wsl-heldout-association-20260731/)
+includes the frozen evaluator, aggregate scoring outputs, split manifest, and
+input-artifact hashes. Row-level predictions remain in the private audit copy.
+
+## Limited supporting evidence
+
+Two overlooked campaigns are now preserved with narrower claim boundaries:
+
+- The [WSL2 RuntimeEvent proxy-overhead package](docs/evidence/wsl-runtimeevent-overhead-20260712/)
+  contains 60 whole-run summaries: disabled, buffered, and per-event flush at
+  nominal 5 Hz and stress 20 Hz. Median process CPU was 2.037%, 3.476%, and
+  3.250% at 5 Hz, and 4.075%, 7.607%, and 7.253% at 20 Hz. This block-ordered,
+  dirty-tree WSL2 campaign is not native or four-mode tracing/fused evidence.
+- The [X5 physical-CAN smoke package](docs/evidence/x5-physical-can-smoke-20260727/)
+  preserves one 40-second arm64 PREEMPT_RT capture with 34 sends, 34 matched
+  ACKs, 100% payload matching, and 6.039 ms / 6.238 ms send-to-ACK P50/P95.
+  The planner was mock and no drop/timeout comparator exists, so this is neither
+  ECU HIL nor evidence for the current fail-closed model runtime.
+
+See the [public evidence index](docs/evidence/) for package manifests and the
+claim boundary of every published result.
 
 ## Project lineage
 

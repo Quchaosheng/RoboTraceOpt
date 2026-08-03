@@ -346,6 +346,7 @@ def collect_capabilities(label: str, can_interface: str = "vcan0") -> dict[str, 
             ["ip", "-details", "-json", "link", "show", "type", "can"]
         ),
         "can_interface": run_command(["ip", "-details", "link", "show", can_interface]),
+        "slcand_processes": run_command(["pgrep", "-a", "-x", "slcand"]),
         "timedatectl": run_command(
             ["timedatectl", "show", "--property=NTPSynchronized", "--value"]
         ),
@@ -453,6 +454,7 @@ def collect_capabilities(label: str, can_interface: str = "vcan0") -> dict[str, 
                 "requested_interface_status": commands["can_interface"],
                 "candump": shutil.which("candump") or "",
                 "cansend": shutil.which("cansend") or "",
+                "slcand_processes": commands["slcand_processes"],
             },
             "cpu": {
                 "lscpu": commands["lscpu"],

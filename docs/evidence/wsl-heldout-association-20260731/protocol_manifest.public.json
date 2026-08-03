@@ -1,0 +1,82 @@
+{
+  "analysis_script": "evaluate_heldout_association.py",
+  "analysis_script_sha256": "9ba15d14d025600c0bb88f94beecc5a432a2871f2cf6b88463a2a9c41854c012",
+  "bootstrap_resamples": 10000,
+  "bootstrap_seed": 20260731,
+  "calibration_runs": [
+    "run_01",
+    "run_02",
+    "run_03",
+    "run_04",
+    "run_05"
+  ],
+  "evidence_qualification": "paper_supporting_wsl2_run_heldout_association",
+  "expected_stages": [
+    "camera_frame_published",
+    "planner_receive",
+    "planner_process_start",
+    "planner_process_end",
+    "planner_publish",
+    "can_command_received",
+    "can_encode_start",
+    "can_encode_end",
+    "can_frame_sent"
+  ],
+  "headline_policies": [
+    "timestamp_only",
+    "sequence_only",
+    "source_sequence",
+    "trace_id",
+    "trace_id_contract"
+  ],
+  "metric_definitions": {
+    "f1": "harmonic mean of run precision and recall",
+    "false_admission_rate": "incorrect accepted groups / all accepted groups",
+    "mixed_chain_rate": "accepted groups containing multiple oracle identities / all accepted groups",
+    "precision": "correct accepted groups / all accepted groups",
+    "recall": "oracle traces recovered by correct accepted groups / reference oracle traces",
+    "reject_rate": "rejected candidate groups / all candidate groups",
+    "valid_path_coverage": "same denominator as recall"
+  },
+  "negative_control_faults": [
+    "drop",
+    "duplicate",
+    "timestamp_inversion",
+    "sequence_conflict"
+  ],
+  "negative_control_repeats_per_run": 10,
+  "oracle_isolation": {
+    "oracle_join_stage": "after all public predictions are generated",
+    "oracle_not_used_by_grouping": true,
+    "prediction_input_fields": [
+      "event_uid",
+      "trace_id",
+      "sequence_id",
+      "stage",
+      "timestamp_ns"
+    ]
+  },
+  "protocol_id": "association_run_heldout_v2_standard_metrics",
+  "scenarios": [
+    "overlap_dual_10hz",
+    "overlap_dual_mixed"
+  ],
+  "source_commit": "65273ead83545d89f1f6bb8daeeded68cc926337",
+  "source_git_dirty": true,
+  "source_root_id": "ROS2Probe/ai_robotics_runtime_ws/reports/paper_formal_20260712",
+  "source_tree_sha256": "0973596604c8b7acd4a6ad3277ea43035d6c7c4e63b32089513847afa3ffaaaa",
+  "test_runs": [
+    "run_06",
+    "run_07",
+    "run_08",
+    "run_09",
+    "run_10"
+  ],
+  "timestamp_windows_ms": [
+    100.0,
+    250.0,
+    500.0,
+    1000.0
+  ],
+  "unit": "independent run invocation; same host/boot, not reboot-held-out"
+}

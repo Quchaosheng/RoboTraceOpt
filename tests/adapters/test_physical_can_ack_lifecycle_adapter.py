@@ -29,11 +29,31 @@ def physical_sources():
                 "info_kind": "can",
                 "info_data": {
                     "state": "ERROR-ACTIVE",
-                    "bittiming": {"bitrate": 500000},
+                    "bittiming": {"bitrate": 0},
                 },
             },
         }
 
+    pair = {
+        "runtime": link("can0"),
+        "peer": link("can1"),
+        "bitrate_evidence": {
+            "runtime": {
+                "source": "slcand",
+                "pid": 100,
+                "speed_code": "s6",
+                "bitrate": 500000,
+                "argv": ["slcand", "-o", "-c", "-s6", "/dev/tty0", "can0"],
+            },
+            "peer": {
+                "source": "slcand",
+                "pid": 101,
+                "speed_code": "s6",
+                "bitrate": 500000,
+                "argv": ["slcand", "-o", "-c", "-s6", "/dev/tty1", "can1"],
+            },
+        },
+    }
     capture.update(
         {
             "schema_version": "socketcan-capture/v2",
@@ -41,8 +61,8 @@ def physical_sources():
             "virtual_can_bus": False,
             "physical_can_evidence": True,
             "interface_pair": {
-                "before": {"runtime": link("can0"), "peer": link("can1")},
-                "after": {"runtime": link("can0"), "peer": link("can1")},
+                "before": pair,
+                "after": pair,
             },
         }
     )

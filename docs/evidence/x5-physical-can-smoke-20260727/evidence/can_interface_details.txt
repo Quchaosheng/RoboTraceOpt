@@ -1,0 +1,26 @@
+9: can1: <NOARP,UP,LOWER_UP> mtu 16 qdisc pfifo_fast state UP mode DEFAULT group default qlen 1024
+    link/can  promiscuity 0 minmtu 0 maxmtu 0 
+    can state ERROR-ACTIVE restart-ms 0 
+	  bitrate 0
+	     [   10000,    20000,    50000,   100000,   125000,   250000, 
+	        500000,   800000,  1000000 ]
+	  clock 0 
+	  re-started bus-errors arbit-lost error-warn error-pass bus-off
+	  0          0          0          0          0          0         numtxqueues 1 numrxqueues 1 gso_max_size 65536 gso_max_segs 65535 
+    RX:  bytes packets errors dropped  missed   mcast           
+           824     103      0       0       0       0 
+    TX:  bytes packets errors dropped carrier collsns           
+           832     104      0       0       0       0 
+10: can2: <NOARP,UP,LOWER_UP> mtu 16 qdisc pfifo_fast state UP mode DEFAULT group default qlen 1024
+    link/can  promiscuity 0 minmtu 0 maxmtu 0 
+    can state ERROR-ACTIVE restart-ms 0 
+	  bitrate 0
+	     [   10000,    20000,    50000,   100000,   125000,   250000, 
+	        500000,   800000,  1000000 ]
+	  clock 0 
+	  re-started bus-errors arbit-lost error-warn error-pass bus-off
+	  0          0          0          0          0          0         numtxqueues 1 numrxqueues 1 gso_max_size 65536 gso_max_segs 65535 
+    RX:  bytes packets errors dropped  missed   mcast           
+           832     104      0       0       0       0 
+    TX:  bytes packets errors dropped carrier collsns           
+           824     103      0       0       0       0 

@@ -1,0 +1,82 @@
+[
+  {
+    "bytes": 5406,
+    "sha256": "a219f9f80ce3e892e6e4aff4c24179b41f199a3f690fe2376401a9fe9af35aa4",
+    "source_path": "ack_responder.jsonl"
+  },
+  {
+    "bytes": 424,
+    "sha256": "6afcc2fcebc735c173ede0a68bf957e3697eead618f13c0e0950c01e62983dc5",
+    "source_path": "camera_capture_summary.json"
+  },
+  {
+    "bytes": 1519,
+    "sha256": "ceded5b7531031b714c4f8db052c7cc8e46a8c8006ad8cca403752e16d761060",
+    "source_path": "can_interface_details.txt"
+  },
+  {
+    "bytes": 3128,
+    "sha256": "9d09629a356f2eb46cdcd959cad91d26cdf25b6789c24c6f090fd73e764c95ee",
+    "source_path": "candump_can1.log"
+  },
+  {
+    "bytes": 3128,
+    "sha256": "5a6eea8d9bb62dae82c77a52de9557a81a2ddac81fccffa589bd2c681472e819",
+    "source_path": "candump_can2.log"
+  },
+  {
+    "bytes": 2824,
+    "sha256": "607466ea59c86d74a81f79311be89143d622649c973f9af4b2135c9806b8c636",
+    "source_path": "environment.txt"
+  },
+  {
+    "bytes": 2322,
+    "sha256": "feac692e08d51c80a190934c38283f5f3083fb89561e1b37f6c7a0fbc0e3160c",
+    "source_path": "hardware_can_ack_report.csv"
+  },
+  {
+    "bytes": 223,
+    "sha256": "1bbb92a16e6aec746b1c3b92da830aaec5224d909c3298927d86495d110853ed",
+    "source_path": "hardware_can_ack_summary.json"
+  },
+  {
+    "bytes": 759,
+    "sha256": "c7fd4919961b495c2e7c8a69afcac1048b2ba70091e5fec2e57d599163b4f957",
+    "source_path": "hardware_can_experiment_notes.md"
+  },
+  {
+    "bytes": 3396,
+    "sha256": "6b9645e0ca96f1dce7d802f5e752739e6109ac45ebcf43f0a290ac400a4d8061",
+    "source_path": "hardware_can_write_report.csv"
+  },
+  {
+    "bytes": 124,
+    "sha256": "3a0a61c1ad4b038a3ce24d198b5cf5dffb20aa1b68668dce164823cee43c6a7a",
+    "source_path": "hardware_can_write_summary.json"
+  },
+  {
+    "bytes": 6189,
+    "sha256": "29daa9a7d6ae40be880f5e9bee6053aafaf489c40b2c1da889c4606d6f70eda2",
+    "source_path": "latency_report.csv"
+  },
+  {
+    "bytes": 2327,
+    "sha256": "6cd9e2893483ecdbfb705508ae855219b2ebe85abe7ebfa614c6e75eacc7c595",
+    "source_path": "latency_summary.json"
+  },
+  {
+    "bytes": 375310,
+    "sha256": "877124ab201aae3c117bb5589ce7330045b0cce776778a8eea2d927026d750bd",
+    "source_path": "runtime_events.jsonl"
+  },
+  {
+    "bytes": 113,
+    "sha256": "4ebe4769727db3af70b6a16bc831796503f42c628ed40622f6f4b4b5ec00b7d7",
+    "source_path": "slcan_setup.txt"
+  },
+  {
+    "bytes": 476,
+    "sha256": "7430d53493895b7124d867109d0ce39607ca1269aa6cf6f52accdc7ee09281c3",
+    "source_path": "usb_devices.txt"
+  }
+]

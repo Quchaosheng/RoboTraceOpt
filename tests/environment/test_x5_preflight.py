@@ -17,11 +17,13 @@ def capability_report() -> dict:
             "ebpf": {"status": "ready"},
             "identity_comparable_ebpf": {"status": "ready"},
             "ros2_tracing": {"status": "ready"},
+            "runtime_event": {"status": "ready"},
             "socketcan": {"status": "ready"},
         },
         "evidence": {
             "ros2": {"ros_distro": "humble"},
             "can": {
+                "slcand_processes": {"returncode": 1, "stdout": ""},
                 "interfaces": [
                     {
                         "ifname": "can0",
@@ -99,6 +101,43 @@ class X5PreflightTest(unittest.TestCase):
 
         self.assertEqual(result["status"], "blocked")
         self.assertIn("socketcan", result["failed_checks"])
+
+    def test_physical_mode_accepts_auditable_slcan_bitrate(self) -> None:
+        report = capability_report()
+        report["readiness"]["ebpf"]["status"] = "blocked"
+        report["readiness"]["identity_comparable_ebpf"]["status"] = "blocked"
+        report["readiness"]["ros2_tracing"]["status"] = "blocked"
+        links = report["evidence"]["can"]["interfaces"]
+        links[0]["ifname"] = "can1"
+        links[1]["ifname"] = "can2"
+        for link in links:
+            link["linkinfo"]["info_data"]["bittiming"]["bitrate"] = 0
+        report["evidence"]["can"]["slcand_processes"] = {
+            "returncode": 0,
+            "stdout": (
+                "9348 slcand -o -c -s6 /dev/ttyACM0 can1\n"
+                "9351 slcand -o -c -s6 /dev/ttyACM1 can2\n"
+            ),
+        }
+
+        result = evaluate_x5_readiness(
+            report,
+            mode="physical-can",
+            runtime_interface="can1",
+            peer_interface="can2",
+            bitrate=500000,
+        )
+
+        self.assertEqual(result["status"], "ready")
+
+    def test_physical_mode_still_requires_runtime_events(self) -> None:
+        report = capability_report()
+        report["readiness"]["runtime_event"]["status"] = "blocked"
+
+        result = evaluate_x5_readiness(report, mode="physical-can")
+
+        self.assertEqual(result["status"], "blocked")
+        self.assertIn("runtime_event", result["failed_checks"])
 
     def test_markdown_keeps_blocking_reasons_visible(self) -> None:
         report = capability_report()

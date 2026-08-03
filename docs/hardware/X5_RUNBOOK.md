@@ -8,10 +8,17 @@ The core X5 matrix and the physical CAN demonstration are separate:
   optimization measurements.
 - The physical CAN pair supplies additional F6 electrical-bus and ACK lifecycle
   evidence.
+- The currently retained physical result is a two-interface SocketCAN smoke
+  with a responder peer. It does not establish an ECU HIL result, actuator
+  behavior, Bus-Off recovery, bus-load tolerance, or a formal physical-CAN
+  experiment.
 - The physical control/injected pair is development evidence until a separate
   physical-CAN formal protocol is frozen. The tools enforce this label.
 - `vcan`, mock, dry-run, and WSL output cannot set
   `physical_can_evidence=true`.
+
+Use [`PHYSICAL_CAN_EVIDENCE.md`](PHYSICAL_CAN_EVIDENCE.md) for the required
+capture package and the exact limits of each claim.
 
 ## Hardware wiring
 
@@ -56,7 +63,18 @@ source ~/.cache/robotraceopt_build/install/setup.bash
 
 ## Configure physical CAN
 
-Identify both adapters and bring them up at the same bitrate:
+First identify and record the physical adapter mapping. Never infer identity
+from a transient `/dev/ttyACM*` index alone.
+
+```bash
+ls -l /dev/serial/by-id/ 2>/dev/null || true
+ip -details -json link show type can | jq
+```
+
+### Native SocketCAN adapters
+
+For adapters whose CAN controller is exposed directly by the kernel, bring both
+interfaces up at the same bitrate:
 
 ```bash
 ip -details -json link show type can | jq
@@ -70,6 +88,31 @@ ip -details link show can0
 ip -details link show can1
 ```
 
+### CANable / SLCAN adapters
+
+For SLCAN adapters, set the CAN bitrate through `slcand`; do not also apply the
+native `ip link set ... type can bitrate` commands above. The current checker
+recognizes `-s6` as 500 kbit/s and requires exactly one matching `slcand`
+process per selected interface when netlink does not report a bitrate.
+
+Replace the device paths with the stable `/dev/serial/by-id/...` paths recorded
+for the two adapters:
+
+```bash
+sudo slcand -o -c -s6 /dev/serial/by-id/<runtime-adapter> can0
+sudo slcand -o -c -s6 /dev/serial/by-id/<peer-adapter> can1
+sudo ip link set can0 up
+sudo ip link set can1 up
+pgrep -a -x slcand
+ip -details link show can0
+ip -details link show can1
+```
+
+If adapter firmware needs an additional `slcand` serial-rate option, record the
+full command in the provenance file. Do not leave stale or duplicate `slcand`
+processes for either interface: the physical preflight rejects ambiguous
+bitrate evidence.
+
 Run a manual electrical smoke test in two terminals:
 
 ```bash
@@ -82,6 +125,12 @@ cansend can0 123#01020304
 
 The frame must appear on `can1`. Resolve `BUS-OFF`, missing frames, bitrate
 mismatch, or termination errors before running RoboTraceOpt.
+
+Before an evidence run, create a new directory and retain the adapter serials,
+pre/post `ip -details` snapshots, preflight output, `candump`, both capture
+manifests, and the matched normal/drop pair as specified in
+[`PHYSICAL_CAN_EVIDENCE.md`](PHYSICAL_CAN_EVIDENCE.md). The raw directory is
+intentionally ignored by Git; do not replace it with a prose result summary.
 
 ## Preflight
 
@@ -138,10 +187,20 @@ Inspect:
 
 ```text
 data/raw/demos/x5_rehearsal_01/demo_summary.json
+data/raw/demos/x5_rehearsal_01/preflight/report.{json,md}
+data/raw/demos/x5_rehearsal_01/control/candump.log
+data/raw/demos/x5_rehearsal_01/control/socketcan_capture_manifest.json
+data/raw/demos/x5_rehearsal_01/injected/candump.log
+data/raw/demos/x5_rehearsal_01/injected/socketcan_capture_manifest.json
 data/raw/demos/x5_rehearsal_01/physical_comparison.json
 data/raw/demos/x5_rehearsal_01/report/experiment_report.md
 data/raw/demos/x5_rehearsal_01/report/experiment_metrics.csv
 ```
+
+The control path is the normal ACK condition and the injected path is the
+dropped-ACK condition. Both must be retained under the same planned hardware
+configuration. A successful demonstration still remains development evidence;
+only a separately frozen physical-CAN protocol may promote its role.
 
 ## Core pilot and held-out session
 

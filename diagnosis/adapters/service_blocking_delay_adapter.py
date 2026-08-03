@@ -1,4 +1,4 @@
-"""Derive development-only W2 service blocking-delay evidence for F4."""
+"""Derive W2 service blocking-delay evidence for F4."""
 
 from __future__ import annotations
 
@@ -44,13 +44,16 @@ def derive_service_blocking_delay_evidence(
         raise ValueError("all source file paths are required")
     records = list(runtime_records)
     variant, injection, reason = _validate_manifests(run_manifest, oracle_manifest)
+    dataset_role = str(run_manifest.get("dataset_role", ""))
+    formal_role = dataset_role in {"calibration", "test"}
     report: dict[str, Any] = {
         "schema_version": "service-blocking-evidence/v1",
         "measurement_semantics": MEASUREMENT_SEMANTICS,
         "formal_syscall_attribution": False,
         "ebpf_evidence": False,
-        "development_only": True,
-        "formal_inference_allowed": False,
+        "dataset_role": dataset_role,
+        "development_only": not formal_role,
+        "formal_inference_allowed": formal_role and not reason,
         "condition_variant": variant,
         "status": "invalid" if reason else "valid",
         "reason_code": reason,
@@ -236,8 +239,8 @@ def _validate_manifests(
         for field in ("condition_id", "session_id", "dataset_role")
     ):
         return variant, {}, "run_oracle_identity_mismatch"
-    if run.get("dataset_role") != "development":
-        return variant, {}, "development_partition_required"
+    if run.get("dataset_role") not in {"development", "calibration", "test"}:
+        return variant, {}, "invalid_dataset_role"
     injection = oracle.get("injection")
     if (
         run.get("workload") != "w2"

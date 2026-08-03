@@ -5,4 +5,8 @@ camera_mock_node:
     runtime_events_enabled: true
     width: 640
     height: 480
+    image_file: ""
+    fixed_trace_id: ""
+    fixed_oracle_id: ""
+    fixed_sequence_id: 0
     encoding: "mock"

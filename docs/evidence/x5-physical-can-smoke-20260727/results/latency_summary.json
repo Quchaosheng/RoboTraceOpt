@@ -1,0 +1,97 @@
+{
+  "event_count": 681,
+  "input": "<CAPTURE_ROOT>/runtime_events.jsonl",
+  "latency_metrics": {
+    "ack_total_latency_ms": {
+      "count": 34,
+      "max_ms": 174.171776,
+      "mean_ms": 169.837137,
+      "p50_ms": 169.633558,
+      "p95_ms": 172.802009,
+      "p99_ms": 174.165377
+    },
+    "action_process_ms": {
+      "count": 34,
+      "max_ms": 100.8236,
+      "mean_ms": 100.673377,
+      "p50_ms": 100.695719,
+      "p95_ms": 100.789058,
+      "p99_ms": 100.818304
+    },
+    "action_to_control_ms": {
+      "count": 34,
+      "max_ms": 3.025173,
+      "mean_ms": 1.454205,
+      "p50_ms": 1.280461,
+      "p95_ms": 2.4575,
+      "p99_ms": 2.851551
+    },
+    "can_send_to_ack_ms": {
+      "count": 34,
+      "max_ms": 6.521386,
+      "mean_ms": 6.069284,
+      "p50_ms": 6.038532,
+      "p95_ms": 6.237957,
+      "p99_ms": 6.438597
+    },
+    "can_send_to_terminal_ms": {
+      "count": 34,
+      "max_ms": 6.521386,
+      "mean_ms": 6.069284,
+      "p50_ms": 6.038532,
+      "p95_ms": 6.237957,
+      "p99_ms": 6.438597
+    },
+    "control_process_ms": {
+      "count": 34,
+      "max_ms": 7.346471,
+      "mean_ms": 6.155685,
+      "p50_ms": 6.069365,
+      "p95_ms": 6.743564,
+      "p99_ms": 7.153366
+    },
+    "input_to_planner_ms": {
+      "count": 34,
+      "max_ms": 1.612294,
+      "mean_ms": 1.246445,
+      "p50_ms": 1.215648,
+      "p95_ms": 1.437171,
+      "p99_ms": 1.564362
+    },
+    "planner_process_ms": {
+      "count": 34,
+      "max_ms": 51.02926,
+      "mean_ms": 50.799136,
+      "p50_ms": 50.813465,
+      "p95_ms": 50.991359,
+      "p99_ms": 51.017861
+    },
+    "planner_to_action_ms": {
+      "count": 34,
+      "max_ms": 2.843338,
+      "mean_ms": 0.239173,
+      "p50_ms": 0.172375,
+      "p95_ms": 0.266124,
+      "p99_ms": 2.030547
+    },
+    "terminal_total_latency_ms": {
+      "count": 34,
+      "max_ms": 174.171776,
+      "mean_ms": 169.837137,
+      "p50_ms": 169.633558,
+      "p95_ms": 172.802009,
+      "p99_ms": 174.165377
+    },
+    "total_latency_ms": {
+      "count": 34,
+      "max_ms": 168.299432,
+      "mean_ms": 163.767853,
+      "p50_ms": 163.597069,
+      "p95_ms": 166.736869,
+      "p99_ms": 168.200578
+    }
+  },
+  "missing_total_latency_count": 0,
+  "parse_error_count": 0,
+  "trace_count": 34
+}
