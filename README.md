@@ -114,6 +114,9 @@ and fails closed before the final CAN guard. Configuration, replay, fault
 campaign semantics, and the distinction between command delivery and task
 success are documented in
 [docs/ai/OPENAI_COMPATIBLE_PROXY_SETUP.md](docs/ai/OPENAI_COMPATIBLE_PROXY_SETUP.md).
+The default vision mode is metadata-only; image bytes are sent only when
+`payload_base64` is configured with a real JPEG, PNG, or WebP payload. The mock
+camera does not constitute a real VLM experiment.
 
 ## Evidence boundaries
 
