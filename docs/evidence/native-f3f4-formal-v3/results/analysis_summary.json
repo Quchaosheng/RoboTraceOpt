@@ -1,0 +1,776 @@
+{
+  "case_count": 40,
+  "case_rows": [
+    {
+      "case": "001_native_x86_2404_jazzy_f3f4_20260729_070205_diagnosis_f3_control_r01",
+      "complete": 691,
+      "ebpf_events": 176683,
+      "fault_id": "F3",
+      "incomplete": 41,
+      "observed": 732,
+      "status": "partial",
+      "variant": "control"
+    },
+    {
+      "case": "002_native_x86_2404_jazzy_f3f4_20260729_070205_diagnosis_f3_injected_r01",
+      "complete": 341,
+      "ebpf_events": 45432,
+      "fault_id": "F3",
+      "incomplete": 331,
+      "observed": 672,
+      "status": "partial",
+      "variant": "injected"
+    },
+    {
+      "case": "003_native_x86_2404_jazzy_f3f4_20260729_070205_diagnosis_f4_control_r01",
+      "complete": 38,
+      "ebpf_events": 3044,
+      "fault_id": "F4",
+      "incomplete": 0,
+      "observed": 38,
+      "status": "valid",
+      "variant": "control"
+    },
+    {
+      "case": "004_native_x86_2404_jazzy_f3f4_20260729_070205_diagnosis_f4_injected_r01",
+      "complete": 38,
+      "ebpf_events": 3179,
+      "fault_id": "F4",
+      "incomplete": 0,
+      "observed": 38,
+      "status": "valid",
+      "variant": "injected"
+    },
+    {
+      "case": "005_native_x86_2404_jazzy_f3f4_20260729_070205_diagnosis_f3_injected_r02",
+      "complete": 344,
+      "ebpf_events": 48863,
+      "fault_id": "F3",
+      "incomplete": 347,
+      "observed": 691,
+      "status": "partial",
+      "variant": "injected"
+    },
+    {
+      "case": "006_native_x86_2404_jazzy_f3f4_20260729_070205_diagnosis_f4_control_r02",
+      "complete": 38,
+      "ebpf_events": 2882,
+      "fault_id": "F4",
+      "incomplete": 0,
+      "observed": 38,
+      "status": "valid",
+      "variant": "control"
+    },
+    {
+      "case": "007_native_x86_2404_jazzy_f3f4_20260729_070205_diagnosis_f4_injected_r02",
+      "complete": 38,
+      "ebpf_events": 2987,
+      "fault_id": "F4",
+      "incomplete": 0,
+      "observed": 38,
+      "status": "valid",
+      "variant": "injected"
+    },
+    {
+      "case": "008_native_x86_2404_jazzy_f3f4_20260729_070205_diagnosis_f3_control_r02",
+      "complete": 691,
+      "ebpf_events": 185576,
+      "fault_id": "F3",
+      "incomplete": 45,
+      "observed": 736,
+      "status": "partial",
+      "variant": "control"
+    },
+    {
+      "case": "009_native_x86_2404_jazzy_f3f4_20260729_070205_diagnosis_f4_control_r03",
+      "complete": 38,
+      "ebpf_events": 2660,
+      "fault_id": "F4",
+      "incomplete": 0,
+      "observed": 38,
+      "status": "valid",
+      "variant": "control"
+    },
+    {
+      "case": "010_native_x86_2404_jazzy_f3f4_20260729_070205_diagnosis_f4_injected_r03",
+      "complete": 38,
+      "ebpf_events": 3091,
+      "fault_id": "F4",
+      "incomplete": 1,
+      "observed": 39,
+      "status": "partial",
+      "variant": "injected"
+    },
+    {
+      "case": "011_native_x86_2404_jazzy_f3f4_20260729_070205_diagnosis_f3_control_r03",
+      "complete": 711,
+      "ebpf_events": 191014,
+      "fault_id": "F3",
+      "incomplete": 24,
+      "observed": 735,
+      "status": "partial",
+      "variant": "control"
+    },
+    {
+      "case": "012_native_x86_2404_jazzy_f3f4_20260729_070205_diagnosis_f3_injected_r03",
+      "complete": 331,
+      "ebpf_events": 46444,
+      "fault_id": "F3",
+      "incomplete": 361,
+      "observed": 692,
+      "status": "partial",
+      "variant": "injected"
+    },
+    {
+      "case": "013_native_x86_2404_jazzy_f3f4_20260729_070205_diagnosis_f4_injected_r04",
+      "complete": 38,
+      "ebpf_events": 3649,
+      "fault_id": "F4",
+      "incomplete": 0,
+      "observed": 38,
+      "status": "valid",
+      "variant": "injected"
+    },
+    {
+      "case": "014_native_x86_2404_jazzy_f3f4_20260729_070205_diagnosis_f3_control_r04",
+      "complete": 688,
+      "ebpf_events": 180744,
+      "fault_id": "F3",
+      "incomplete": 37,
+      "observed": 725,
+      "status": "partial",
+      "variant": "control"
+    },
+    {
+      "case": "015_native_x86_2404_jazzy_f3f4_20260729_070205_diagnosis_f3_injected_r04",
+      "complete": 336,
+      "ebpf_events": 40617,
+      "fault_id": "F3",
+      "incomplete": 332,
+      "observed": 668,
+      "status": "partial",
+      "variant": "injected"
+    },
+    {
+      "case": "016_native_x86_2404_jazzy_f3f4_20260729_070205_diagnosis_f4_control_r04",
+      "complete": 38,
+      "ebpf_events": 3236,
+      "fault_id": "F4",
+      "incomplete": 0,
+      "observed": 38,
+      "status": "valid",
+      "variant": "control"
+    },
+    {
+      "case": "017_native_x86_2404_jazzy_f3f4_20260729_070205_diagnosis_f3_control_r05",
+      "complete": 701,
+      "ebpf_events": 182126,
+      "fault_id": "F3",
+      "incomplete": 37,
+      "observed": 738,
+      "status": "partial",
+      "variant": "control"
+    },
+    {
+      "case": "018_native_x86_2404_jazzy_f3f4_20260729_070205_diagnosis_f3_injected_r05",
+      "complete": 641,
+      "ebpf_events": 48940,
+      "fault_id": "F3",
+      "incomplete": 53,
+      "observed": 694,
+      "status": "partial",
+      "variant": "injected"
+    },
+    {
+      "case": "019_native_x86_2404_jazzy_f3f4_20260729_070205_diagnosis_f4_control_r05",
+      "complete": 38,
+      "ebpf_events": 3050,
+      "fault_id": "F4",
+      "incomplete": 1,
+      "observed": 39,
+      "status": "partial",
+      "variant": "control"
+    },
+    {
+      "case": "020_native_x86_2404_jazzy_f3f4_20260729_070205_diagnosis_f4_injected_r05",
+      "complete": 38,
+      "ebpf_events": 2964,
+      "fault_id": "F4",
+      "incomplete": 0,
+      "observed": 38,
+      "status": "valid",
+      "variant": "injected"
+    },
+    {
+      "case": "021_native_x86_2404_jazzy_f3f4_20260729_070205_diagnosis_f3_injected_r06",
+      "complete": 348,
+      "ebpf_events": 46681,
+      "fault_id": "F3",
+      "incomplete": 353,
+      "observed": 701,
+      "status": "partial",
+      "variant": "injected"
+    },
+    {
+      "case": "022_native_x86_2404_jazzy_f3f4_20260729_070205_diagnosis_f4_control_r06",
+      "complete": 38,
+      "ebpf_events": 3409,
+      "fault_id": "F4",
+      "incomplete": 0,
+      "observed": 38,
+      "status": "valid",
+      "variant": "control"
+    },
+    {
+      "case": "023_native_x86_2404_jazzy_f3f4_20260729_070205_diagnosis_f4_injected_r06",
+      "complete": 38,
+      "ebpf_events": 3064,
+      "fault_id": "F4",
+      "incomplete": 0,
+      "observed": 38,
+      "status": "valid",
+      "variant": "injected"
+    },
+    {
+      "case": "024_native_x86_2404_jazzy_f3f4_20260729_070205_diagnosis_f3_control_r06",
+      "complete": 705,
+      "ebpf_events": 186872,
+      "fault_id": "F3",
+      "incomplete": 21,
+      "observed": 726,
+      "status": "partial",
+      "variant": "control"
+    },
+    {
+      "case": "025_native_x86_2404_jazzy_f3f4_20260729_070205_diagnosis_f4_control_r07",
+      "complete": 38,
+      "ebpf_events": 2877,
+      "fault_id": "F4",
+      "incomplete": 0,
+      "observed": 38,
+      "status": "valid",
+      "variant": "control"
+    },
+    {
+      "case": "026_native_x86_2404_jazzy_f3f4_20260729_070205_diagnosis_f4_injected_r07",
+      "complete": 38,
+      "ebpf_events": 2920,
+      "fault_id": "F4",
+      "incomplete": 0,
+      "observed": 38,
+      "status": "valid",
+      "variant": "injected"
+    },
+    {
+      "case": "027_native_x86_2404_jazzy_f3f4_20260729_070205_diagnosis_f3_control_r07",
+      "complete": 697,
+      "ebpf_events": 183568,
+      "fault_id": "F3",
+      "incomplete": 36,
+      "observed": 733,
+      "status": "partial",
+      "variant": "control"
+    },
+    {
+      "case": "028_native_x86_2404_jazzy_f3f4_20260729_070205_diagnosis_f3_injected_r07",
+      "complete": 647,
+      "ebpf_events": 48032,
+      "fault_id": "F3",
+      "incomplete": 46,
+      "observed": 693,
+      "status": "partial",
+      "variant": "injected"
+    },
+    {
+      "case": "029_native_x86_2404_jazzy_f3f4_20260729_070205_diagnosis_f4_injected_r08",
+      "complete": 38,
+      "ebpf_events": 3309,
+      "fault_id": "F4",
+      "incomplete": 0,
+      "observed": 38,
+      "status": "valid",
+      "variant": "injected"
+    },
+    {
+      "case": "030_native_x86_2404_jazzy_f3f4_20260729_070205_diagnosis_f3_control_r08",
+      "complete": 700,
+      "ebpf_events": 176595,
+      "fault_id": "F3",
+      "incomplete": 36,
+      "observed": 736,
+      "status": "partial",
+      "variant": "control"
+    },
+    {
+      "case": "031_native_x86_2404_jazzy_f3f4_20260729_070205_diagnosis_f3_injected_r08",
+      "complete": 349,
+      "ebpf_events": 48542,
+      "fault_id": "F3",
+      "incomplete": 331,
+      "observed": 680,
+      "status": "partial",
+      "variant": "injected"
+    },
+    {
+      "case": "032_native_x86_2404_jazzy_f3f4_20260729_070205_diagnosis_f4_control_r08",
+      "complete": 38,
+      "ebpf_events": 3232,
+      "fault_id": "F4",
+      "incomplete": 0,
+      "observed": 38,
+      "status": "valid",
+      "variant": "control"
+    },
+    {
+      "case": "033_native_x86_2404_jazzy_f3f4_20260729_070205_diagnosis_f3_control_r09",
+      "complete": 702,
+      "ebpf_events": 185754,
+      "fault_id": "F3",
+      "incomplete": 39,
+      "observed": 741,
+      "status": "partial",
+      "variant": "control"
+    },
+    {
+      "case": "034_native_x86_2404_jazzy_f3f4_20260729_070205_diagnosis_f3_injected_r09",
+      "complete": 659,
+      "ebpf_events": 121313,
+      "fault_id": "F3",
+      "incomplete": 41,
+      "observed": 700,
+      "status": "partial",
+      "variant": "injected"
+    },
+    {
+      "case": "035_native_x86_2404_jazzy_f3f4_20260729_070205_diagnosis_f4_control_r09",
+      "complete": 39,
+      "ebpf_events": 3045,
+      "fault_id": "F4",
+      "incomplete": 0,
+      "observed": 39,
+      "status": "valid",
+      "variant": "control"
+    },
+    {
+      "case": "036_native_x86_2404_jazzy_f3f4_20260729_070205_diagnosis_f4_injected_r09",
+      "complete": 38,
+      "ebpf_events": 2974,
+      "fault_id": "F4",
+      "incomplete": 1,
+      "observed": 39,
+      "status": "partial",
+      "variant": "injected"
+    },
+    {
+      "case": "037_native_x86_2404_jazzy_f3f4_20260729_070205_diagnosis_f3_injected_r10",
+      "complete": 657,
+      "ebpf_events": 117756,
+      "fault_id": "F3",
+      "incomplete": 39,
+      "observed": 696,
+      "status": "partial",
+      "variant": "injected"
+    },
+    {
+      "case": "038_native_x86_2404_jazzy_f3f4_20260729_070205_diagnosis_f4_control_r10",
+      "complete": 39,
+      "ebpf_events": 2978,
+      "fault_id": "F4",
+      "incomplete": 0,
+      "observed": 39,
+      "status": "valid",
+      "variant": "control"
+    },
+    {
+      "case": "039_native_x86_2404_jazzy_f3f4_20260729_070205_diagnosis_f4_injected_r10",
+      "complete": 38,
+      "ebpf_events": 2927,
+      "fault_id": "F4",
+      "incomplete": 1,
+      "observed": 39,
+      "status": "partial",
+      "variant": "injected"
+    },
+    {
+      "case": "040_native_x86_2404_jazzy_f3f4_20260729_070205_diagnosis_f3_control_r10",
+      "complete": 717,
+      "ebpf_events": 200451,
+      "fault_id": "F3",
+      "incomplete": 29,
+      "observed": 746,
+      "status": "partial",
+      "variant": "control"
+    }
+  ],
+  "comparisons": {
+    "F3": {
+      "metrics_ns": {
+        "dispatch_upper_bound_ns": {
+          "median": {
+            "absolute_delta": -251801.0,
+            "control": 511515.0,
+            "injected": 259714.0,
+            "ratio": 0.5077348660352091
+          },
+          "p90": {
+            "absolute_delta": 836145.8000000023,
+            "control": 768592.6,
+            "injected": 1604738.4000000022,
+            "ratio": 2.0878920770249443
+          },
+          "p95": {
+            "absolute_delta": 2133365.399999998,
+            "control": 879254.1999999997,
+            "injected": 3012619.5999999978,
+            "ratio": 3.4263351827037036
+          },
+          "p99": {
+            "absolute_delta": 38499518.079999804,
+            "control": 14683851.039999384,
+            "injected": 53183369.119999185,
+            "ratio": 3.621895167359408
+          }
+        },
+        "planner_path_upper_bound_ns": {
+          "median": {
+            "absolute_delta": -753167.0,
+            "control": 1239772.0,
+            "injected": 486605.0,
+            "ratio": 0.3924955556344231
+          },
+          "p90": {
+            "absolute_delta": 653996.0000000016,
+            "control": 1579067.5999999999,
+            "injected": 2233063.6000000015,
+            "ratio": 1.4141659293117037
+          },
+          "p95": {
+            "absolute_delta": 1741525.6000000006,
+            "control": 1710166.1999999993,
+            "injected": 3451691.8,
+            "ratio": 2.0183370481769556
+          },
+          "p99": {
+            "absolute_delta": 38361581.69999954,
+            "control": 15172492.939999465,
+            "injected": 53534074.63999901,
+            "ratio": 3.5283637864721853
+          }
+        },
+        "zero_work_callback_elapsed_ns": {
+          "median": {
+            "absolute_delta": -130922.0,
+            "control": 190204.0,
+            "injected": 59282.0,
+            "ratio": 0.31167588483943554
+          },
+          "p90": {
+            "absolute_delta": -117870.99999999997,
+            "control": 248959.4,
+            "injected": 131088.40000000002,
+            "ratio": 0.5265452921239367
+          },
+          "p95": {
+            "absolute_delta": -81805.6999999999,
+            "control": 272877.69999999984,
+            "injected": 191071.99999999994,
+            "ratio": 0.7002111202197909
+          },
+          "p99": {
+            "absolute_delta": 75541.07999999798,
+            "control": 364450.7599999999,
+            "injected": 439991.8399999979,
+            "ratio": 1.2072737617559035
+          }
+        }
+      }
+    },
+    "F4": {
+      "metrics_ns": {
+        "post_server_elapsed_ns": {
+          "median": {
+            "absolute_delta": 171942.5,
+            "control": 352524.5,
+            "injected": 524467.0,
+            "ratio": 1.4877462417505734
+          },
+          "p90": {
+            "absolute_delta": 178068.29999999993,
+            "control": 463230.0,
+            "injected": 641298.2999999999,
+            "ratio": 1.3844058027329835
+          },
+          "p95": {
+            "absolute_delta": 174850.25000000012,
+            "control": 493268.2499999999,
+            "injected": 668118.5,
+            "ratio": 1.3544729465154106
+          },
+          "p99": {
+            "absolute_delta": 170553.9700000001,
+            "control": 552200.6799999999,
+            "injected": 722754.65,
+            "ratio": 1.308862296221729
+          }
+        },
+        "pre_server_elapsed_ns": {
+          "median": {
+            "absolute_delta": -9690.0,
+            "control": 507380.5,
+            "injected": 497690.5,
+            "ratio": 0.980901906951489
+          },
+          "p90": {
+            "absolute_delta": -6775.899999999907,
+            "control": 607602.5,
+            "injected": 600826.6000000001,
+            "ratio": 0.9888481367341314
+          },
+          "p95": {
+            "absolute_delta": -7410.25,
+            "control": 636826.55,
+            "injected": 629416.3,
+            "ratio": 0.988363786026195
+          },
+          "p99": {
+            "absolute_delta": -50150.77000000002,
+            "control": 739888.33,
+            "injected": 689737.5599999999,
+            "ratio": 0.9322184605885052
+          }
+        },
+        "request_response_elapsed_ns": {
+          "median": {
+            "absolute_delta": 100337028.5,
+            "control": 874880.0,
+            "injected": 101211908.5,
+            "ratio": 115.68661816477689
+          },
+          "p90": {
+            "absolute_delta": 100355204.69999999,
+            "control": 1031244.2000000002,
+            "injected": 101386448.89999999,
+            "ratio": 98.31468521229014
+          },
+          "p95": {
+            "absolute_delta": 100320674.99999999,
+            "control": 1103690.9,
+            "injected": 101424365.89999999,
+            "ratio": 91.8956257589874
+          },
+          "p99": {
+            "absolute_delta": 100266710.23,
+            "control": 1215007.74,
+            "injected": 101481717.97,
+            "ratio": 83.52351563620492
+          }
+        },
+        "server_processing_elapsed_ns": {
+          "median": {
+            "absolute_delta": 100178631.0,
+            "control": 9249.5,
+            "injected": 100187880.5,
+            "ratio": 10831.707713930482
+          },
+          "p90": {
+            "absolute_delta": 100250969.1,
+            "control": 16157.100000000008,
+            "injected": 100267126.19999999,
+            "ratio": 6205.762556399351
+          },
+          "p95": {
+            "absolute_delta": 100271101.75,
+            "control": 19279.899999999998,
+            "injected": 100290381.65,
+            "ratio": 5201.810260945338
+          },
+          "p99": {
+            "absolute_delta": 100299721.19,
+            "control": 28325.52999999999,
+            "injected": 100328046.72,
+            "ratio": 3541.9653831720016
+          }
+        }
+      }
+    }
+  },
+  "conditions": [
+    {
+      "complete": 7003,
+      "complete_rate": 0.9530484485574305,
+      "ebpf_events": 1849383,
+      "fault_id": "F3",
+      "incomplete": 345,
+      "metrics_ns": {
+        "dispatch_upper_bound_ns": {
+          "count": 7003,
+          "mean": 1087627.0381265173,
+          "median": 511515.0,
+          "p90": 768592.6,
+          "p95": 879254.1999999997,
+          "p99": 14683851.039999384
+        },
+        "planner_path_upper_bound_ns": {
+          "count": 7003,
+          "mean": 1736011.0526917037,
+          "median": 1239772.0,
+          "p90": 1579067.5999999999,
+          "p95": 1710166.1999999993,
+          "p99": 15172492.939999465
+        },
+        "zero_work_callback_elapsed_ns": {
+          "count": 7003,
+          "mean": 173601.29244609454,
+          "median": 190204.0,
+          "p90": 248959.4,
+          "p95": 272877.69999999984,
+          "p99": 364450.7599999999
+        }
+      },
+      "observed": 7348,
+      "runs": 10,
+      "variant": "control"
+    },
+    {
+      "complete": 4653,
+      "complete_rate": 0.6756207347175839,
+      "ebpf_events": 612620,
+      "fault_id": "F3",
+      "incomplete": 2234,
+      "metrics_ns": {
+        "dispatch_upper_bound_ns": {
+          "count": 4653,
+          "mean": 1582382.1194928004,
+          "median": 259714.0,
+          "p90": 1604738.4000000022,
+          "p95": 3012619.5999999978,
+          "p99": 53183369.119999185
+        },
+        "planner_path_upper_bound_ns": {
+          "count": 4653,
+          "mean": 1880298.5785514722,
+          "median": 486605.0,
+          "p90": 2233063.6000000015,
+          "p95": 3451691.8,
+          "p99": 53534074.63999901
+        },
+        "zero_work_callback_elapsed_ns": {
+          "count": 4653,
+          "mean": 89050.39909735654,
+          "median": 59282.0,
+          "p90": 131088.40000000002,
+          "p95": 191071.99999999994,
+          "p99": 439991.8399999979
+        }
+      },
+      "observed": 6887,
+      "runs": 10,
+      "variant": "injected"
+    },
+    {
+      "complete": 382,
+      "complete_rate": 0.9973890339425587,
+      "ebpf_events": 30413,
+      "fault_id": "F4",
+      "incomplete": 1,
+      "metrics_ns": {
+        "post_server_elapsed_ns": {
+          "count": 382,
+          "mean": 351765.0890052356,
+          "median": 352524.5,
+          "p90": 463230.0,
+          "p95": 493268.2499999999,
+          "p99": 552200.6799999999
+        },
+        "pre_server_elapsed_ns": {
+          "count": 382,
+          "mean": 512027.5392670157,
+          "median": 507380.5,
+          "p90": 607602.5,
+          "p95": 636826.55,
+          "p99": 739888.33
+        },
+        "request_response_elapsed_ns": {
+          "count": 382,
+          "mean": 874304.4109947644,
+          "median": 874880.0,
+          "p90": 1031244.2000000002,
+          "p95": 1103690.9,
+          "p99": 1215007.74
+        },
+        "server_processing_elapsed_ns": {
+          "count": 382,
+          "mean": 10511.78272251309,
+          "median": 9249.5,
+          "p90": 16157.100000000008,
+          "p95": 19279.899999999998,
+          "p99": 28325.52999999999
+        }
+      },
+      "observed": 383,
+      "runs": 10,
+      "variant": "control"
+    },
+    {
+      "complete": 380,
+      "complete_rate": 0.9921671018276762,
+      "ebpf_events": 31064,
+      "fault_id": "F4",
+      "incomplete": 3,
+      "metrics_ns": {
+        "post_server_elapsed_ns": {
+          "count": 380,
+          "mean": 527283.2842105263,
+          "median": 524467.0,
+          "p90": 641298.2999999999,
+          "p95": 668118.5,
+          "p99": 722754.65
+        },
+        "pre_server_elapsed_ns": {
+          "count": 380,
+          "mean": 500181.8657894737,
+          "median": 497690.5,
+          "p90": 600826.6000000001,
+          "p95": 629416.3,
+          "p99": 689737.5599999999
+        },
+        "request_response_elapsed_ns": {
+          "count": 380,
+          "mean": 101204859.43157895,
+          "median": 101211908.5,
+          "p90": 101386448.89999999,
+          "p95": 101424365.89999999,
+          "p99": 101481717.97
+        },
+        "server_processing_elapsed_ns": {
+          "count": 380,
+          "mean": 100177394.28157894,
+          "median": 100187880.5,
+          "p90": 100267126.19999999,
+          "p95": 100290381.65,
+          "p99": 100328046.72
+        }
+      },
+      "observed": 383,
+      "runs": 10,
+      "variant": "injected"
+    }
+  ],
+  "dataset_role": "test",
+  "development_only": false,
+  "formal_experiment_allowed": true,
+  "git_commit": "384b21556d12e572ef8e490c1ab7cfef0c328203",
+  "git_status": "",
+  "host": {
+    "hostname": "native-x86-host",
+    "is_wsl": false,
+    "kernel": "7.0.0-28-generic",
+    "machine": "x86_64",
+    "system": "Linux"
+  },
+  "platform_label": "native-x86-ubuntu-24.04-jazzy",
+  "schema_version": "native-f3-f4-analysis/v1",
+  "source_archive": null,
+  "source_session": "<EXPERIMENT_ROOT>",
+  "source_session_integrity": "complete"
+}

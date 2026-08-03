@@ -1,0 +1,20 @@
+{
+  "counts": {
+    "failed": 0,
+    "interrupted": 0,
+    "not_started": 0,
+    "planned": 40,
+    "running": 0,
+    "successful": 40
+  },
+  "dataset_role": "test",
+  "development_only": false,
+  "execution_performed": true,
+  "formal_experiment_allowed": true,
+  "integrity_status": "complete",
+  "live_mutation_performed": false,
+  "planned_run_count": 40,
+  "reason_codes": [],
+  "schema_version": "formal-experiment-session-summary/v1",
+  "status": "completed"
+}

@@ -1,0 +1,7 @@
+Bus 002 Device 002: ID 05e3:0626 Genesys Logic, Inc. USB3.1 Hub
+Bus 002 Device 001: ID 1d6b:0003 Linux Foundation 3.0 root hub
+Bus 001 Device 003: ID bbdf:0537 camera camera
+Bus 001 Device 004: ID 16d0:117e MCS CANable2 b158aa7 github.com/normaldotcom/canable2.git
+Bus 001 Device 005: ID 16d0:117e MCS CANable2 b158aa7 github.com/normaldotcom/canable2.git
+Bus 001 Device 002: ID 05e3:0610 Genesys Logic, Inc. Hub
+Bus 001 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub

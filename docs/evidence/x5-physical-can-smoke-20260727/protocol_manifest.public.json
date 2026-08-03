@@ -1,0 +1,37 @@
+{
+  "dataset": "x5-dual-canable-camera-normal-ack-smoke-20260727-100139",
+  "environment": "arm64 Ubuntu 22.04.5, Linux 6.1.83-rt28 PREEMPT_RT",
+  "formal_experiment_allowed": false,
+  "hardware": {
+    "bitrate": 500000,
+    "camera": "USB V4L2 1280x720",
+    "transport": "two CANable/SocketCAN interfaces"
+  },
+  "invalid_claims": [
+    "ECU HIL",
+    "normal-vs-drop fault comparison",
+    "formal physical CAN experiment",
+    "proof of current fail-closed AI runtime"
+  ],
+  "limitations": [
+    "single session",
+    "normal ACK path only",
+    "planner backend was mock",
+    "no timeout/drop comparator",
+    "camera frames excluded from public archive; hashes retained"
+  ],
+  "observed": {
+    "camera_event_frame_count": 34,
+    "matched_runtime_acks": 34,
+    "payload_match_rate": 1.0
+  },
+  "qualification": "limited-hardware-smoke-only",
+  "schema_version": "limited-evidence-protocol/v1",
+  "session": {
+    "camera_frames_retained": 34,
+    "duration_s": 40,
+    "runtime_events": 681,
+    "traces": 34
+  },
+  "valid_claim": "Physical dual-interface SocketCAN normal-ACK path smoke on an X5-class arm64 system."
+}

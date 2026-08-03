@@ -1,0 +1,21 @@
+{
+  "camera_device": [
+    "/dev/video0"
+  ],
+  "capture_duration_ms": {
+    "count": 34,
+    "max": 530.955587,
+    "mean": 32.511927382352944,
+    "p95": 21.343635199999998
+  },
+  "dimensions": [
+    "1280x720"
+  ],
+  "event_frame_count": 34,
+  "event_paths_valid_count": 34,
+  "observed_publish_rate_hz": 1.0157340336428058,
+  "parse_error_count": 0,
+  "retained_frame_count": 34,
+  "source": "v4l2",
+  "success": true
+}

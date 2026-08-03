@@ -1,0 +1,9 @@
+scenario,policy,timestamp_window_ms,calibration_mean_f1
+overlap_dual_10hz,timestamp_100ms,100.0,0.0
+overlap_dual_10hz,timestamp_250ms,250.0,0.0
+overlap_dual_10hz,timestamp_500ms,500.0,0.0
+overlap_dual_10hz,timestamp_1000ms,1000.0,0.0
+overlap_dual_mixed,timestamp_100ms,100.0,0.0004284960179936195
+overlap_dual_mixed,timestamp_250ms,250.0,0.0003933444722918408
+overlap_dual_mixed,timestamp_500ms,500.0,0.00036883426944797295
+overlap_dual_mixed,timestamp_1000ms,1000.0,0.0003680701085921128
