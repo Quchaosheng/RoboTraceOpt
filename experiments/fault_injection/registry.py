@@ -82,7 +82,11 @@ def create_fault_manifests(
             f"F6 {f6_transport_profile} transport profile is development-only"
         )
     validate_condition_variant(spec, condition_variant)
-    if condition_variant == "control" and dataset_role != "development":
+    if (
+        condition_variant == "control"
+        and dataset_role != "development"
+        and spec.fault_id not in {"F3", "F4"}
+    ):
         raise ValueError("control variant is development-only")
     if not session_id:
         raise ValueError("session_id is required")

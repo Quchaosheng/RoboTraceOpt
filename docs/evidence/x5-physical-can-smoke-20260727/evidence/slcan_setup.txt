@@ -1,0 +1,3 @@
+4079 slcand -o -c -s6 /dev/ttyACM0 can1
+4090 slcand -o -c -s6 /dev/ttyACM1 can2
+SLCAN speed code s6 = 500 kbit/s

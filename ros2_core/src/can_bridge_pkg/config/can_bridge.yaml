@@ -12,3 +12,7 @@ can_bridge_node:
     mock_ack_delay_ms: 5
     mock_ack_policy: "success"
     ack_can_id_offset: 128
+    command_ttl_ms: 1000
+    command_max_future_skew_ms: 100
+    command_dedup_window_ms: 10000
+    max_command_speed: 1.0

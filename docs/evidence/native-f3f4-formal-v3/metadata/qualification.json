@@ -1,0 +1,74 @@
+{
+  "capability_sha256": "17ea30793f62eef8a49bbfd97703025c95e582d56381076592a25560f81c410b",
+  "cases": [
+    {
+      "case_id": "diagnosis_f3_control",
+      "missing_requirements": [],
+      "requirements": [
+        "runtime_event",
+        "ros2_tracing",
+        "identity_comparable_ebpf",
+        "cpu_control",
+        "scheduling_tools"
+      ],
+      "role_errors": [],
+      "status": "ready"
+    },
+    {
+      "case_id": "diagnosis_f3_injected",
+      "missing_requirements": [],
+      "requirements": [
+        "runtime_event",
+        "ros2_tracing",
+        "identity_comparable_ebpf",
+        "cpu_control",
+        "scheduling_tools"
+      ],
+      "role_errors": [],
+      "status": "ready"
+    },
+    {
+      "case_id": "diagnosis_f4_control",
+      "missing_requirements": [],
+      "requirements": [
+        "runtime_event",
+        "identity_comparable_ebpf"
+      ],
+      "role_errors": [],
+      "status": "ready"
+    },
+    {
+      "case_id": "diagnosis_f4_injected",
+      "missing_requirements": [],
+      "requirements": [
+        "runtime_event",
+        "identity_comparable_ebpf"
+      ],
+      "role_errors": [],
+      "status": "ready"
+    }
+  ],
+  "dataset_role": "test",
+  "development_only": false,
+  "formal_experiment_allowed": true,
+  "git_commit": "384b21556d12e572ef8e490c1ab7cfef0c328203",
+  "git_status": "",
+  "host": {
+    "hostname": "native-x86-host",
+    "is_wsl": false,
+    "kernel": "7.0.0-28-generic",
+    "machine": "x86_64",
+    "system": "Linux"
+  },
+  "matrix_sha256": "afd061558236abbcbc43c3ab6a35bb6f9f2791799026e21e5851a8189e21b0cf",
+  "platform_label": "native-x86-ubuntu-24.04-jazzy",
+  "reason_codes": [],
+  "schema_version": "formal-experiment-qualification/v1",
+  "selected_case_ids": [
+    "diagnosis_f3_control",
+    "diagnosis_f3_injected",
+    "diagnosis_f4_control",
+    "diagnosis_f4_injected"
+  ],
+  "status": "allowed"
+}

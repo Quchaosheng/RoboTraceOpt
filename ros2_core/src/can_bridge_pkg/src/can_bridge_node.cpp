@@ -48,6 +48,12 @@ CanBridgeNode::CanBridgeNode()
   mock_ack_delay_ms_ = this->declare_parameter<int64_t>("mock_ack_delay_ms", 5);
   mock_ack_policy_ = this->declare_parameter<std::string>("mock_ack_policy", "success");
   ack_can_id_offset_ = this->declare_parameter<int64_t>("ack_can_id_offset", 0x80);
+  command_ttl_ms_ = this->declare_parameter<int64_t>("command_ttl_ms", 1000);
+  command_max_future_skew_ms_ = this->declare_parameter<int64_t>(
+    "command_max_future_skew_ms", 100);
+  command_dedup_window_ms_ = this->declare_parameter<int64_t>(
+    "command_dedup_window_ms", 10000);
+  max_command_speed_ = this->declare_parameter<double>("max_command_speed", 1.0);
   const auto max_retries_param = this->declare_parameter<int64_t>("max_retries", 2);
 
   if (can_interface_.empty()) {
@@ -73,6 +79,30 @@ CanBridgeNode::CanBridgeNode()
   if (mock_ack_delay_ms_ < 0) {
     RCLCPP_WARN(this->get_logger(), "mock_ack_delay_ms must be non-negative; using 5 ms");
     mock_ack_delay_ms_ = 5;
+  }
+  if (command_ttl_ms_ < 1) {
+    RCLCPP_WARN(this->get_logger(), "command_ttl_ms must be positive; using 1000 ms");
+    command_ttl_ms_ = 1000;
+  }
+  if (command_max_future_skew_ms_ < 0) {
+    RCLCPP_WARN(
+      this->get_logger(),
+      "command_max_future_skew_ms must be non-negative; using 100 ms");
+    command_max_future_skew_ms_ = 100;
+  }
+  if (command_dedup_window_ms_ < 1) {
+    RCLCPP_WARN(
+      this->get_logger(),
+      "command_dedup_window_ms must be positive; using 10000 ms");
+    command_dedup_window_ms_ = 10000;
+  }
+  if (!std::isfinite(max_command_speed_) || max_command_speed_ <= 0.0 ||
+    max_command_speed_ > 1.0)
+  {
+    RCLCPP_WARN(
+      this->get_logger(),
+      "max_command_speed must be finite and in (0, 1]; using 1.0");
+    max_command_speed_ = 1.0;
   }
   if (max_retries_param < 0) {
     RCLCPP_WARN(this->get_logger(), "max_retries must be non-negative; using 2");
@@ -114,6 +144,7 @@ CanBridgeNode::CanBridgeNode()
     this->get_logger(),
     "can_bridge_node subscribed to %s, interface=%s mock_mode=%s delay=%ld ms "
     "ack_enabled=%s ack_mode=%s ack_timeout=%ld ms max_retries=%u mock_ack_policy=%s "
+    "command_ttl=%ld ms dedup_window=%ld ms max_speed=%.3f "
     "runtime_event_enabled=%s probe_enabled=%s",
     command_topic_.c_str(),
     can_interface_.c_str(),
@@ -124,6 +155,9 @@ CanBridgeNode::CanBridgeNode()
     ack_timeout_ms_,
     max_retries_,
     mock_ack_policy_.c_str(),
+    command_ttl_ms_,
+    command_dedup_window_ms_,
+    max_command_speed_,
     runtime_event_enabled_ ? "true" : "false",
     probe_enabled_ ? "true" : "false");
 }
@@ -144,6 +178,16 @@ void CanBridgeNode::on_planner_command(const PlannerCommand::SharedPtr command)
   if (!rclcpp::ok() || shutting_down_.load()) {
     return;
   }
+  std::string reason_code;
+  std::string detail;
+  const auto now_ns = steady_now_ns();
+  if (!validate_command(*command, now_ns, &reason_code, &detail) ||
+    !admit_request(*command, now_ns, &reason_code, &detail))
+  {
+    publish_command_rejection(*command, reason_code, detail);
+    return;
+  }
+
   const auto frame = encode_command(*command);
 
   publish_event(*command, frame, "can_command_received", "can_receive", true, "pending");
@@ -158,10 +202,20 @@ void CanBridgeNode::send_attempt(
   const EncodedCanFrame & frame,
   const uint32_t retry_count)
 {
+  std::string reason_code;
+  std::string detail;
+  if (!validate_command(command, steady_now_ns(), &reason_code, &detail)) {
+    publish_command_rejection(command, reason_code, detail, retry_count);
+    return;
+  }
   if (can_send_delay_ms_ > 0) {
     std::this_thread::sleep_for(std::chrono::milliseconds(can_send_delay_ms_));
   }
   if (!rclcpp::ok() || shutting_down_.load()) {
+    return;
+  }
+  if (!validate_command(command, steady_now_ns(), &reason_code, &detail)) {
+    publish_command_rejection(command, reason_code, detail, retry_count);
     return;
   }
 
@@ -532,10 +586,109 @@ void CanBridgeNode::on_ack_timeout(
   send_attempt(command, frame, next_retry_count);
 }
 
+bool CanBridgeNode::validate_command(
+  const PlannerCommand & command,
+  const int64_t now_ns,
+  std::string * reason_code,
+  std::string * detail) const
+{
+  if (!is_allowed_action(command.action)) {
+    *reason_code = "can_guard_action_not_allowed";
+    *detail = "action is not in the CAN command allowlist";
+    return false;
+  }
+  if (!std::isfinite(command.speed)) {
+    *reason_code = "can_guard_speed_not_finite";
+    *detail = "command speed is not finite";
+    return false;
+  }
+  if (command.speed < 0.0F || command.speed > static_cast<float>(max_command_speed_)) {
+    *reason_code = "can_guard_speed_out_of_range";
+    *detail = "command speed is outside the configured safe range";
+    return false;
+  }
+  if (command.action == "stop" && command.speed != 0.0F) {
+    *reason_code = "can_guard_stop_speed_nonzero";
+    *detail = "stop commands must carry zero speed";
+    return false;
+  }
+  if (command.header.trace_id.empty() || command.header.oracle_id.empty()) {
+    *reason_code = "can_guard_request_identity_missing";
+    *detail = "trace_id and oracle_id are required for CAN command deduplication";
+    return false;
+  }
+  if (command.header.timestamp_ns <= 0) {
+    *reason_code = "can_guard_timestamp_missing";
+    *detail = "command timestamp is required for TTL enforcement";
+    return false;
+  }
+
+  const auto future_tolerance_ns = command_max_future_skew_ms_ * 1000000;
+  if (command.header.timestamp_ns > now_ns + future_tolerance_ns) {
+    *reason_code = "can_guard_timestamp_future";
+    *detail = "command timestamp exceeds the allowed monotonic-clock skew";
+    return false;
+  }
+  const auto command_age_ns = now_ns - command.header.timestamp_ns;
+  if (command_age_ns > command_ttl_ms_ * 1000000) {
+    *reason_code = "can_guard_command_expired";
+    *detail = "command exceeded the CAN execution TTL";
+    return false;
+  }
+  return true;
+}
+
+bool CanBridgeNode::admit_request(
+  const PlannerCommand & command,
+  const int64_t now_ns,
+  std::string * reason_code,
+  std::string * detail)
+{
+  const auto dedup_window_ns = command_dedup_window_ms_ * 1000000;
+  std::lock_guard<std::mutex> lock(command_dedup_mutex_);
+  for (auto iterator = admitted_request_ns_.begin(); iterator != admitted_request_ns_.end();) {
+    if (now_ns - iterator->second >= dedup_window_ns) {
+      iterator = admitted_request_ns_.erase(iterator);
+    } else {
+      ++iterator;
+    }
+  }
+
+  const auto key = request_key(command);
+  if (admitted_request_ns_.find(key) != admitted_request_ns_.end()) {
+    *reason_code = "can_guard_duplicate_request";
+    *detail = "duplicate request identity is still inside the deduplication window";
+    return false;
+  }
+  admitted_request_ns_.emplace(key, now_ns);
+  return true;
+}
+
+void CanBridgeNode::publish_command_rejection(
+  const PlannerCommand & command,
+  const std::string & reason_code,
+  const std::string & detail,
+  const uint32_t retry_count) const
+{
+  const EncodedCanFrame rejected_frame;
+  publish_event(
+    command,
+    rejected_frame,
+    "can_command_rejected",
+    "can_command_guard",
+    false,
+    detail,
+    false,
+    retry_count,
+    "rejected",
+    reason_code);
+}
+
 CanBridgeNode::EncodedCanFrame CanBridgeNode::encode_command(
   const PlannerCommand & command) const
 {
   EncodedCanFrame frame;
+  frame.encoded = true;
   frame.can_id = 0x100u | (hash_string(command.action + ":" + command.target) & 0x7fu);
 
   const auto speed_milli = static_cast<uint16_t>(
@@ -644,7 +797,8 @@ void CanBridgeNode::publish_event(
     const std::string & send_detail,
     const bool ack_success,
     const uint32_t retry_count,
-    const std::string & terminal_status) const
+    const std::string & terminal_status,
+    const std::string & reason_code) const
 {
   if (!runtime_event_enabled_ || !event_publisher_) {
     return;
@@ -659,9 +813,19 @@ void CanBridgeNode::publish_event(
   event.event_name = event_name;
   event.event_type = "can_bridge";
   ai_robot_runtime_interfaces::populate_runtime_identity(
-    event, "monotonic", terminal_status.empty() ? "observed" : terminal_status);
+    event,
+    "monotonic",
+    terminal_status.empty() ? "observed" : terminal_status,
+    reason_code);
   event.extra_json = make_extra_json(
-    command, frame, send_success, send_detail, ack_success, retry_count, terminal_status);
+    command,
+    frame,
+    send_success,
+    send_detail,
+    ack_success,
+    retry_count,
+    terminal_status,
+    reason_code);
   event_publisher_->publish(event);
 }
 
@@ -672,7 +836,8 @@ std::string CanBridgeNode::make_extra_json(
   const std::string & send_detail,
   const bool ack_success,
   const uint32_t retry_count,
-  const std::string & terminal_status) const
+  const std::string & terminal_status,
+  const std::string & reason_code) const
 {
   std::ostringstream stream;
   const auto ack_can_id = static_cast<uint32_t>(frame.can_id + ack_can_id_offset_);
@@ -685,17 +850,27 @@ std::string CanBridgeNode::make_extra_json(
          << ",\"ack_mode\":\"" << escape_json(ack_mode_)
          << "\",\"mock_ack_policy\":\"" << escape_json(mock_ack_policy_)
          << "\",\"ack_timeout_ms\":" << ack_timeout_ms_
+         << ",\"command_ttl_ms\":" << command_ttl_ms_
+         << ",\"command_dedup_window_ms\":" << command_dedup_window_ms_
+         << ",\"max_command_speed\":" << max_command_speed_
          << ",\"retry_count\":" << retry_count
          << ",\"max_retries\":" << max_retries_
-         << ",\"can_id\":\"" << can_id_to_hex(frame.can_id)
-         << "\",\"ack_can_id\":\"" << can_id_to_hex(ack_can_id)
-         << "\",\"payload_hex\":\"" << frame.payload_hex
-         << "\",\"send_success\":" << (send_success ? "true" : "false")
+         << ",\"frame_encoded\":" << (frame.encoded ? "true" : "false")
+         << ",\"send_success\":" << (send_success ? "true" : "false")
          << ",\"ack_success\":" << (ack_success ? "true" : "false")
          << ",\"send_detail\":\"" << escape_json(send_detail)
          << "\"";
+  if (frame.encoded) {
+    stream << ",\"can_id\":\"" << can_id_to_hex(frame.can_id)
+           << "\",\"ack_can_id\":\"" << can_id_to_hex(ack_can_id)
+           << "\",\"payload_hex\":\"" << frame.payload_hex
+           << "\"";
+  }
   if (!terminal_status.empty()) {
     stream << ",\"terminal_status\":\"" << escape_json(terminal_status) << "\"";
+  }
+  if (!reason_code.empty()) {
+    stream << ",\"reason_code\":\"" << escape_json(reason_code) << "\"";
   }
   stream << "}";
   return stream.str();
@@ -705,6 +880,21 @@ int64_t CanBridgeNode::steady_now_ns()
 {
   const auto now = std::chrono::steady_clock::now().time_since_epoch();
   return std::chrono::duration_cast<std::chrono::nanoseconds>(now).count();
+}
+
+bool CanBridgeNode::is_allowed_action(const std::string & action)
+{
+  return action == "move_forward" || action == "turn_left" || action == "turn_right" ||
+         action == "stop" || action == "inspect";
+}
+
+std::string CanBridgeNode::request_key(const PlannerCommand & command)
+{
+  std::ostringstream stream;
+  stream << command.header.trace_id.size() << ":" << command.header.trace_id
+         << "|" << command.header.oracle_id.size() << ":" << command.header.oracle_id
+         << "|" << command.header.sequence_id;
+  return stream.str();
 }
 
 uint32_t CanBridgeNode::hash_string(const std::string & value)

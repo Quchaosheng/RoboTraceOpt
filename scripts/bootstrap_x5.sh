@@ -13,9 +13,7 @@ fi
 mode="$1"
 packages=(
   build-essential
-  bpftool
   can-utils
-  clang
   cmake
   curl
   git
@@ -23,10 +21,11 @@ packages=(
   jq
   libbpf-dev
   libelf-dev
-  lld
-  llvm
+  liblttng-ust-dev
+  lttng-tools
   ninja-build
   pkg-config
+  python3-bt2
   python3-pip
   python3-rosdep
   python3-venv
@@ -37,7 +36,8 @@ packages=(
 printf 'apt-get install -y'
 printf ' %q' "${packages[@]}"
 printf '\n'
-echo "Optional ROS packages: python3-colcon-common-extensions ros-humble-ros-base ros-humble-ros2-tracing ros-humble-tracetools ros-humble-rmw-cyclonedds-cpp"
+echo "Optional ROS packages: python3-colcon-common-extensions ros-humble-ros-base ros-humble-ros2trace ros-humble-tracetools ros-humble-rmw-cyclonedds-cpp"
+echo "Vendor note: keep the board-provided perf/bpftool toolchain; generic bpftool and clang/llvm packages can conflict with RDK X5 packages."
 
 if [[ "$mode" == "--dry-run" ]]; then
   exit 0
@@ -61,7 +61,7 @@ sudo apt-get install -y "${packages[@]}"
 ros_packages=(
   python3-colcon-common-extensions
   ros-humble-ros-base
-  ros-humble-ros2-tracing
+  ros-humble-ros2trace
   ros-humble-tracetools
   ros-humble-rmw-cyclonedds-cpp
 )

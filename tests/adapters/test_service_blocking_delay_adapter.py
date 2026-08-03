@@ -176,7 +176,7 @@ class ServiceBlockingDelayAdapterTest(unittest.TestCase):
                 self.assertEqual(events, [])
                 self.assertEqual(report["invalid_pair_reason_counts"], {reason: 1})
 
-    def test_rejects_non_development_or_mismatched_manifest(self) -> None:
+    def test_accepts_formal_role_and_rejects_mismatched_manifest(self) -> None:
         run, oracle = manifests()
         run["dataset_role"] = "test"
         oracle["dataset_role"] = "test"
@@ -188,8 +188,11 @@ class ServiceBlockingDelayAdapterTest(unittest.TestCase):
             run_manifest_source_file="run.json",
             oracle_manifest_source_file="oracle.json",
         )
-        self.assertEqual(events, [])
-        self.assertEqual(report["reason_code"], "development_partition_required")
+        self.assertEqual(len(events), 1)
+        self.assertEqual(report["dataset_role"], "test")
+        self.assertFalse(report["development_only"])
+        self.assertTrue(report["formal_inference_allowed"])
+        self.assertFalse(report["formal_syscall_attribution"])
 
         run, oracle = manifests()
         oracle["session_id"] = "other"

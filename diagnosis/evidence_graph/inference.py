@@ -71,7 +71,7 @@ class SourceAvailability:
 
 def load_root_cause_catalog(path: Path | None = None) -> tuple[RootCauseRule, ...]:
     catalog_path = (
-        path or Path(__file__).parents[1] / "rules" / "root_cause_catalog.yaml"
+        path or Path(__file__).parents[1] / "rules" / "root_cause_catalog.json"
     )
     record = json.loads(catalog_path.read_text(encoding="utf-8"))
     if record.get("schema_version") != "root-cause-catalog/v1":

@@ -70,7 +70,12 @@ def evaluate_x5_readiness(
             str(provenance.get("git_status", "")).strip() or "clean",
         ),
     ]
-    for name in ("ebpf", "identity_comparable_ebpf", "ros2_tracing"):
+    required_capabilities = (
+        ("ebpf", "identity_comparable_ebpf", "ros2_tracing", "runtime_event")
+        if mode == "software"
+        else ("runtime_event",)
+    )
+    for name in required_capabilities:
         status = str(readiness.get(name, {}).get("status", "missing"))
         checks.append(_check(name, status == "ready", "ready", status))
 
@@ -80,12 +85,19 @@ def evaluate_x5_readiness(
             _check("socketcan", socketcan_status == "ready", "ready", socketcan_status)
         )
         interfaces = evidence.get("can", {}).get("interfaces", [])
+        slcand_result = evidence.get("can", {}).get("slcand_processes", {})
+        slcand_processes = (
+            str(slcand_result.get("stdout", "")).splitlines()
+            if isinstance(slcand_result, dict)
+            else []
+        )
         try:
             validate_physical_can_pair(
                 interfaces,
                 runtime_interface=runtime_interface,
                 peer_interface=peer_interface,
                 bitrate=bitrate,
+                slcand_processes=slcand_processes,
             )
             physical_ready, observed = True, "ready"
         except ValueError as error:

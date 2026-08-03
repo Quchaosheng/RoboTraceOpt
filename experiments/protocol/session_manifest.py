@@ -154,7 +154,10 @@ def _validate_case_role(case: dict[str, Any], dataset_role: str) -> None:
     if case["runner_id"] != "fault_condition":
         return
     parameters = case["parameters"]
-    if parameters["condition_variant"] == "control":
+    if (
+        parameters["condition_variant"] == "control"
+        and parameters["fault_id"] not in {"F3", "F4"}
+    ):
         raise ValueError("case is not allowed for formal dataset role")
     if parameters["fault_id"] == "F5":
         raise ValueError("case is not allowed for formal dataset role")

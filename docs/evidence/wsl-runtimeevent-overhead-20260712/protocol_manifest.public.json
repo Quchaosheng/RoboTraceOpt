@@ -1,0 +1,35 @@
+{
+  "dataset": "ros2probe-wsl2-runtimeevent-overhead-20260712",
+  "design": {
+    "duration_s": 60,
+    "modes": [
+      "disabled",
+      "buffered",
+      "flush"
+    ],
+    "runs_per_condition": 10,
+    "workloads": [
+      "5 Hz nominal",
+      "20 Hz stress"
+    ]
+  },
+  "environment": "Ubuntu 22.04 / ROS 2 Humble on WSL2",
+  "formal_experiment_allowed": false,
+  "invalid_claims": [
+    "native Linux overhead",
+    "ros2_tracing or fused overhead",
+    "causal effect from randomized ordering",
+    "latency comparison against disabled mode"
+  ],
+  "limitations": [
+    "WSL2 host",
+    "dirty source tree",
+    "block-ordered capture",
+    "disabled mode has no internal event latency or completeness outputs"
+  ],
+  "qualification": "limited-paper-support-only",
+  "schema_version": "limited-evidence-protocol/v1",
+  "source_git_commit": "65273ead83545d89f1f6bb8daeeded68cc926337",
+  "source_git_dirty": true,
+  "valid_claim": "WSL2 proxy comparison of RuntimeEvent disabled, buffered, and per-event flush modes."
+}

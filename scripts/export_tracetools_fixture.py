@@ -92,7 +92,16 @@ def trace_records(
     except ImportError as error:
         raise RuntimeError("bt2 is required to export a CTF fixture") from error
 
-    iterator = bt2.TraceCollectionMessageIterator(str(trace_path))
+    trace_sources = [trace_path]
+    if not (trace_path / "metadata").is_file():
+        trace_sources = sorted(
+            metadata.parent for metadata in trace_path.rglob("metadata")
+        )
+    if not trace_sources:
+        raise ValueError("trace contains no CTF metadata")
+    iterator = bt2.TraceCollectionMessageIterator(
+        [str(path) for path in trace_sources]
+    )
     for message in iterator:
         if not isinstance(message, bt2._EventMessageConst):
             continue
