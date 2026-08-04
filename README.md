@@ -34,6 +34,23 @@ tests/         unit and contract tests
 docs/          public schemas, environment notes, and migration references
 ```
 
+## Quick start on native Ubuntu 24.04
+
+For an x86_64 Ubuntu 24.04 host, preview the Jazzy dependency installation,
+then apply it and build the core workspace:
+
+```bash
+bash scripts/bootstrap.sh --profile native-x86-2404 --dry-run
+sudo bash scripts/bootstrap.sh --profile native-x86-2404 --apply
+ROS_DISTRO=jazzy bash scripts/build_core.sh
+bash scripts/run_smoke_workload.sh all 8
+```
+
+`scripts/bootstrap.sh` is the public entry point for supported hosts. It also
+selects the existing X5/Humble bootstrap when run on ARM64 Ubuntu 22.04. The
+apply path validates architecture and Ubuntu version before installing
+packages; `--dry-run` never invokes `apt-get`.
+
 ## RDK X5 preparation
 
 X5 setup, two-adapter physical CAN wiring, pilot execution, the short defense
@@ -76,12 +93,6 @@ core workspace can be built from WSL or native Ubuntu:
 bash scripts/build_core.sh
 source ~/.cache/robotraceopt_build/install/setup.bash
 ```
-
-The Humble workspace is the primary development and paper baseline. Native
-Ubuntu 24.04 / ROS 2 Jazzy is scoped to the pinned F3/F4 formal partition, with
-its own provisioning script, capability metadata, runner, and sanitized
-evidence package below. The negative Jazzy preflight case is an environment
-guard, not a Jazzy workload result; the two partitions must not be merged.
 
 Run the migrated workloads:
 
@@ -201,6 +212,10 @@ Two overlooked campaigns are now preserved with narrower claim boundaries:
 
 See the [public evidence index](docs/evidence/) for package manifests and the
 claim boundary of every published result.
+
+## Engineering case studies
+
+- [F3 CPU pressure negative result: completeness fell without a clean scheduler-latency causal estimate](docs/case-studies/f3-cpu-pressure-negative-result.md)
 
 ## Project lineage
 

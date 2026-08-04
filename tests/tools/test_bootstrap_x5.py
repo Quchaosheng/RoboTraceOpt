@@ -2,13 +2,15 @@ import subprocess
 import unittest
 from pathlib import Path
 
+from tests.tools.bash_test_utils import find_working_bash
+
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
-BASH = Path(r"C:\Program Files\Git\bin\bash.exe")
+BASH = find_working_bash()
 
 
 class BootstrapX5Test(unittest.TestCase):
-    @unittest.skipUnless(BASH.is_file(), "Git Bash is unavailable")
+    @unittest.skipUnless(BASH, "bash is unavailable")
     def test_dry_run_prints_packages_without_running_apt(self) -> None:
         result = subprocess.run(
             [str(BASH), "scripts/bootstrap_x5.sh", "--dry-run"],
