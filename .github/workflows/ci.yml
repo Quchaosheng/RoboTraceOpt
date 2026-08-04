@@ -25,6 +25,11 @@ jobs:
         with:
           python-version: "3.10"
 
+      - name: Run Ruff
+        run: |
+          python3 -m pip install --disable-pip-version-check ruff
+          python3 -m ruff check .
+
       - name: Check shell syntax
         run: find scripts -type f -name '*.sh' -print0 | xargs -0 -n1 bash -n
 
