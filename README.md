@@ -77,11 +77,20 @@ bash scripts/build_core.sh
 source ~/.cache/robotraceopt_build/install/setup.bash
 ```
 
-The Humble workspace is the primary development and paper baseline. Native
-Ubuntu 24.04 / ROS 2 Jazzy is scoped to the pinned F3/F4 formal partition, with
-its own provisioning script, capability metadata, runner, and sanitized
-evidence package below. The negative Jazzy preflight case is an environment
-guard, not a Jazzy workload result; the two partitions must not be merged.
+The repository keeps these environment partitions separate:
+
+| Partition | Environment | What it supports |
+| --- | --- | --- |
+| Development and WSL evidence | Ubuntu 22.04 / ROS 2 Humble | WSL smoke, association, RuntimeEvent proxy, and readiness checks |
+| Native formal F3/F4 | Native Ubuntu 24.04 / ROS 2 Jazzy | The pinned 40-run F3/F4 test partition and its sanitized package |
+| X5 hardware path | arm64 Ubuntu 22.04.5 / ROS 2 Humble | X5 software/physical-CAN preparation and separately qualified hardware smoke |
+
+The Humble workspace is the development and paper baseline. Jazzy has its own
+provisioning script, capability metadata, runner, and evidence package. The
+negative Jazzy preflight case is an environment guard, not a Jazzy workload
+result. The legacy 22.04 native F3/F4 runbook and the X5 runbook must not be
+used to relabel the 24.04/Jazzy formal package, and results from these
+partitions must not be merged.
 
 Run the migrated workloads:
 
@@ -124,6 +133,15 @@ The default vision mode is metadata-only; image bytes are sent only when
 `payload_base64` is configured with a real JPEG, PNG, or WebP payload. The mock
 camera does not constitute a real VLM experiment.
 
+`replay` is an implemented backend, not only a launch parameter. The node wires
+`ReplayPlannerClient` through
+`ros2_core/src/vlm_planner_pkg/src/vlm_planner_node.py`, and
+`tests/planner/test_model_recording_replay.py` covers unique-match delivery,
+ambiguous-match rejection, and validation before ROS publication. It replays a
+normalized decision JSONL recording; it does not replay raw model or image
+inputs. A recording must be supplied by a prior run because this checkout has
+no `data/` recording.
+
 ## Evidence boundaries
 
 Generated raw and processed experiment data is intentionally excluded from
@@ -136,6 +154,15 @@ functional-safety, actuator, or formal experiment result.
 
 The repository contains implementation and public technical documentation
 only. Private research documents and local experiment data are excluded.
+
+### Current checkout artifact status
+
+This checkout has no `data/` directory and Git tracks zero paths below
+`data/`. Commands in this README and the runbooks create local ignored files
+under `data/raw/`, `data/processed/`, or `data/reports/`; those files are not
+present here and their absence is not a zero-result experiment. The committed
+result artifacts are the sanitized projections under `docs/evidence/`, each
+with its own manifest and claim boundary.
 
 ## Native Linux F3/F4 formal results
 
@@ -155,9 +182,13 @@ The sanitized [native F3/F4 evidence package](docs/evidence/native-f3f4-formal-v
 contains qualification metadata, source hashes, run-level metrics, statistics,
 and both result figures.
 
-These runs establish native collection and the reported F3/F4 effects. They do
-not yet establish held-out multi-class diagnosis accuracy, abstention quality,
-runtime overhead, optimization benefit, ECU HIL behavior, or actuator safety.
+These runs establish native collection and the reported F3/F4 effects. The
+public projection reports aggregate `ebpf_events` counts, but it excludes raw
+bpftrace/eBPF JSONL and per-event identity mappings; those counts do not by
+themselves establish scheduler- or syscall-level causal attribution. These
+runs also do not establish held-out multi-class diagnosis accuracy, abstention
+quality, runtime overhead, optimization benefit, ECU HIL behavior, or actuator
+safety.
 Those claims require separate frozen datasets and paired campaigns.
 
 ## WSL2 run-held-out association evaluation
@@ -262,8 +293,10 @@ does not match tasks by process name as a fallback. F2/F3/F5 perform a full ROS 
 after CTF capture, retaining every selected event rather
 than the bounded sampling used by public fixtures.
 
-This integration closes the evidence contract but does not establish X5 measurement results.
-WSL dry-runs and synthetic tests remain readiness checks;
+This integration closes the runner's artifact-admission contract for a
+qualified session, but it does not turn a tool-ready or WSL capture into native
+evidence and does not establish X5 measurement results. WSL dry-runs and
+synthetic tests remain readiness checks;
 formal conclusions still require a qualified native Linux or X5 `test`
 session with real artifacts.
 

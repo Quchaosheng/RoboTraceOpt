@@ -5,6 +5,11 @@ claim boundary, source-artifact hashes, and package-level `SHA256SUMS.txt`.
 Evidence classes are intentionally separate; results must not be merged across
 environments or promoted beyond the package manifest.
 
+The source checkout intentionally has no `data/` tree and no tracked raw,
+processed, or report outputs. The result files listed below are committed,
+sanitized projections under `docs/evidence/`; commands that write `data/` create
+local ignored artifacts and do not change the qualification of a package.
+
 | Package | Qualification | Supported claim | Explicitly unsupported |
 | --- | --- | --- | --- |
 | [`native-f3f4-formal-v3`](native-f3f4-formal-v3/) | Formal native test evidence | Native Ubuntu 24.04 / Jazzy F3 complete-path recovery and F4 blocking-delay effects | Diagnosis Top-1/Macro-F1, optimization benefit, hardware safety |

@@ -33,7 +33,7 @@ tracetools adapter 使用 CTF raw monotonic clock value 和 frequency 计算 `ti
 
 ## 实测
 
-2026-07-15 将 W1 v2 smoke 的 654 行 RuntimeEvent 全量转换为 654 行 NormalizedEvent。首条输出保留 `source_file` 与 `record_index=1`，不含 `oracle_id`。转换结果位于 Git 忽略的 `data/processed/smoke/w1_normalized.jsonl`，仅作工程 smoke。
+2026-07-15 将 W1 v2 smoke 的 654 行 RuntimeEvent 全量转换为 654 行 NormalizedEvent。首条输出保留 `source_file` 与 `record_index=1`，不含 `oracle_id`。转换结果曾位于 Git 忽略的 `data/processed/smoke/w1_normalized.jsonl`，仅作工程 smoke；当前 checkout 不包含该 `data/` 文件。
 
 ## 下一步
 
