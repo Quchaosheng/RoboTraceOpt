@@ -1,10 +1,11 @@
+import shutil
 import subprocess
 import unittest
 from pathlib import Path
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
-BASH = Path(r"C:\Program Files\Git\bin\bash.exe")
+BASH = Path(shutil.which("bash") or "/bin/bash")
 
 
 class BootstrapX5Test(unittest.TestCase):
