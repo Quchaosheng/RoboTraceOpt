@@ -77,6 +77,12 @@ bash scripts/build_core.sh
 source ~/.cache/robotraceopt_build/install/setup.bash
 ```
 
+The Humble workspace is the primary development and paper baseline. Native
+Ubuntu 24.04 / ROS 2 Jazzy is scoped to the pinned F3/F4 formal partition, with
+its own provisioning script, capability metadata, runner, and sanitized
+evidence package below. The negative Jazzy preflight case is an environment
+guard, not a Jazzy workload result; the two partitions must not be merged.
+
 Run the migrated workloads:
 
 ```bash
