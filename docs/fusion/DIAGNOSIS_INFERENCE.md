@@ -17,9 +17,10 @@ The catalog contains the six planned fault classes:
 - scheduling delay;
 - CAN or application ACK failure.
 
-`root_cause_catalog.yaml` uses the JSON subset of YAML 1.2 so it can be parsed
-with the Python standard library. The catalog identifies evidence semantics;
-it contains no tuned numeric thresholds.
+The catalog is [`diagnosis/rules/root_cause_catalog.json`](../../diagnosis/rules/root_cause_catalog.json).
+It is an ordinary JSON file parsed with the Python standard library; no
+YAML-named catalog is used. The catalog identifies evidence semantics; it
+contains no tuned numeric thresholds.
 
 ## Scoring gate
 

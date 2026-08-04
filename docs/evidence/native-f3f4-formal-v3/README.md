@@ -4,6 +4,12 @@ This package contains the compact, sanitized projection of the native Ubuntu
 24.04 / ROS 2 Jazzy F3/F4 session executed on 2026-07-29. Raw CTF, ROS 2,
 RuntimeEvent, and eBPF files are intentionally excluded.
 
+The public projection retains aggregate `ebpf_events` counts in
+`results/analysis_summary.*`, but not raw bpftrace output or per-event task
+identity mappings. Those counts report non-zero collector output in the
+qualified session; they do not independently establish scheduler- or
+syscall-level causal attribution.
+
 ## Provenance
 
 - Dataset role: `test`

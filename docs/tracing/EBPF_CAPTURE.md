@@ -1,7 +1,12 @@
-# eBPF capture status
+# eBPF/bpftrace capture status
 
 Recorded on 2026-07-15 using Ubuntu 22.04 under WSL2, kernel
 `6.18.33.2-microsoft-standard-WSL2`.
+
+This page describes a WSL2/Humble development probe, not the native Ubuntu
+24.04/Jazzy formal partition. The checkout contains no `data/` capture files;
+the counts below are notes from that local run, not a distributable raw
+eBPF/bpftrace fixture.
 
 ## Implemented path
 
@@ -18,6 +23,10 @@ A minimal three-second `sched_switch` program loaded successfully and counted
 13,572 real switches. The complete four-probe program also passed the verifier
 and attached. Development runs observed 455,818 raw lines in four seconds and
 921,445 raw lines in eight seconds.
+
+This demonstrates that `bpftrace` could load and attach these probes on that
+WSL kernel. It does not demonstrate comparable process identity, a valid
+cross-layer fixture, or scheduler/syscall causal evidence.
 
 These raw lines are not a formal cross-layer fixture. WSL procfs reported the
 ROS `can_bridge_node` as PID 445 while the scheduler tracepoint reported its
@@ -45,7 +54,9 @@ The collector JSONL and summary are required roles in
 from becoming successful.
 
 This wiring is capture readiness, not a native-Linux or X5 result. WSL identity
-remains non-comparable where described above.
+remains non-comparable where described above. The committed native
+24.04/Jazzy projection contains aggregate eBPF event counts but intentionally
+does not publish raw bpftrace records or per-event identity mappings.
 
 ## Reproduction on a comparable host
 
@@ -67,3 +78,5 @@ python3 -m diagnosis.adapters.ebpf_adapter \
 The run is admissible only when the process manifest reports
 `ebpf_identity_status=comparable`, the collector summary contains non-zero
 events, and the adapter converts the frozen fixture without rejection.
+Non-zero bpftrace output or a `ready` tool check alone is insufficient for a
+formal claim.

@@ -1,4 +1,10 @@
-# Native x86 Ubuntu F3/F4 Runbook
+# Legacy Native x86 Ubuntu 22.04/Humble F3/F4 Runbook
+
+This is the legacy native Ubuntu 22.04 / ROS 2 Humble runbook. It is separate
+from the formal native Ubuntu 24.04 / ROS 2 Jazzy package. Use
+[`NATIVE_X86_2404_F3_F4_RUNBOOK.md`](NATIVE_X86_2404_F3_F4_RUNBOOK.md) when
+reproducing or extending that Jazzy partition; do not merge outputs from the
+two environments.
 
 ## Why not WSL2
 
