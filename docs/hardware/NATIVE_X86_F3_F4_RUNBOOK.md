@@ -1,10 +1,10 @@
 # Legacy Native x86 Ubuntu 22.04/Humble F3/F4 Runbook
 
-This is the legacy native Ubuntu 22.04 / ROS 2 Humble runbook. It is separate
-from the formal native Ubuntu 24.04 / ROS 2 Jazzy package. Use
+This is the legacy native Ubuntu 22.04 / ROS 2 Humble runbook. It is a planned
+execution procedure, not evidence that a native session was completed. Use
 [`NATIVE_X86_2404_F3_F4_RUNBOOK.md`](NATIVE_X86_2404_F3_F4_RUNBOOK.md) when
-reproducing or extending that Jazzy partition; do not merge outputs from the
-two environments.
+preparing a new Jazzy qualification attempt; do not merge outputs from the two
+environments or cite the archived candidate package as a completed result.
 
 ## Why not WSL2
 
@@ -34,9 +34,10 @@ sudo bash scripts/run_native_x86_f3_f4.sh
 ```
 
 The second command builds the ROS workspace, writes a read-only capability
-report, then runs 40 repetitions: F3 control/injected and F4
-control/injected, each with 10 repetitions and an 8-second workload window.
-It may take 10--20 minutes depending on package download and trace volume.
+report, then is configured to attempt the planned F3/F4 control and injected
+matrix. A successful command exit is not sufficient evidence: the raw traces,
+identity mapping, environment report, manifests, and checksums must pass the
+current qualification contract before any result is reported.
 
 Do not interrupt a completed session or reuse its output directory. If the
 script stops before the formal run, retain the generated capability JSON and

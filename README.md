@@ -91,15 +91,15 @@ The repository keeps these environment partitions separate:
 | Partition | Environment | What it supports |
 | --- | --- | --- |
 | Development and WSL evidence | Ubuntu 22.04 / ROS 2 Humble | WSL smoke, association, RuntimeEvent proxy, and readiness checks |
-| Native formal F3/F4 | Native Ubuntu 24.04 / ROS 2 Jazzy | The pinned 40-run F3/F4 test partition and its sanitized package |
+| Archived native F3/F4 candidate | Ubuntu 24.04 / ROS 2 Jazzy | Retained tooling and candidate files only; no completed native claim is accepted |
 | X5 hardware path | arm64 Ubuntu 22.04.5 / ROS 2 Humble | X5 software/physical-CAN preparation and separately qualified hardware smoke |
 
-The Humble workspace is the development and paper baseline. Jazzy has its own
-provisioning script, capability metadata, runner, and evidence package. The
-negative Jazzy preflight case is an environment guard, not a Jazzy workload
-result. The legacy 22.04 native F3/F4 runbook and the X5 runbook must not be
-used to relabel the 24.04/Jazzy formal package, and results from these
-partitions must not be merged.
+The Humble workspace is the development and paper baseline. Jazzy has
+provisioning, capability, and runner tooling for a future qualification pass.
+The negative Jazzy preflight case is an environment guard, not a Jazzy
+workload result. Files retained under the historical native F3/F4 package path
+are an archived candidate projection and must not be cited as a completed
+native session. Results from different environments must not be merged.
 
 Run the migrated workloads:
 
@@ -173,32 +173,21 @@ present here and their absence is not a zero-result experiment. The committed
 result artifacts are the sanitized projections under `docs/evidence/`, each
 with its own manifest and claim boundary.
 
-## Native Linux F3/F4 formal results
+## Archived native F3/F4 candidate package
 
-The frozen Ubuntu 24.04 / ROS 2 Jazzy test partition completed 40/40 runs:
-ten balanced control/injected pairs for F3 and ten for F4. The exact code used
-by the session is retained at commit `384b215` and local archival tag
-`experiment-native-f3f4-formal-v3-20260729`.
+The historical
+[native F3/F4 package path](docs/evidence/native-f3f4-formal-v3/) is retained
+for repository compatibility and audit history. Its public projection omits
+the raw CTF, ROS 2, RuntimeEvent, bpftrace/eBPF, and per-event identity records
+needed to independently requalify the session. It is therefore not accepted
+as evidence that a native formal experiment was completed.
 
-| Case | Control | Injected | Defensible conclusion |
-| --- | ---: | ---: | --- |
-| F3 scheduling pressure | 95.30% complete lifecycle recovery | 67.56% | Pressure reduces complete-path recovery; complete samples are selection-biased, so this is not scheduler-causality evidence. |
-| F4 100 ms service blocking | 0.875 ms request-response median | 101.212 ms | The application-level blocking effect is recovered with a paired median increase of about 100.337 ms. |
-
-![F4 control and injected request-response latency](docs/figures/native-f4-formal.svg)
-
-The sanitized [native F3/F4 evidence package](docs/evidence/native-f3f4-formal-v3/)
-contains qualification metadata, source hashes, run-level metrics, statistics,
-and both result figures.
-
-These runs establish native collection and the reported F3/F4 effects. The
-public projection reports aggregate `ebpf_events` counts, but it excludes raw
-bpftrace/eBPF JSONL and per-event identity mappings; those counts do not by
-themselves establish scheduler- or syscall-level causal attribution. These
-runs also do not establish held-out multi-class diagnosis accuracy, abstention
-quality, runtime overhead, optimization benefit, ECU HIL behavior, or actuator
-safety.
-Those claims require separate frozen datasets and paired campaigns.
+Do not cite the archived counts, figures, or metadata as native execution,
+paired F3/F4 effects, scheduler or syscall attribution, diagnosis accuracy,
+optimization benefit, ECU HIL behavior, or actuator safety. A future native
+claim requires a new clean session whose raw artifacts, environment report,
+identity mapping, manifests, and checksums pass the current qualification
+contract. Until then, the native runbooks describe planned procedures only.
 
 ## WSL2 run-held-out association evaluation
 
@@ -216,9 +205,9 @@ timestamp; oracle identity is joined only after public groups are generated.
 This is association and path-validity evidence, not F1-F6 root-cause
 classification. The runs share one host and boot, use mock-mode delays, and
 record a dirty source tree at commit `65273ea`; their input hashes and source
-tree hash are retained. They are therefore reported separately from the clean,
-native F3/F4 formal session and do not close the held-out diagnosis or formal
-optimization gaps.
+tree hash are retained. They are therefore reported as limited WSL2
+association evidence and do not close the native-execution, held-out
+diagnosis, or formal optimization gaps.
 
 The complete sanitized [run-held-out association package](docs/evidence/wsl-heldout-association-20260731/)
 includes the frozen evaluator, aggregate scoring outputs, split manifest, and
