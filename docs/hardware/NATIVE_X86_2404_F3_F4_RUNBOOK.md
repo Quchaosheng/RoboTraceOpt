@@ -5,6 +5,10 @@ not WSL, Docker, or VM evidence. The resulting F3/F4 data must be reported as
 a separate Ubuntu 24.04/Jazzy platform partition from existing Ubuntu
 22.04/Humble-oriented evidence.
 
+This runbook is a planned qualification procedure. Its presence, and the
+historical candidate files under `docs/evidence/native-f3f4-formal-v3/`, do
+not establish that a native formal session was completed.
+
 ```bash
 cd ~/Desktop
 unzip RoboTraceOpt_x86_ubuntu2404_F3F4_20260729.zip
@@ -14,8 +18,10 @@ sudo bash scripts/run_native_x86_2404_f3_f4.sh
 ```
 
 The runner first writes a capability report. If eBPF, ROS tracing, or identity
-comparability is blocked, it stops without fabricating a result. If qualified,
-it runs F3/F4 control and injected conditions, 10 repetitions each.
+comparability is blocked, it stops without fabricating a result. If the host
+passes preflight, it attempts the planned F3/F4 control and injected matrix.
+No result may be promoted until the returned raw artifacts pass the current
+qualification and integrity checks.
 
 Return the printed experiment directory and capability JSON as one archive:
 
