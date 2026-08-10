@@ -11,7 +11,6 @@ import signal
 import socket
 import statistics
 import subprocess
-import sys
 import threading
 import time
 from dataclasses import dataclass

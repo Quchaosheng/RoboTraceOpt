@@ -13,7 +13,6 @@ import csv
 import hashlib
 import json
 import random
-import re
 from collections import Counter, defaultdict
 from dataclasses import dataclass, replace
 from pathlib import Path
