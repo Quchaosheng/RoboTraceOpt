@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
-
 from ai_robot_runtime_interfaces.msg import CameraFrame
 
 from planner_clients.base_client import BasePlannerClient

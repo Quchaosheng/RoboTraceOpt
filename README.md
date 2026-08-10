@@ -1,5 +1,10 @@
 # RoboTraceOpt
 
+**English** | [简体中文](README.zh-CN.md)
+
+[![CI](https://github.com/Quchaosheng/RoboTraceOpt/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Quchaosheng/RoboTraceOpt/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/license-Apache--2.0-2EA44F)](LICENSE)
+
 RoboTraceOpt analyzes ROS 2 runtime behavior across application, middleware,
 and Linux layers. It combines cross-layer tracing, evidence-graph diagnosis,
 and constrained configuration optimization for robotic systems.
