@@ -34,15 +34,6 @@ tests/         unit and contract tests
 docs/          public schemas, environment notes, and migration references
 ```
 
-## Development Workflow
-
-The `docs/superpowers/` tree is public and retained as historical
-specification material. These specs capture earlier design intent and
-implementation plans; they are not runtime evidence, experiment output, or
-proof that a procedure was executed. Runtime and experiment claims must be
-supported by the qualified evidence packages and claim boundaries documented
-under `docs/evidence/`.
-
 ## RDK X5 preparation
 
 X5 setup, two-adapter physical CAN wiring, pilot execution, the short defense
