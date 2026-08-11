@@ -60,8 +60,8 @@ void validate_runtime_settings(const RuntimeSettings & settings)
   if (settings.executor_contention_load_ms < 0) {
     throw std::invalid_argument("executor_contention_load_ms must be non-negative");
   }
-  if (settings.observation_ttl_ms < 0) {
-    throw std::invalid_argument("observation_ttl_ms must be non-negative");
+  if (settings.observation_ttl_ms <= 0) {
+    throw std::invalid_argument("observation_ttl_ms must be positive");
   }
   if (!valid_delay_mode(settings.planner_delay_mode) ||
     !valid_delay_mode(settings.model_queue_delay_mode))
