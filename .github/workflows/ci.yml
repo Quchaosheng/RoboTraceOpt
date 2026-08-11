@@ -101,9 +101,10 @@ jobs:
           cd ros2_core
           colcon build \
             --packages-select \
-              ai_robot_runtime_interfaces minimal_runtime_demo \
+              ai_robot_runtime_interfaces robotraceopt_core minimal_runtime_demo \
               service_runtime_demo runtime_logger_pkg camera_mock_pkg \
-              vlm_planner_pkg robot_action_pkg can_bridge_pkg runtime_bringup \
+              vlm_planner_pkg vlm_planner_cpp_pkg robot_action_pkg \
+              can_bridge_pkg runtime_bringup \
             --event-handlers console_direct+
 
       - name: Test ROS 2 packages
@@ -114,9 +115,10 @@ jobs:
           cd ros2_core
           colcon test \
             --packages-select \
-              ai_robot_runtime_interfaces minimal_runtime_demo \
+              ai_robot_runtime_interfaces robotraceopt_core minimal_runtime_demo \
               service_runtime_demo runtime_logger_pkg camera_mock_pkg \
-              vlm_planner_pkg robot_action_pkg can_bridge_pkg runtime_bringup \
+              vlm_planner_pkg vlm_planner_cpp_pkg robot_action_pkg \
+              can_bridge_pkg runtime_bringup \
             --event-handlers console_direct+ \
             --return-code-on-test-failure
           colcon test-result --test-result-base build --verbose
