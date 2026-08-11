@@ -1,5 +1,7 @@
 runtime_bringup:
   defaults:
+    planner_implementation: "python"
+    planner_shadow_enabled: false
     camera_rate_hz: 1.0
     planner_delay_ms: 50
     planner_delay_mode: "sleep"
