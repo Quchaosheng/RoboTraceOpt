@@ -13,9 +13,12 @@
   <exec_depend>minimal_runtime_demo</exec_depend>
   <exec_depend>camera_mock_pkg</exec_depend>
   <exec_depend>vlm_planner_pkg</exec_depend>
+  <exec_depend>vlm_planner_cpp_pkg</exec_depend>
   <exec_depend>robot_action_pkg</exec_depend>
   <exec_depend>can_bridge_pkg</exec_depend>
   <exec_depend>runtime_logger_pkg</exec_depend>
+
+  <test_depend>ament_cmake_pytest</test_depend>
 
   <export>
     <build_type>ament_cmake</build_type>

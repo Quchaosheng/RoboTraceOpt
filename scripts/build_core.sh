@@ -37,7 +37,7 @@ ln -sfn "${WORKSPACE_ROOT}" "${SAFE_WS}"
 
 cd "${SAFE_WS}"
 colcon --log-base "${LOG_BASE}" build \
-  --packages-select ai_robot_runtime_interfaces minimal_runtime_demo service_runtime_demo runtime_logger_pkg camera_mock_pkg vlm_planner_pkg robot_action_pkg can_bridge_pkg runtime_bringup \
+  --packages-select ai_robot_runtime_interfaces robotraceopt_core minimal_runtime_demo service_runtime_demo runtime_logger_pkg camera_mock_pkg vlm_planner_pkg vlm_planner_cpp_pkg robot_action_pkg can_bridge_pkg runtime_bringup \
   --build-base "${BUILD_BASE}" \
   --install-base "${INSTALL_BASE}"
 
@@ -57,6 +57,16 @@ Enhanced runtime:
   cd ${WORKSPACE_ROOT}
   source ${INSTALL_BASE}/setup.bash
   ros2 launch runtime_bringup ai_runtime.launch.py profile:=enhanced output_path:=../data/logs/runtime_events.jsonl
+
+C++ planner runtime:
+  cd ${WORKSPACE_ROOT}
+  source ${INSTALL_BASE}/setup.bash
+  ros2 launch runtime_bringup ai_runtime.launch.py profile:=enhanced planner_implementation:=cpp output_path:=../data/logs/runtime_events.jsonl
+
+C++ planner shadow (isolated from CAN):
+  cd ${WORKSPACE_ROOT}
+  source ${INSTALL_BASE}/setup.bash
+  ros2 launch runtime_bringup ai_runtime.launch.py profile:=enhanced planner_implementation:=python planner_shadow_enabled:=true output_path:=../data/logs/runtime_events.jsonl
 
 Service workload:
   cd ${WORKSPACE_ROOT}

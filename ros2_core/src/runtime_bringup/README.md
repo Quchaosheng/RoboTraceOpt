@@ -10,6 +10,9 @@
 camera_mock_node -> vlm_planner_node -> robot_action_node -> can_bridge_node -> runtime_event_logger_node
 ```
 
+增强链路默认继续使用 Python planner。通过 `planner_implementation:=cpp` 可将主
+planner 切换为 C++ 实现；节点名和主链 topic 保持不变，因此下游节点无需修改。
+
 默认模式保留旧的并行兼容链路。设置 `action_manager_enabled:=true` 后，bringup 会启动 `action_manager_node`，关闭旧 `robot_action_node`，并让 CANBridge 订阅 `/action_manager/command_result`，形成：
 
 ```text
@@ -44,6 +47,8 @@ ros2 launch runtime_bringup ai_runtime.launch.py
 | --- | --- | --- |
 | `camera_rate_hz` | `1.0` | camera mock 发布频率 |
 | `second_camera_enabled` | `false` | 是否启动第二个 camera mock（用于 sequence_id collision） |
+| `planner_implementation` | `python` | 主 planner 实现，可选 `python` 或 `cpp` |
+| `planner_shadow_enabled` | `false` | 在 Python 主 planner 旁启动隔离的 C++ shadow；主实现为 `cpp` 时忽略 |
 | `planner_backend` | `mock` | planner backend，可选 `mock` 或 `llm` |
 | `planner_delay_ms` | `50` | mock planner 处理延迟 |
 | `planner_delay_mode` | `sleep` | planner 延迟机制；F1 使用 `busy_compute` |
@@ -77,6 +82,36 @@ ros2 launch runtime_bringup ai_runtime.launch.py \
   mock_mode:=true
 ```
 
+直接切换到 C++ 主 planner：
+
+```bash
+ros2 launch runtime_bringup ai_runtime.launch.py \
+  planner_implementation:=cpp \
+  planner_backend:=mock
+```
+
+先以 shadow 方式对照 Python 与 C++ 输出：
+
+```bash
+ros2 launch runtime_bringup ai_runtime.launch.py \
+  planner_implementation:=python \
+  planner_shadow_enabled:=true \
+  planner_backend:=mock
+
+ros2 topic echo /shadow/planner/command
+ros2 topic echo /shadow/runtime/events
+```
+
+## C++ shadow 安全边界
+
+- C++ shadow 只订阅正常的 `/camera/frame` 输入。
+- 它发布的 `/planner/command` 被强制 remap 到 `/shadow/planner/command`。
+- 它发布的 `/runtime/events` 被强制 remap 到 `/shadow/runtime/events`。
+- `robot_action_node`、`action_manager_node` 和 `can_bridge_node` 仍只消费主链
+  `/planner/command`（或 `/action_manager/command_result`），不会订阅 shadow command。
+- `planner_shadow_enabled` 仅在 `planner_implementation:=python` 时生效，避免 C++
+  已作为主 planner 时重复启动第二个实例。
+
 ## 查看 topic 和节点
 
 另开终端：
@@ -93,7 +128,8 @@ ros2 topic echo /runtime/events
 预期节点：
 
 - `/camera_mock_node`
-- `/vlm_planner_node`
+- `/vlm_planner_node`（Python/C++ 主实现共用节点名）
+- `/vlm_planner_cpp_shadow_node`（仅 `planner_shadow_enabled:=true` 时）
 - `/robot_action_node`（默认兼容模式）
 - `/action_manager_node`（`action_manager_enabled:=true` 时）
 - `/can_bridge_node`

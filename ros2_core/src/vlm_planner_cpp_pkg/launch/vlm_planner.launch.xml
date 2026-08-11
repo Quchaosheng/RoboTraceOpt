@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="config_file" default="$(find-pkg-share vlm_planner_cpp_pkg)/config/planner.yaml"/>
+  <arg name="planner_backend" default="mock"/>
+  <arg name="planner_delay_ms" default="50"/>
+  <arg name="planner_delay_mode" default="sleep"/>
+  <arg name="executor_threads" default="1"/>
+  <arg name="runtime_event_enabled" default="true"/>
+  <arg name="frame_qos_depth" default="10"/>
+  <arg name="frame_qos_reliability" default="reliable"/>
+  <arg name="observation_ttl_ms" default="1000"/>
+  <arg name="model_queue_delay_ms" default="0"/>
+  <arg name="model_queue_delay_mode" default="sleep"/>
+  <arg name="camera_topic" default="/camera/frame"/>
+  <arg name="command_topic" default="/planner/command"/>
+  <arg name="event_topic" default="/runtime/events"/>
+
+  <node pkg="vlm_planner_cpp_pkg" exec="vlm_planner_node"
+        name="vlm_planner_node" output="screen">
+    <param from="$(var config_file)"/>
+    <param name="planner_backend" value="$(var planner_backend)"/>
+    <param name="planner_delay_ms" value="$(var planner_delay_ms)"/>
+    <param name="planner_delay_mode" value="$(var planner_delay_mode)"/>
+    <param name="executor_threads" value="$(var executor_threads)"/>
+    <param name="runtime_event_enabled" value="$(var runtime_event_enabled)"/>
+    <param name="frame_qos_depth" value="$(var frame_qos_depth)"/>
+    <param name="frame_qos_reliability" value="$(var frame_qos_reliability)"/>
+    <param name="observation_ttl_ms" value="$(var observation_ttl_ms)"/>
+    <param name="model_queue_delay_ms" value="$(var model_queue_delay_ms)"/>
+    <param name="model_queue_delay_mode" value="$(var model_queue_delay_mode)"/>
+    <remap from="/camera/frame" to="$(var camera_topic)"/>
+    <remap from="/planner/command" to="$(var command_topic)"/>
+    <remap from="/runtime/events" to="$(var event_topic)"/>
+  </node>
+</launch>
