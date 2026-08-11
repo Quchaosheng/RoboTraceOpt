@@ -15,6 +15,35 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  cpp-core:
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-22.04
+          - windows-2022
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Configure C++ core
+        run: >-
+          cmake -S cpp_core -B build/cpp-core
+          -DCMAKE_BUILD_TYPE=Release
+          -DROBOTRACEOPT_BUILD_TESTS=ON
+          -DROBOTRACEOPT_BUILD_EXAMPLES=ON
+
+      - name: Build C++ core
+        run: cmake --build build/cpp-core --config Release --parallel
+
+      - name: Test C++ core
+        run: >-
+          ctest --test-dir build/cpp-core
+          --build-config Release
+          --output-on-failure
+
   python:
     runs-on: ubuntu-22.04
     timeout-minutes: 15
