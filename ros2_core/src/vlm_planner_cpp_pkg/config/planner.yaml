@@ -1,0 +1,31 @@
+vlm_planner_node:
+  ros__parameters:
+    planner_backend: "mock"
+    planner_mode: "mock"
+    planner_delay_ms: 50
+    planner_delay_mode: "sleep"
+    executor_contention_enabled: false
+    executor_contention_period_ms: 25
+    executor_contention_load_ms: 0
+    executor_threads: 1
+    runtime_event_enabled: true
+    frame_qos_depth: 10
+    frame_qos_reliability: "reliable"
+    llm_provider: "openai_compatible"
+    llm_api_base: ""
+    llm_api_key_env: "LLM_API_KEY"
+    llm_model: ""
+    llm_api_style: "chat_completions"
+    llm_timeout_s: 3.0
+    llm_vision_mode: "metadata"
+    llm_max_image_bytes: 1000000
+    observation_ttl_ms: 1000
+    observation_max_future_skew_ms: 100
+    model_queue_delay_ms: 0
+    model_queue_delay_mode: "sleep"
+    model_dedup_window_ms: 10000
+    model_failure_window_ms: 30000
+    model_failure_storm_count: 3
+    model_record_path: ""
+    model_replay_path: ""
+    fallback_to_mock: false

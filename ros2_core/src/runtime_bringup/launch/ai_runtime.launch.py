@@ -33,6 +33,8 @@ def generate_launch_description():
     input_rate_hz = LaunchConfiguration("input_rate_hz")
     second_camera_enabled = LaunchConfiguration("second_camera_enabled")
     profile = LaunchConfiguration("profile")
+    planner_implementation = LaunchConfiguration("planner_implementation")
+    planner_shadow_enabled = LaunchConfiguration("planner_shadow_enabled")
     planner_backend = LaunchConfiguration("planner_backend")
     llm_provider = LaunchConfiguration("llm_provider")
     llm_api_base = LaunchConfiguration("llm_api_base")
@@ -83,6 +85,61 @@ def generate_launch_description():
     probe_output_path = LaunchConfiguration("probe_output_path")
     mock_mode = LaunchConfiguration("mock_mode")
 
+    planner_parameter_overrides = {
+        "planner_backend": ParameterValue(planner_backend, value_type=str),
+        "llm_provider": ParameterValue(llm_provider, value_type=str),
+        "llm_api_base": ParameterValue(llm_api_base, value_type=str),
+        "llm_api_key_env": ParameterValue(llm_api_key_env, value_type=str),
+        "llm_model": ParameterValue(llm_model, value_type=str),
+        "llm_api_style": ParameterValue(llm_api_style, value_type=str),
+        "llm_timeout_s": ParameterValue(llm_timeout_s, value_type=float),
+        "llm_vision_mode": ParameterValue(llm_vision_mode, value_type=str),
+        "llm_max_image_bytes": ParameterValue(
+            llm_max_image_bytes, value_type=int
+        ),
+        "observation_ttl_ms": ParameterValue(observation_ttl_ms, value_type=int),
+        "observation_max_future_skew_ms": ParameterValue(
+            observation_max_future_skew_ms, value_type=int
+        ),
+        "model_queue_delay_ms": ParameterValue(
+            model_queue_delay_ms, value_type=int
+        ),
+        "model_queue_delay_mode": ParameterValue(
+            model_queue_delay_mode, value_type=str
+        ),
+        "model_dedup_window_ms": ParameterValue(
+            model_dedup_window_ms, value_type=int
+        ),
+        "model_failure_window_ms": ParameterValue(
+            model_failure_window_ms, value_type=int
+        ),
+        "model_failure_storm_count": ParameterValue(
+            model_failure_storm_count, value_type=int
+        ),
+        "model_record_path": ParameterValue(model_record_path, value_type=str),
+        "model_replay_path": ParameterValue(model_replay_path, value_type=str),
+        "fallback_to_mock": ParameterValue(fallback_to_mock, value_type=bool),
+        "planner_delay_ms": ParameterValue(planner_delay_ms, value_type=int),
+        "planner_delay_mode": ParameterValue(planner_delay_mode, value_type=str),
+        "frame_qos_depth": ParameterValue(frame_qos_depth, value_type=int),
+        "frame_qos_reliability": ParameterValue(
+            frame_qos_reliability, value_type=str
+        ),
+        "executor_contention_enabled": ParameterValue(
+            executor_contention_enabled, value_type=bool
+        ),
+        "executor_contention_period_ms": ParameterValue(
+            executor_contention_period_ms, value_type=int
+        ),
+        "executor_contention_load_ms": ParameterValue(
+            executor_contention_load_ms, value_type=int
+        ),
+        "executor_threads": ParameterValue(executor_threads, value_type=int),
+        "runtime_event_enabled": ParameterValue(
+            runtime_event_enabled, value_type=bool
+        ),
+    }
+
     return LaunchDescription(
         [
             DeclareLaunchArgument(
@@ -121,6 +178,20 @@ def generate_launch_description():
                 description=(
                     "Start a second camera_mock_node publishing to the same /camera/frame topic. "
                     "This is useful for sequence_id collision experiments."
+                ),
+            ),
+            DeclareLaunchArgument(
+                "planner_implementation",
+                default_value="python",
+                description="Primary enhanced planner implementation: python or cpp.",
+                choices=["python", "cpp"],
+            ),
+            DeclareLaunchArgument(
+                "planner_shadow_enabled",
+                default_value="false",
+                description=(
+                    "Run the C++ planner beside the Python primary with command and event "
+                    "topics isolated below /shadow. Ignored when planner_implementation is cpp."
                 ),
             ),
             DeclareLaunchArgument(
@@ -566,90 +637,67 @@ def generate_launch_description():
                 name="vlm_planner_node",
                 output="screen",
                 condition=IfCondition(
-                    PythonExpression(["'", profile, "' == 'enhanced'"])
+                    PythonExpression(
+                        [
+                            "'",
+                            profile,
+                            "' == 'enhanced' and '",
+                            planner_implementation,
+                            "' == 'python'",
+                        ]
+                    )
                 ),
                 parameters=[
                     package_config("vlm_planner_pkg", "planner.yaml"),
-                    {
-                        "planner_backend": ParameterValue(
-                            planner_backend, value_type=str
-                        ),
-                        "llm_provider": ParameterValue(llm_provider, value_type=str),
-                        "llm_api_base": ParameterValue(llm_api_base, value_type=str),
-                        "llm_api_key_env": ParameterValue(
-                            llm_api_key_env, value_type=str
-                        ),
-                        "llm_model": ParameterValue(llm_model, value_type=str),
-                        "llm_api_style": ParameterValue(
-                            llm_api_style, value_type=str
-                        ),
-                        "llm_timeout_s": ParameterValue(
-                            llm_timeout_s, value_type=float
-                        ),
-                        "llm_vision_mode": ParameterValue(
-                            llm_vision_mode, value_type=str
-                        ),
-                        "llm_max_image_bytes": ParameterValue(
-                            llm_max_image_bytes, value_type=int
-                        ),
-                        "observation_ttl_ms": ParameterValue(
-                            observation_ttl_ms, value_type=int
-                        ),
-                        "observation_max_future_skew_ms": ParameterValue(
-                            observation_max_future_skew_ms, value_type=int
-                        ),
-                        "model_queue_delay_ms": ParameterValue(
-                            model_queue_delay_ms, value_type=int
-                        ),
-                        "model_queue_delay_mode": ParameterValue(
-                            model_queue_delay_mode, value_type=str
-                        ),
-                        "model_dedup_window_ms": ParameterValue(
-                            model_dedup_window_ms, value_type=int
-                        ),
-                        "model_failure_window_ms": ParameterValue(
-                            model_failure_window_ms, value_type=int
-                        ),
-                        "model_failure_storm_count": ParameterValue(
-                            model_failure_storm_count, value_type=int
-                        ),
-                        "model_record_path": ParameterValue(
-                            model_record_path, value_type=str
-                        ),
-                        "model_replay_path": ParameterValue(
-                            model_replay_path, value_type=str
-                        ),
-                        "fallback_to_mock": ParameterValue(
-                            fallback_to_mock, value_type=bool
-                        ),
-                        "planner_delay_ms": ParameterValue(
-                            planner_delay_ms, value_type=int
-                        ),
-                        "planner_delay_mode": ParameterValue(
-                            planner_delay_mode, value_type=str
-                        ),
-                        "frame_qos_depth": ParameterValue(
-                            frame_qos_depth, value_type=int
-                        ),
-                        "frame_qos_reliability": ParameterValue(
-                            frame_qos_reliability, value_type=str
-                        ),
-                        "executor_contention_enabled": ParameterValue(
-                            executor_contention_enabled, value_type=bool
-                        ),
-                        "executor_contention_period_ms": ParameterValue(
-                            executor_contention_period_ms, value_type=int
-                        ),
-                        "executor_contention_load_ms": ParameterValue(
-                            executor_contention_load_ms, value_type=int
-                        ),
-                        "executor_threads": ParameterValue(
-                            executor_threads, value_type=int
-                        ),
-                        "runtime_event_enabled": ParameterValue(
-                            runtime_event_enabled, value_type=bool
-                        ),
-                    },
+                    planner_parameter_overrides,
+                ],
+            ),
+            Node(
+                package="vlm_planner_cpp_pkg",
+                executable="vlm_planner_node",
+                name="vlm_planner_node",
+                output="screen",
+                condition=IfCondition(
+                    PythonExpression(
+                        [
+                            "'",
+                            profile,
+                            "' == 'enhanced' and '",
+                            planner_implementation,
+                            "' == 'cpp'",
+                        ]
+                    )
+                ),
+                parameters=[
+                    package_config("vlm_planner_cpp_pkg", "planner.yaml"),
+                    planner_parameter_overrides,
+                ],
+            ),
+            Node(
+                package="vlm_planner_cpp_pkg",
+                executable="vlm_planner_node",
+                name="vlm_planner_cpp_shadow_node",
+                output="screen",
+                condition=IfCondition(
+                    PythonExpression(
+                        [
+                            "'",
+                            profile,
+                            "' == 'enhanced' and '",
+                            planner_implementation,
+                            "' == 'python' and '",
+                            planner_shadow_enabled,
+                            "' == 'true'",
+                        ]
+                    )
+                ),
+                parameters=[
+                    package_config("vlm_planner_cpp_pkg", "planner.yaml"),
+                    planner_parameter_overrides,
+                ],
+                remappings=[
+                    ("/planner/command", "/shadow/planner/command"),
+                    ("/runtime/events", "/shadow/runtime/events"),
                 ],
             ),
             Node(
