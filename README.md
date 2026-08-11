@@ -31,6 +31,7 @@ optimization trials whose actions match the diagnosed cause.
 
 ```text
 ros2_core/     ROS 2 Humble packages and launch files
+cpp_core/      portable C++17 planner, diagnosis, and optimizer libraries
 diagnosis/     evidence adapters, association, graph construction, inference
 experiments/   fault catalog, controlled runners, matched comparisons
 optimizer/     action constraints, search plans, objectives, validation
@@ -38,6 +39,25 @@ scripts/       build, capture, smoke, and experiment entry points
 tests/         unit and contract tests
 docs/          public schemas, environment notes, and migration references
 ```
+
+## Portable C++ core
+
+The first incremental C++ migration is available under [`cpp_core`](cpp_core/).
+It provides dependency-free C++17 libraries for planner safety contracts,
+trace-stage diagnosis, evidence graphs, and deterministic optimization. The
+libraries have one CMake entry point, CTest coverage, installable package
+exports, and a cross-module executable example.
+
+```bash
+cmake -S cpp_core -B build/cpp-core -DCMAKE_BUILD_TYPE=Release
+cmake --build build/cpp-core --parallel
+ctest --test-dir build/cpp-core --output-on-failure
+```
+
+The current Python and ROS 2 implementations remain the default while adapters
+and shadow-mode validation are completed. See
+[`docs/CPP_MIGRATION.md`](docs/CPP_MIGRATION.md) for the staged replacement
+plan and compatibility gates.
 
 ## RDK X5 preparation
 
