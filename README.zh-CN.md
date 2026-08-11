@@ -24,6 +24,7 @@ RoboTraceOpt 用于分析 ROS 2 在应用层、中间件和 Linux 层的运行�
 
 ~~~text
 ros2_core/     ROS 2 Humble 包与 launch 文件
+cpp_core/      可移植的 C++17 planner、诊断与优化库
 diagnosis/     证据适配、关联、证据图构建和推断
 experiments/   故障目录、受控 runner 与配对比较
 optimizer/     动作约束、搜索计划、目标函数和验证
@@ -31,6 +32,21 @@ scripts/       构建、采集、冒烟和实验入口
 tests/         单元测试与契约测试
 docs/          公共 schema、环境说明和迁移参考
 ~~~
+
+## 可移植 C++ 核心
+
+第一阶段 C++ 重构位于 [`cpp_core`](cpp_core/)：包含 planner 安全契约、trace-stage
+诊断、证据图和确定性优化的无第三方依赖 C++17 库，并提供统一 CMake、CTest、安装
+导出和跨模块示例。
+
+~~~bash
+cmake -S cpp_core -B build/cpp-core -DCMAKE_BUILD_TYPE=Release
+cmake --build build/cpp-core --parallel
+ctest --test-dir build/cpp-core --output-on-failure
+~~~
+
+在适配层和 shadow-mode 验证完成前，当前 Python/ROS 2 实现仍是默认路径。分阶段替换
+顺序和兼容门槛见 [`docs/CPP_MIGRATION.md`](docs/CPP_MIGRATION.md)。
 
 ## RDK X5 准备
 
