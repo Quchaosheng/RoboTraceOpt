@@ -48,7 +48,7 @@ parameters are:
 | `runtime_event_enabled` | `true` | Enables RuntimeEvent publication |
 | `frame_qos_depth` | `10` | Positive KEEP_LAST depth |
 | `frame_qos_reliability` | `reliable` | `reliable` or `best_effort` |
-| `observation_ttl_ms` | `1000` | Non-negative lifetime; `0` disables the deadline |
+| `observation_ttl_ms` | `1000` | Positive observation lifetime, matching the Python runtime |
 | `model_queue_delay_ms` | `0` | Non-negative delay before inference |
 
 The LLM, recording, and replay parameter names remain declared for launch-file
