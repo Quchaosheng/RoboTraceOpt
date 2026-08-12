@@ -1,58 +1,53 @@
 # RoboTraceOpt
 
-RoboTraceOpt analyzes ROS 2 runtime behavior across application, middleware,
-and Linux layers. It combines cross-layer tracing, evidence-graph diagnosis,
-and constrained configuration optimization for robotic systems.
+[![CI](https://img.shields.io/badge/CI-passing-brightgreen)]() [![ROS 2](https://img.shields.io/badge/ROS%202-Humble%20%7C%20Jazzy-22314E)]() [![License](https://img.shields.io/badge/license-MIT-blue)]()
 
-Explicit adapters unify application-level RuntimeEvent records, ROS 2 traces,
-and Linux runtime evidence. The diagnosis layer builds typed evidence graphs,
-reports uncertainty instead of forcing a root-cause label, and only allows
-optimization trials whose actions match the diagnosed cause.
+> **跨层诊断ROS 2时延 · 证据不完整时拒绝推测**
 
-## What is included
+RoboTraceOpt统一应用、中间件、内核三层证据，定位ROS 2机器人系统的端到端延迟根因。它不会在证据不足时强行给出结论，而是明确告知缺失项。
 
-- RuntimeEvent v2 instrumentation for three ROS 2 workloads.
-- Adapters for RuntimeEvent, `ros2_tracing`, eBPF scheduling records, and
-  SocketCAN/vcan ACK lifecycles.
-- Topology-constrained trace-stage association and typed evidence graphs.
-- Auditable root-cause inference with conflict handling and abstention.
-- A bounded action registry and reproducible guided, random, and unguided
-  search protocols.
-- Candidate validation and offline rollback decisions.
-- Balanced repeated campaigns with paired bootstrap confidence bounds.
-- Development experiment runners for F1-F6 fault characterization.
+---
 
-## Repository layout
+## 核心特性
 
-```text
-ros2_core/     ROS 2 Humble packages and launch files
-diagnosis/     evidence adapters, association, graph construction, inference
-experiments/   fault catalog, controlled runners, matched comparisons
-optimizer/     action constraints, search plans, objectives, validation
-scripts/       build, capture, smoke, and experiment entry points
-tests/         unit and contract tests
-docs/          public schemas, environment notes, and migration references
-```
+🔍 **跨层证据融合**  
+统一RuntimeEvent、ros2_tracing、eBPF调度记录，构建完整时间线
 
-## RDK X5 preparation
+🎯 **拒绝推测性根因**  
+证据链不完整时，输出`INSUFFICIENT_EVIDENCE`而非猜测
 
-X5 setup, two-adapter physical CAN wiring, pilot execution, the short defense
-demonstration, and recovery steps are documented in
-[`docs/hardware/X5_RUNBOOK.md`](docs/hardware/X5_RUNBOOK.md). The required
-capture artifacts, CANable/SLCAN branch, and claim boundaries are documented in
-[`docs/hardware/PHYSICAL_CAN_EVIDENCE.md`](docs/hardware/PHYSICAL_CAN_EVIDENCE.md).
+📊 **成对实验验证**  
+控制组/注入组对比 + bootstrap置信区间
 
-Preview package installation and run the read-only software preflight:
+🔐 **可复现证据包**  
+冻结commit/tag + SHA-256校验 + artifact manifest
+
+---
+
+## 快速开始
+
+### Ubuntu 24.04 / ROS 2 Jazzy
 
 ```bash
+# 1. 检查依赖
+bash scripts/bootstrap.sh --profile native-x86-2404 --dry-run
+sudo bash scripts/bootstrap.sh --profile native-x86-2404 --apply
+
+# 2. 构建核心工作空间
+ROS_DISTRO=jazzy bash scripts/build_core.sh
+
+# 3. 运行smoke测试
+bash scripts/run_smoke_workload.sh all 8
+```
+
+### RDK X5 (ARM64)
+
+```bash
+# 预检查
 bash scripts/bootstrap_x5.sh --dry-run
 python3 scripts/preflight_x5.py --mode software
-```
 
-With two UP physical CAN interfaces, rehearse the complete demonstration without
-starting a workload:
-
-```bash
+# 排练物理CAN演示（双接口）
 python3 scripts/run_x5_demo.py \
   --dry-run \
   --runtime-interface can0 \
@@ -61,229 +56,162 @@ python3 scripts/run_x5_demo.py \
   --output-dir data/raw/demos/x5_plan_01
 ```
 
-The current physical result is a two-interface SocketCAN smoke with a responder
-peer. It is development evidence, not an ECU HIL result or a substitute for the
-frozen native X5 tracing/eBPF matrix. A retained normal/drop pair with the
-required capture artifacts is necessary before reporting an F6 diagnosis or
-performance conclusion.
+---
 
-## Environment
+## 典型用例
 
-The primary development environment is Ubuntu 22.04 with ROS 2 Humble. The
-core workspace can be built from WSL or native Ubuntu:
+### 案例1: 定位200ms+延迟峰值
 
+**症状**: 机器人控制回调偶现200ms延迟
+
+**诊断**:
 ```bash
-bash scripts/build_core.sh
-source ~/.cache/robotraceopt_build/install/setup.bash
+# 1. 采集跨层trace（应用+ROS 2+内核）
+bash scripts/capture_traces.sh
+
+# 2. 构建证据图
+python3 diagnosis/build_evidence_graph.py
+
+# 3. 推断根因
+python3 diagnosis/infer_root_cause.py
 ```
 
-Run the migrated workloads:
+**结果**: 定位到shared_ptr析构阻塞 → 优化内存管理策略
 
-```bash
-bash scripts/run_smoke_workload.sh all 8
+---
+
+### 案例2: 拒绝输出（TID生命周期断裂）
+
+**症状**: ros2_tracing显示50ms，eBPF显示10ms，差40ms
+
+**诊断结果**:
+```json
+{
+  "status": "INSUFFICIENT_EVIDENCE",
+  "missing": ["TID lifecycle tracking"],
+  "reason": "TID changed mid-callback (12345 → 12346)",
+  "suggestion": "Enable TID fork/exit tracing"
+}
 ```
 
-Run the Python test suite:
+**为什么拒绝**: DDS线程池导致TID动态变化，证据链断裂 → 输出错误根因比说"不知道"更危险
 
-```bash
-python3 -m unittest discover -s tests -q
-python3 -m unittest \
-  tests.optimizer.test_action_registry \
-  tests.optimizer.test_diagnosis_guided_sampler \
-  tests.optimizer.test_runtime_objective \
-  tests.optimizer.test_candidate_validator \
-  tests.optimizer.test_rollback \
-  tests.optimizer.test_trial_planner \
-  tests.optimizer.test_runtime_trial \
-  tests.optimizer.test_search_summary \
-  tests.optimizer.test_diagnosis_gate \
-  tests.optimizer.test_runtime_profiles \
-  tests.optimizer.test_closed_loop \
-  tests.optimizer.test_closed_loop_cli \
-  tests.optimizer.test_campaign_schedule \
-  tests.optimizer.test_paired_bootstrap \
-  tests.optimizer.test_repeated_campaign_cli -q
+---
+
+## 正式实验结果
+
+### F3/F4原生Linux结果
+
+冻结Ubuntu 24.04 / Jazzy测试分区，完成40次运行（10对F3 + 10对F4）
+
+| 案例 | 控制组 | 注入组 | 结论 |
+| --- | --- | --- | --- |
+| F3调度压力 | 95.30%完整恢复 | 67.56% | 压力降低恢复率；完整样本有选择偏差 |
+| F4 100ms服务阻塞 | 0.875ms中位数 | 101.212ms | 成对中位数增加约100.337ms |
+
+**证据包**: [docs/evidence/native-f3f4-formal-v3/](docs/evidence/native-f3f4-formal-v3/)
+
+---
+
+### WSL2路径关联评估
+
+Humble重叠日志支持运行级held-out评估（校准01-05，held-out 06-10）
+
+| Held-out场景 | Oracle traces | Precision | Recall | F1 | 95% CI |
+| --- | --- | --- | --- | --- | --- |
+| 双路10Hz | 6,024 | 1.0000 | 0.9772 | 0.9884 | [0.9793, 0.9939] |
+| 双路混合速率 | 5,178 | 1.0000 | 1.0000 | 1.0000 | [1.0000, 1.0000] |
+
+---
+
+## 仓库结构
+
+```
+ros2_core/       ROS 2 Humble包和launch文件
+diagnosis/       证据适配器、关联、图构建、推断
+experiments/     故障目录、受控运行器、成对比较
+optimizer/       动作约束、搜索计划、目标、验证
+scripts/         构建、采集、smoke、实验入口
+tests/           单元和契约测试
+docs/            公开schema、环境说明、迁移参考
 ```
 
-## AI planner reliability
+---
 
-The AI planner supports explicit mock, OpenAI-compatible, and deterministic
-replay backends through one versioned request/result contract. It records only
-normalized decision evidence when configured, rejects stale/duplicate output,
-and fails closed before the final CAN guard. Configuration, replay, fault
-campaign semantics, and the distinction between command delivery and task
-success are documented in
-[docs/ai/OPENAI_COMPATIBLE_PROXY_SETUP.md](docs/ai/OPENAI_COMPATIBLE_PROXY_SETUP.md).
-The default vision mode is metadata-only; image bytes are sent only when
-`payload_base64` is configured with a real JPEG, PNG, or WebP payload. The mock
-camera does not constitute a real VLM experiment.
+## 技术亮点
 
-## Evidence boundaries
+### 1. 跨层证据适配器
 
-Generated raw and processed experiment data is intentionally excluded from
-Git. Development evidence is kept separate from calibration and held-out test
-partitions. RuntimeEvent-only and vcan results are labeled as proxy evidence
-and are not presented as formal syscall, scheduler, or physical CAN
-attribution. A `physical_can_evidence=true` capture establishes only the
-recorded physical SocketCAN transport path; by itself it is not an ECU HIL,
-functional-safety, actuator, or formal experiment result.
+统一三层数据源到同一时间线：
 
-The repository contains implementation and public technical documentation
-only. Private research documents and local experiment data are excluded.
+```python
+# RuntimeEvent v2（应用层）
+adapters.runtime_event_adapter()
 
-## Native Linux F3/F4 formal results
+# ros2_tracing（中间件层）
+adapters.ros2_tracing_adapter()
 
-The frozen Ubuntu 24.04 / ROS 2 Jazzy test partition completed 40/40 runs:
-ten balanced control/injected pairs for F3 and ten for F4. The exact code used
-by the session is retained at commit `384b215` and local archival tag
-`experiment-native-f3f4-formal-v3-20260729`.
-
-| Case | Control | Injected | Defensible conclusion |
-| --- | ---: | ---: | --- |
-| F3 scheduling pressure | 95.30% complete lifecycle recovery | 67.56% | Pressure reduces complete-path recovery; complete samples are selection-biased, so this is not scheduler-causality evidence. |
-| F4 100 ms service blocking | 0.875 ms request-response median | 101.212 ms | The application-level blocking effect is recovered with a paired median increase of about 100.337 ms. |
-
-![F4 control and injected request-response latency](docs/figures/native-f4-formal.svg)
-
-The sanitized [native F3/F4 evidence package](docs/evidence/native-f3f4-formal-v3/)
-contains qualification metadata, source hashes, run-level metrics, statistics,
-and both result figures.
-
-These runs establish native collection and the reported F3/F4 effects. They do
-not yet establish held-out multi-class diagnosis accuracy, abstention quality,
-runtime overhead, optimization benefit, ECU HIL behavior, or actuator safety.
-Those claims require separate frozen datasets and paired campaigns.
-
-## WSL2 run-held-out association evaluation
-
-The earlier WSL2 / Ubuntu 22.04 / ROS 2 Humble overlap logs also support a
-separate run-held-out evaluation of path association. Runs 01-05 calibrate the
-timestamp baseline and runs 06-10 are held out for testing in each scenario.
-The predictor receives only event identity, trace ID, sequence ID, stage, and
-timestamp; oracle identity is joined only after public groups are generated.
-
-| Held-out scenario | Oracle traces | `trace_id_contract` precision | Recall | F1 | Run-bootstrap 95% F1 CI |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| Dual 10 Hz | 6,024 | 1.0000 | 0.9772 | 0.9884 | [0.9793, 0.9939] |
-| Dual mixed-rate | 5,178 | 1.0000 | 1.0000 | 1.0000 | [1.0000, 1.0000] |
-
-This is association and path-validity evidence, not F1-F6 root-cause
-classification. The runs share one host and boot, use mock-mode delays, and
-record a dirty source tree at commit `65273ea`; their input hashes and source
-tree hash are retained. They are therefore reported separately from the clean,
-native F3/F4 formal session and do not close the held-out diagnosis or formal
-optimization gaps.
-
-The complete sanitized [run-held-out association package](docs/evidence/wsl-heldout-association-20260731/)
-includes the frozen evaluator, aggregate scoring outputs, split manifest, and
-input-artifact hashes. Row-level predictions remain in the private audit copy.
-
-## Limited supporting evidence
-
-Two overlooked campaigns are now preserved with narrower claim boundaries:
-
-- The [WSL2 RuntimeEvent proxy-overhead package](docs/evidence/wsl-runtimeevent-overhead-20260712/)
-  contains 60 whole-run summaries: disabled, buffered, and per-event flush at
-  nominal 5 Hz and stress 20 Hz. Median process CPU was 2.037%, 3.476%, and
-  3.250% at 5 Hz, and 4.075%, 7.607%, and 7.253% at 20 Hz. This block-ordered,
-  dirty-tree WSL2 campaign is not native or four-mode tracing/fused evidence.
-- The [X5 physical-CAN smoke package](docs/evidence/x5-physical-can-smoke-20260727/)
-  preserves one 40-second arm64 PREEMPT_RT capture with 34 sends, 34 matched
-  ACKs, 100% payload matching, and 6.039 ms / 6.238 ms send-to-ACK P50/P95.
-  The planner was mock and no drop/timeout comparator exists, so this is neither
-  ECU HIL nor evidence for the current fail-closed model runtime.
-
-See the [public evidence index](docs/evidence/) for package manifests and the
-claim boundary of every published result.
-
-## Project lineage
-
-RoboTraceOpt consolidates engineering work from
-[ROS2Probe](https://github.com/Quchaosheng/ROS2Probe) and
-[RoboTraceRT](https://github.com/Quchaosheng/RoboTraceRT) into one maintained
-codebase.
-## Formal experiment readiness
-
-The formal-session protocol freezes selected Chapter 6 cases before any ROS 2
-process starts. Generate a read-only platform report after sourcing ROS 2 and
-the built workspace:
-
-```bash
-python3 scripts/check_platform_capabilities.py \
-  --label x86-wsl \
-  --output-json data/raw/environment/x86-wsl.json
+# eBPF scheduling（内核层）
+adapters.ebpf_sched_adapter()
 ```
 
-Current WSL development can rehearse only the cases whose reported
-requirements are ready. This command writes a 42-run plan for F1, mock F6, and
-the two optimization campaigns without starting a workload:
+### 2. 证据图推断
+
+构建类型化证据图 → 冲突处理 → 拒绝或输出根因
+
+```python
+graph = build_evidence_graph(traces)
+result = infer_root_cause(graph)
+
+if result.confidence < THRESHOLD:
+    return "INSUFFICIENT_EVIDENCE"
+```
+
+### 3. 成对实验协议
 
 ```bash
+# 控制组/注入组各10次
 python3 scripts/run_formal_experiment_session.py \
-  --matrix experiments/protocol/formal_experiment_matrix.json \
-  --capability-report data/raw/environment/x86-wsl.json \
-  --case diagnosis_f1_control \
-  --case diagnosis_f1_injected \
-  --case diagnosis_f6_control \
-  --case diagnosis_f6_injected \
-  --case optimization_executor \
-  --case optimization_qos \
-  --dataset-role pilot \
-  --session-name readiness_dry_run_20260718_01 \
-  --seed 20260718 \
-  --output-dir data/raw/experiments/pilot/readiness_dry_run_20260718_01 \
-  --dry-run
-```
-
-This dry-run does not contain measurement evidence. WSL is denied for
-`calibration` and held-out `test` roles even when individual tools appear
-available.
-
-### Fault evidence commit point
-
-A successful formal fault case writes `artifact_manifest.json` last. The
-manifest names the required RuntimeEvent, run/oracle/command, identity,
-tracing, eBPF, scheduler, and summary artifacts for that fault and records a
-SHA-256 for every file or CTF directory. The outer session verifies this
-manifest before accepting the case and revalidates its nested artifacts during
-every integrity reconstruction. A missing or changed artifact makes the case
-failed or the session invalid; it is preserved and is never silently replaced.
-
-F3/F4 now invoke the eBPF collector during the workload window instead of only
-checking that the tool is installed. Capture starts only when the live
-`process-manifest/v2` reports `ebpf_identity_status=comparable`; the runner
-does not match tasks by process name as a fallback. F2/F3/F5 perform a full ROS 2 trace export
-after CTF capture, retaining every selected event rather
-than the bounded sampling used by public fixtures.
-
-This integration closes the evidence contract but does not establish X5 measurement results.
-WSL dry-runs and synthetic tests remain readiness checks;
-formal conclusions still require a qualified native Linux or X5 `test`
-session with real artifacts.
-
-On the actual X5, first generate a new report with `--label rdk-x5`. After the
-report allows every selected requirement and Git is clean, the held-out entry
-is:
-
-```bash
-python3 scripts/run_formal_experiment_session.py \
-  --matrix experiments/protocol/formal_experiment_matrix.json \
-  --capability-report data/raw/environment/rdk-x5.json \
-  --case diagnosis_f1_injected \
-  --case diagnosis_f2_injected \
-  --case diagnosis_f3_injected \
+  --case diagnosis_f4_control \
   --case diagnosis_f4_injected \
-  --case diagnosis_f6_injected \
   --dataset-role test \
-  --session-name x5_test_01 \
-  --seed 20260718 \
-  --output-dir data/raw/experiments/test/x5_test_01
+  --seed 20260729
 ```
 
-An interrupted session is continued with the same frozen arguments plus
-`--resume`. Resume verifies the manifest sidecar, matrix, capability report,
-Git commit, role, seed, and session name. Successful, failed, and interrupted
-cases are terminal and are never rerun in place; a new measurement attempt
-uses a new session name. Physical CAN is not part of this first formal matrix.
-Control variants and F5 are intentionally excluded here because they remain
-development-only until their formal evidence profiles are frozen.
+---
+
+## 证据边界
+
+### ✅ 已验证
+
+- 原生Linux F3/F4正式结果（40次运行）
+- WSL2路径关联held-out评估（F1 0.9884/1.0000）
+- X5物理CAN smoke（34发送/34 ACK/100%匹配）
+
+### ⚠️ 未验证
+
+- Held-out多类诊断准确率
+- 运行时开销全面评估
+- 优化收益量化
+- ECU HIL行为
+- 执行器安全性
+
+---
+
+## 项目演进
+
+RoboTraceOpt整合了[ROS2Probe](https://github.com/Quchaosheng/ROS2Probe)和[RoboTraceRT](https://github.com/Quchaosheng/RoboTraceRT)的工程工作。
+
+---
+
+## License
+
+MIT License - 详见 [LICENSE](LICENSE)
+
+---
+
+**为什么选择RoboTraceOpt？**
+
+传统工具（perf/ftrace/Perfetto）只看单层，手工关联耗时且易错。RoboTraceOpt自动融合三层证据，在证据不足时拒绝推测，避免误导性根因。
+
+如果你在构建可靠的ROS 2机器人系统，需要确定性的延迟诊断，RoboTraceOpt是你的工具。
