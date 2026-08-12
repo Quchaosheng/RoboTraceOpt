@@ -54,17 +54,17 @@ TEST(RuntimeContract, DelayAndQosValuesAreValidated)
   EXPECT_THROW(vlm_planner_cpp_pkg::validate_runtime_settings(settings), std::invalid_argument);
 }
 
-TEST(RuntimeContract, ZeroTtlAndContentionLoadAreValidBoundaries)
+TEST(RuntimeContract, TtlMustBePositiveAndZeroContentionLoadIsValid)
 {
   RuntimeSettings settings;
-  settings.observation_ttl_ms = 0;
+  settings.observation_ttl_ms = 1;
   settings.executor_contention_period_ms = 1;
   settings.executor_contention_load_ms = 0;
   EXPECT_NO_THROW(vlm_planner_cpp_pkg::validate_runtime_settings(settings));
 
-  settings.observation_ttl_ms = -1;
-  EXPECT_THROW(vlm_planner_cpp_pkg::validate_runtime_settings(settings), std::invalid_argument);
   settings.observation_ttl_ms = 0;
+  EXPECT_THROW(vlm_planner_cpp_pkg::validate_runtime_settings(settings), std::invalid_argument);
+  settings.observation_ttl_ms = 1;
   settings.executor_contention_period_ms = 0;
   EXPECT_THROW(vlm_planner_cpp_pkg::validate_runtime_settings(settings), std::invalid_argument);
   settings.executor_contention_period_ms = 1;
