@@ -153,7 +153,7 @@ AI planner 通过同一套带版本的请求/结果契约支持显式 mock、Ope
 
 ## 项目沿革
 
-RoboTraceOpt 将 [ROS2Probe](https://github.com/Quchaosheng/ROS2Probe) 与 [RoboTraceRT](https://github.com/Quchaosheng/RoboTraceRT) 的工程工作整合到一个持续维护的代码库中。
+RoboTraceOpt 将早期 `ROS2Probe` 与 `RoboTraceRT` 的工程工作整合到一个持续维护的代码库中。这两个原始仓库已不再公开，这里仅保留名称作为历史记录，因此不提供链接。
 
 ## 正式实验就绪流程
 
