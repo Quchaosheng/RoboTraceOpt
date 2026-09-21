@@ -249,10 +249,11 @@ claim boundary of every published result.
 
 ## Project lineage
 
-RoboTraceOpt consolidates engineering work from
-[ROS2Probe](https://github.com/Quchaosheng/ROS2Probe) and
-[RoboTraceRT](https://github.com/Quchaosheng/RoboTraceRT) into one maintained
-codebase.
+RoboTraceOpt consolidates engineering work from the earlier `ROS2Probe` and
+`RoboTraceRT` codebases into one maintained codebase. The original source
+repositories are no longer publicly available; their names are retained here as
+historical records only, so no link is provided.
+
 ## Formal experiment readiness
 
 The formal-session protocol freezes selected Chapter 6 cases before any ROS 2
