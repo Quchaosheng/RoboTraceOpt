@@ -49,6 +49,16 @@ class PublicDocsLinksTest(unittest.TestCase):
             (ROOT / "README.zh-CN.md").read_text(encoding="utf-8"),
         )
 
+    def test_both_readmes_document_the_license(self) -> None:
+        self.assertIn(
+            "## License",
+            (ROOT / "README.md").read_text(encoding="utf-8"),
+        )
+        self.assertIn(
+            "## 许可证",
+            (ROOT / "README.zh-CN.md").read_text(encoding="utf-8"),
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -341,3 +341,7 @@ cases are terminal and are never rerun in place; a new measurement attempt
 uses a new session name. Physical CAN is not part of this first formal matrix.
 Control variants and F5 are intentionally excluded here because they remain
 development-only until their formal evidence profiles are frozen.
+
+## License
+
+This project is licensed under the [Apache License 2.0](LICENSE).
