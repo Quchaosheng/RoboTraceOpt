@@ -92,6 +92,15 @@ class CollectorLifecycleTest(unittest.TestCase):
                     )
                 self.assertEqual(context.exception.reason_code, reason)
 
+    def test_refuses_truncated_captures_that_hit_their_bound(self) -> None:
+        summary = self._summary(counts={"sched_switch": 4})
+        validate_ebpf_summary({**summary, "capture_truncated": False}, fault_id="F3")
+
+        with self.assertRaises(EvidenceCaptureError) as context:
+            validate_ebpf_summary({**summary, "capture_truncated": True}, fault_id="F3")
+
+        self.assertEqual(context.exception.reason_code, "ebpf_capture_truncated")
+
     @staticmethod
     def _process_manifest() -> dict:
         return {
@@ -117,6 +126,7 @@ class CollectorLifecycleTest(unittest.TestCase):
             "raw_stdout_line_count": sum(counts.values()),
             "raw_stdout_sample": [],
             "bpftrace_returncode": -signal.SIGINT,
+            "capture_truncated": False,
             "bpftrace_stderr": "",
         }
 

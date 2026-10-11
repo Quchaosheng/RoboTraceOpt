@@ -129,6 +129,12 @@ def validate_ebpf_summary(value: dict[str, Any], *, fault_id: str) -> dict[str, 
         raise EvidenceCaptureError(
             "ebpf_events_missing", "eBPF capture contains no target events"
         )
+    # A capture that hit its retention bound is incomplete by construction, so
+    # it must not be qualified even though every retained event is well formed.
+    if value.get("capture_truncated"):
+        raise EvidenceCaptureError(
+            "ebpf_capture_truncated", "eBPF capture was truncated by its bound"
+        )
     counts = value.get("counts_by_type")
     if (
         not isinstance(counts, dict)

@@ -256,6 +256,7 @@ class FaultEvidenceCaptureTest(unittest.TestCase):
             "raw_stdout_line_count": sum(counts.values()),
             "raw_stdout_sample": [],
             "bpftrace_returncode": 0,
+            "capture_truncated": False,
             "bpftrace_stderr": "",
         }
 

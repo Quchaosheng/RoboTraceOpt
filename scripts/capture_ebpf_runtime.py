@@ -10,6 +10,7 @@ import socket
 import subprocess
 import sys
 from collections import Counter
+from collections.abc import Iterable
 from pathlib import Path
 from typing import Any, Sequence
 
@@ -155,8 +156,47 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--duration", type=float, default=5.0)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--summary-output", type=Path, required=True)
+    # Both scheduler probes printf every host switch, so host-sized output is
+    # possible; these bounds keep a busy host from exhausting this process.
+    parser.add_argument("--max-events", type=int, default=2_000_000)
+    parser.add_argument("--max-malformed-lines", type=int, default=1000)
     parser.add_argument("--verbose", action="store_true")
     return parser.parse_args()
+
+
+def collect_bounded(
+    lines: Iterable[str],
+    *,
+    identities: dict[int, TaskIdentity],
+    host_id: str,
+    collector_version: str,
+    max_events: int,
+    max_malformed_lines: int,
+) -> tuple[list[dict[str, Any]], int, bool]:
+    """Parse target events, retaining at most max_events.
+
+    Returns (records, malformed_count, truncated). Once a bound is reached the
+    stream is drained without further retention, so memory tracks the bound
+    rather than the host's switch rate; the caller reports the loss.
+    """
+    records: list[dict[str, Any]] = []
+    malformed_count = 0
+    truncated = False
+    for line in lines:
+        if not line.startswith("E\t"):
+            continue
+        if len(records) >= max_events or malformed_count >= max_malformed_lines:
+            truncated = True
+            continue
+        try:
+            record = parse_event_line(
+                line, host_id=host_id, collector_version=collector_version
+            )
+            if record_targets_manifest(record, identities):
+                records.append(record)
+        except ValueError:
+            malformed_count += 1
+    return records, malformed_count, truncated
 
 
 def capture_exit_is_successful(
@@ -203,20 +243,22 @@ def main() -> int:
         process.send_signal(signal.SIGINT)
         stdout, stderr = process.communicate(timeout=5)
 
-    records: list[dict[str, Any]] = []
-    malformed_lines: list[str] = []
-    stdout_lines = stdout.splitlines()
-    for line in stdout_lines:
-        if not line.startswith("E\t"):
-            continue
-        try:
-            record = parse_event_line(
-                line, host_id=host_id, collector_version=collector_version
-            )
-            if record_targets_manifest(record, identities):
-                records.append(record)
-        except ValueError:
-            malformed_lines.append(line)
+    raw_line_count = 0
+
+    def counted_lines() -> Iterable[str]:
+        nonlocal raw_line_count
+        for line in stdout.splitlines():
+            raw_line_count += 1
+            yield line
+
+    records, malformed_count, truncated = collect_bounded(
+        counted_lines(),
+        identities=identities,
+        host_id=host_id,
+        collector_version=collector_version,
+        max_events=args.max_events,
+        max_malformed_lines=args.max_malformed_lines,
+    )
 
     args.output.parent.mkdir(parents=True, exist_ok=True)
     with args.output.open("w", encoding="utf-8") as handle:
@@ -233,9 +275,11 @@ def main() -> int:
         "target_pid_count": len(target_pids),
         "event_count": len(records),
         "counts_by_type": dict(sorted(counts.items())),
-        "malformed_line_count": len(malformed_lines),
-        "raw_stdout_line_count": len(stdout_lines),
-        "raw_stdout_sample": stdout_lines[:5],
+        "malformed_line_count": malformed_count,
+        "raw_stdout_line_count": raw_line_count,
+        "raw_stdout_sample": stdout.splitlines()[:5],
+        "capture_truncated": truncated,
+        "max_events": args.max_events,
         "bpftrace_returncode": process.returncode,
         "bpftrace_stderr": stderr.strip(),
     }
@@ -248,8 +292,9 @@ def main() -> int:
         if capture_exit_is_successful(
             returncode=process.returncode,
             event_count=len(records),
-            malformed_count=len(malformed_lines),
+            malformed_count=malformed_count,
         )
+        and not truncated
         else 1
     )
 
