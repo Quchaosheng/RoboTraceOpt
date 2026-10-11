@@ -8,6 +8,7 @@ from diagnosis.adapters.ebpf_adapter import TaskIdentity
 from scripts.capture_ebpf_runtime import (
     build_bpftrace_program,
     capture_exit_is_successful,
+    collect_bounded,
     parse_event_line,
     record_targets_manifest,
 )
@@ -148,6 +149,89 @@ class CaptureEbpfRuntimeTest(unittest.TestCase):
                 host_id="host-a",
                 collector_version="0.14.0",
             )
+
+    def test_bounds_retained_events_and_reports_truncation(self) -> None:
+        identities = {
+            101: TaskIdentity(pid=10, tid=101, kernel_pid=10, kernel_tid=101),
+        }
+        lines = [self._switch_line(index) for index in range(50)]
+
+        records, malformed, truncated = collect_bounded(
+            lines,
+            identities=identities,
+            host_id="host-a",
+            collector_version="0.14.0",
+            max_events=5,
+            max_malformed_lines=1000,
+        )
+
+        # 50 candidate events arrive, only the bound is retained, and the run
+        # is reported as truncated instead of silently looking complete.
+        self.assertEqual(len(records), 5)
+        self.assertEqual(malformed, 0)
+        self.assertTrue(truncated)
+
+    def test_keeps_every_event_when_under_the_bound(self) -> None:
+        identities = {
+            101: TaskIdentity(pid=10, tid=101, kernel_pid=10, kernel_tid=101),
+        }
+
+        records, malformed, truncated = collect_bounded(
+            [self._switch_line(index) for index in range(3)],
+            identities=identities,
+            host_id="host-a",
+            collector_version="0.14.0",
+            max_events=10,
+            max_malformed_lines=10,
+        )
+
+        self.assertEqual([record["prev_tid"] for record in records], [101, 101, 101])
+        self.assertEqual(malformed, 0)
+        self.assertFalse(truncated)
+
+    def test_bounds_malformed_lines_without_losing_target_events(self) -> None:
+        identities = {
+            101: TaskIdentity(pid=10, tid=101, kernel_pid=10, kernel_tid=101),
+        }
+        lines = ["E\tS\tbroken"] * 10 + [self._switch_line(1)]
+
+        records, malformed, truncated = collect_bounded(
+            lines,
+            identities=identities,
+            host_id="host-a",
+            collector_version="0.14.0",
+            max_events=100,
+            max_malformed_lines=3,
+        )
+
+        self.assertEqual(malformed, 3)
+        self.assertTrue(truncated)
+        # Past the bound the stream is drained but not retained, so the capture
+        # is reported truncated rather than passing on a partial parse.
+        self.assertEqual(records, [])
+
+    def test_non_target_events_do_not_consume_the_bound(self) -> None:
+        identities = {
+            101: TaskIdentity(pid=10, tid=101, kernel_pid=10, kernel_tid=101),
+        }
+        noise = "E\tS\t1\t999\tnoise\t0\t998\tnoise2\t0"
+        lines = [noise] * 20 + [self._switch_line(1)]
+
+        records, _, truncated = collect_bounded(
+            lines,
+            identities=identities,
+            host_id="host-a",
+            collector_version="0.14.0",
+            max_events=1,
+            max_malformed_lines=1000,
+        )
+
+        self.assertEqual(len(records), 1)
+        self.assertFalse(truncated)
+
+    @staticmethod
+    def _switch_line(index: int) -> str:
+        return f"E\tS\t{1000 + index}\t101\tcamera\t1\t{200 + index}\tplanner\t3"
 
 
 if __name__ == "__main__":
