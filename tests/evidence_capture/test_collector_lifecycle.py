@@ -92,6 +92,39 @@ class CollectorLifecycleTest(unittest.TestCase):
                     )
                 self.assertEqual(context.exception.reason_code, reason)
 
+    def test_qualifies_only_explicitly_lossless_captures(self) -> None:
+        summary = self._summary(counts={"sched_switch": 4})
+        validate_ebpf_summary(
+            {**summary, "collector_loss_status": "zero"}, fault_id="F3"
+        )
+
+        for loss_status, reason in (
+            ("nonzero", "ebpf_events_lost"),
+            ("unknown", "ebpf_loss_unqualified"),
+            # A summary written before loss was tracked claims nothing.
+            (None, "ebpf_loss_unqualified"),
+            ("not-a-status", "ebpf_loss_unqualified"),
+        ):
+            with self.subTest(loss_status=loss_status):
+                value = dict(summary)
+                if loss_status is None:
+                    value.pop("collector_loss_status", None)
+                else:
+                    value["collector_loss_status"] = loss_status
+                with self.assertRaises(EvidenceCaptureError) as context:
+                    validate_ebpf_summary(value, fault_id="F3")
+                self.assertEqual(context.exception.reason_code, reason)
+
+    def test_wellformed_partial_stream_is_refused_even_with_target_events(self) -> None:
+        # The regression: valid events, no malformed lines, zero return code,
+        # yet the collector dropped events, so wakeup pairing is not trustworthy.
+        value = self._summary(counts={"sched_switch": 3, "sched_wakeup": 2})
+        value["collector_loss_status"] = "nonzero"
+        with self.assertRaises(EvidenceCaptureError) as context:
+            validate_ebpf_summary(value, fault_id="F3")
+
+        self.assertEqual(context.exception.reason_code, "ebpf_events_lost")
+
     @staticmethod
     def _process_manifest() -> dict:
         return {
@@ -117,6 +150,7 @@ class CollectorLifecycleTest(unittest.TestCase):
             "raw_stdout_line_count": sum(counts.values()),
             "raw_stdout_sample": [],
             "bpftrace_returncode": -signal.SIGINT,
+            "collector_loss_status": "zero",
             "bpftrace_stderr": "",
         }
 

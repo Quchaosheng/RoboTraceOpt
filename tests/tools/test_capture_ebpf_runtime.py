@@ -8,6 +8,7 @@ from diagnosis.adapters.ebpf_adapter import TaskIdentity
 from scripts.capture_ebpf_runtime import (
     build_bpftrace_program,
     capture_exit_is_successful,
+    collector_loss_status,
     parse_event_line,
     record_targets_manifest,
 )
@@ -148,6 +149,17 @@ class CaptureEbpfRuntimeTest(unittest.TestCase):
                 host_id="host-a",
                 collector_version="0.14.0",
             )
+
+    def test_classifies_collector_loss_from_stderr_only_when_reported(self) -> None:
+        for stderr, expected in (
+            ("", "unknown"),
+            ("WARNING: some unrelated message\n", "unknown"),
+            ("Lost 42 events\n", "nonzero"),
+            ("Lost 0 events\n", "zero"),
+            ("Lost 0 events\nLost 7 events\n", "nonzero"),
+        ):
+            with self.subTest(stderr=stderr):
+                self.assertEqual(collector_loss_status(stderr), expected)
 
 
 if __name__ == "__main__":
