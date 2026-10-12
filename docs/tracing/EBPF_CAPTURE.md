@@ -17,6 +17,26 @@ eBPF/bpftrace fixture.
 target switch-out, switch-in, wakeup, and syscall-interval events without
 assigning ROS trace or stage identities.
 
+## Bounded capture
+
+Both scheduler probes `printf` every host switch and wakeup, so raw output
+scales with host activity rather than with the target. The collector keeps at
+most `--max-events` target events (default 2,000,000) and
+`--max-malformed-lines` malformed lines (default 1000); past either bound the
+stream is still drained but nothing further is retained. The summary then
+reports `capture_truncated: true`, and the process exits non-zero, so a
+truncated capture stays incomplete instead of looking like a small capture.
+
+Thread discovery semantics are unchanged: the program filters syscalls by
+target PID, while `sched_switch`/`sched_wakeup` carry no PID predicate because
+they are needed for target switch-in/wakeup pairing. Target membership is
+applied in userspace by kernel TID from the `process-manifest/v2` mapping, so
+TIDs that start after the manifest was captured are not tracked.
+
+`shortcut: retention is bounded, but bpftrace's own stdout is still buffered in
+full before parsing; upgrade to a streaming reader if a single capture can
+exceed available memory.`
+
 ## WSL2 result
 
 A minimal three-second `sched_switch` program loaded successfully and counted
