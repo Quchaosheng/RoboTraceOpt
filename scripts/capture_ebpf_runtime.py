@@ -159,6 +159,28 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def collect_until_timeout(
+    process: subprocess.Popen[str], duration: float
+) -> tuple[str, str]:
+    """Collect for the window, then escalate SIGINT -> terminate -> kill."""
+    try:
+        return process.communicate(timeout=duration)
+    except subprocess.TimeoutExpired:
+        pass
+    # Escalation ladder; each step reaps stdout/stderr, so no pipe deadlocks.
+    for escalation in (
+        (signal.SIGINT, 5.0),
+        (signal.SIGTERM, 5.0),
+        (signal.SIGKILL, 5.0),
+    ):
+        process.send_signal(escalation[0])
+        try:
+            return process.communicate(timeout=escalation[1])
+        except subprocess.TimeoutExpired:
+            continue
+    return process.communicate()
+
+
 def capture_exit_is_successful(
     *, returncode: int, event_count: int, malformed_count: int
 ) -> bool:
@@ -198,10 +220,12 @@ def main() -> int:
         text=True,
     )
     try:
-        stdout, stderr = process.communicate(timeout=args.duration)
-    except subprocess.TimeoutExpired:
-        process.send_signal(signal.SIGINT)
-        stdout, stderr = process.communicate(timeout=5)
+        stdout, stderr = collect_until_timeout(process, args.duration)
+    finally:
+        # Never orphan the collector on KeyboardInterrupt or a write failure.
+        if process.poll() is None:
+            process.kill()
+            process.communicate()
 
     records: list[dict[str, Any]] = []
     malformed_lines: list[str] = []
