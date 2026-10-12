@@ -1,6 +1,7 @@
 import unittest
 import subprocess
 import json
+import signal
 import tempfile
 from pathlib import Path
 
@@ -10,8 +11,52 @@ from scripts.capture_ebpf_runtime import (
     capture_exit_is_successful,
     collector_loss_status,
     parse_event_line,
+    collect_until_timeout,
     record_targets_manifest,
 )
+
+
+_SWITCH_LINE = "E\tS\t123\t101\tcamera\t1\t202\tplanner\t3\n"
+
+
+class _FakeCollector:
+    """Fake collector: exits inside the window, on `exits_on`, or only on kill()."""
+
+    def __init__(
+        self,
+        *,
+        exits_immediately: bool = False,
+        exits_on: int | None = None,
+        output: str = _SWITCH_LINE,
+    ) -> None:
+        self.exits_immediately = exits_immediately
+        self.exits_on = exits_on  # None: survives every signal; kill() is required
+        self.output = output
+        self.signals: list[int] = []
+        self.killed = False
+        self.reaped = False
+
+    def send_signal(self, number: int) -> None:
+        self.signals.append(number)
+
+    def kill(self) -> None:
+        self.killed = True
+
+    def poll(self) -> int | None:
+        return -2 if self.reaped else None
+
+    def communicate(self, timeout: float | None = None) -> tuple[str, str]:
+        # SIGKILL cannot be ignored, so it always ends the fake.
+        if (
+            self.reaped
+            or self.exits_immediately
+            or self.killed
+            or signal.SIGKILL in self.signals
+            or (self.exits_on is not None and self.exits_on in self.signals)
+        ):
+            self.reaped = True
+            return self.output, "stderr"
+        raise subprocess.TimeoutExpired("bpftrace", timeout)
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
@@ -160,6 +205,67 @@ class CaptureEbpfRuntimeTest(unittest.TestCase):
         ):
             with self.subTest(stderr=stderr):
                 self.assertEqual(collector_loss_status(stderr), expected)
+    def test_collects_normal_exit_without_signalling_the_collector(self) -> None:
+        collector = _FakeCollector(exits_immediately=True)
+
+        self.assertEqual(
+            collect_until_timeout(collector, 5.0), (_SWITCH_LINE, "stderr")
+        )
+        self.assertEqual(collector.signals, [])
+        self.assertFalse(collector.killed)
+
+    def test_escalates_to_sigint_then_sigterm_then_sigkill(self) -> None:
+        cases = (
+            (signal.SIGINT, [signal.SIGINT]),
+            (signal.SIGTERM, [signal.SIGINT, signal.SIGTERM]),
+            (None, [signal.SIGINT, signal.SIGTERM, signal.SIGKILL]),
+        )
+        for exits_on, expected in cases:
+            with self.subTest(exits_on=exits_on):
+                collector = _FakeCollector(exits_on=exits_on)
+
+                stdout, _ = collect_until_timeout(collector, 5.0)
+
+                self.assertEqual(collector.signals, expected)
+                # Partial output survives every escalation path.
+                self.assertEqual(stdout, _SWITCH_LINE)
+                self.assertTrue(collector.reaped)
+
+    def test_reaps_the_collector_when_collection_is_interrupted(self) -> None:
+        collector = _FakeCollector(exits_on=None)
+
+        with self.assertRaises(KeyboardInterrupt):
+            try:
+                # main() abandons collection by raising; the finally block reaps.
+                raise KeyboardInterrupt()
+            finally:
+                if collector.poll() is None:
+                    collector.kill()
+                    collector.communicate()
+
+        self.assertTrue(collector.killed)
+        self.assertTrue(collector.reaped)
+
+    def test_forced_termination_never_becomes_qualified_evidence(self) -> None:
+        # SIGKILL reaps partial output, but the return code fails the capture gate.
+        collector = _FakeCollector(exits_on=None)
+        stdout, _ = collect_until_timeout(collector, 5.0)
+        parsed = [
+            parse_event_line(line, host_id="h", collector_version="0.14.0")
+            for line in stdout.splitlines()
+            if line.startswith("E\t")
+        ]
+
+        self.assertEqual(
+            [record["event_source"] for record in parsed], ["sched_switch"]
+        )
+        self.assertFalse(
+            capture_exit_is_successful(
+                returncode=-signal.SIGKILL,
+                event_count=len(parsed),
+                malformed_count=0,
+            )
+        )
 
 
 if __name__ == "__main__":
