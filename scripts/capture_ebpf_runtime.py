@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import signal
 import socket
 import subprocess
@@ -159,6 +160,21 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def collector_loss_status(stderr: str) -> str:
+    """Classify collector-side event loss from bpftrace diagnostics.
+
+    Only an explicit "Lost <n> events" report proves loss; stderr says nothing
+    about the absence of loss, so a silent collector stays `unknown`.
+    """
+    reported = sum(
+        int(match.group(1))
+        for match in re.finditer(r"Lost\s+(\d+)\s+events", stderr or "")
+    )
+    if reported > 0:
+        return "nonzero"
+    if re.search(r"Lost\s+0\s+events", stderr or ""):
+        return "zero"
+    return "unknown"
 def collect_until_timeout(
     process: subprocess.Popen[str], duration: float
 ) -> tuple[str, str]:
@@ -261,6 +277,7 @@ def main() -> int:
         "raw_stdout_line_count": len(stdout_lines),
         "raw_stdout_sample": stdout_lines[:5],
         "bpftrace_returncode": process.returncode,
+        "collector_loss_status": collector_loss_status(stderr),
         "bpftrace_stderr": stderr.strip(),
     }
     args.summary_output.parent.mkdir(parents=True, exist_ok=True)
