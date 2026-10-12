@@ -150,6 +150,17 @@ def validate_ebpf_summary(value: dict[str, Any], *, fault_id: str) -> dict[str, 
         raise EvidenceCaptureError(
             "ebpf_summary_invalid", "eBPF event counts are invalid"
         )
+    # An unqualified collector loss status is not proof of completeness: a
+    # truncated stream still pairs wakeups and would silently distort causes.
+    # Summaries predating this field stay `unknown` rather than assumed complete.
+    loss_status = value.get("collector_loss_status", "unknown")
+    if loss_status == "nonzero":
+        raise EvidenceCaptureError("ebpf_events_lost", "bpftrace reported lost events")
+    if loss_status != "zero":
+        raise EvidenceCaptureError(
+            "ebpf_loss_unqualified",
+            "collector loss is unknown; completeness cannot be qualified",
+        )
     if (
         fault_id == "F3"
         and counts.get("sched_switch", 0) + counts.get("sched_wakeup", 0) < 1

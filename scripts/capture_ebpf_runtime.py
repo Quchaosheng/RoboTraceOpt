@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import signal
 import socket
 import subprocess
@@ -199,6 +200,45 @@ def collect_bounded(
     return records, malformed_count, truncated
 
 
+def collector_loss_status(stderr: str) -> str:
+    """Classify collector-side event loss from bpftrace diagnostics.
+
+    Only an explicit "Lost <n> events" report proves loss; stderr says nothing
+    about the absence of loss, so a silent collector stays `unknown`.
+    """
+    reported = sum(
+        int(match.group(1))
+        for match in re.finditer(r"Lost\s+(\d+)\s+events", stderr or "")
+    )
+    if reported > 0:
+        return "nonzero"
+    if re.search(r"Lost\s+0\s+events", stderr or ""):
+        return "zero"
+    return "unknown"
+
+
+def collect_until_timeout(
+    process: subprocess.Popen[str], duration: float
+) -> tuple[str, str]:
+    """Collect for the window, then escalate SIGINT -> terminate -> kill."""
+    try:
+        return process.communicate(timeout=duration)
+    except subprocess.TimeoutExpired:
+        pass
+    # Escalation ladder; each step reaps stdout/stderr, so no pipe deadlocks.
+    for escalation in (
+        (signal.SIGINT, 5.0),
+        (signal.SIGTERM, 5.0),
+        (signal.SIGKILL, 5.0),
+    ):
+        process.send_signal(escalation[0])
+        try:
+            return process.communicate(timeout=escalation[1])
+        except subprocess.TimeoutExpired:
+            continue
+    return process.communicate()
+
+
 def capture_exit_is_successful(
     *, returncode: int, event_count: int, malformed_count: int
 ) -> bool:
@@ -238,10 +278,12 @@ def main() -> int:
         text=True,
     )
     try:
-        stdout, stderr = process.communicate(timeout=args.duration)
-    except subprocess.TimeoutExpired:
-        process.send_signal(signal.SIGINT)
-        stdout, stderr = process.communicate(timeout=5)
+        stdout, stderr = collect_until_timeout(process, args.duration)
+    finally:
+        # Never orphan the collector on KeyboardInterrupt or a write failure.
+        if process.poll() is None:
+            process.kill()
+            process.communicate()
 
     raw_line_count = 0
 
@@ -281,6 +323,7 @@ def main() -> int:
         "capture_truncated": truncated,
         "max_events": args.max_events,
         "bpftrace_returncode": process.returncode,
+        "collector_loss_status": collector_loss_status(stderr),
         "bpftrace_stderr": stderr.strip(),
     }
     args.summary_output.parent.mkdir(parents=True, exist_ok=True)
