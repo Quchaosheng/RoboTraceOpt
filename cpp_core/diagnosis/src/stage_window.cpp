@@ -72,6 +72,12 @@ std::vector<StageWindow> build_stage_windows(const std::vector<NormalizedEvent>&
             return std::tie(left->timestamp_ns, left->event_id) <
                    std::tie(right->timestamp_ns, right->event_id);
         });
+        for (std::size_t index = 1; index < grouped.size(); ++index) {
+            if (grouped[index]->timestamp_ns < grouped[index - 1]->timestamp_ns) {
+                throw std::invalid_argument(
+                    "non-monotonic stage events: " + grouped[index]->trace_id);
+            }
+        }
         for (const auto* grouped_event : grouped) {
             const auto& start = *grouped_event;
             const auto duration = duration_for(start);

@@ -52,12 +52,11 @@ def build_stage_windows(events: Iterable[NormalizedEvent]) -> list[StageWindow]:
     for _, grouped in grouped_events:
         ordered = list(grouped)
         for previous, event in pairwise(ordered):
-            if event.timestamp_ns < previous.timestamp_ns:
-                raise ValueError(
-                    f"non-monotonic stage events: {event.trace_id}"
-                )
-            if event.timestamp_ns == previous.timestamp_ns and event.event_id < previous.event_id:
-                raise ValueError(f"unstable same-timestamp events: {event.trace_id}")
+            if (event.timestamp_ns, event.event_id) < (
+                previous.timestamp_ns,
+                previous.event_id,
+            ):
+                raise ValueError(f"non-monotonic stage events: {event.trace_id}")
         for event in ordered:
             duration_ns = event.attributes.get("duration_ns", 0)
             if (
