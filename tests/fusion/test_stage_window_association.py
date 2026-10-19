@@ -130,6 +130,45 @@ class StageWindowTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             build_stage_windows([incomplete])
 
+    def test_rejects_invalid_or_overflowing_duration(self) -> None:
+        invalid = event(
+            "invalid-duration",
+            source="runtime_event",
+            timestamp_ns=100,
+            pid=10,
+            tid=11,
+            trace_id="trace-a",
+            sequence_id=1,
+            stage="planner",
+        )
+        invalid = NormalizedEvent(
+            **{
+                **invalid.to_dict(),
+                "attributes": {"duration_ns": True},
+            }
+        )
+        with self.assertRaisesRegex(ValueError, "duration_ns"):
+            build_stage_windows([invalid])
+
+        near_limit = event(
+            "overflow",
+            source="runtime_event",
+            timestamp_ns=2**63 - 2,
+            pid=10,
+            tid=11,
+            trace_id="trace-a",
+            sequence_id=1,
+            stage="planner",
+        )
+        near_limit = NormalizedEvent(
+            **{
+                **near_limit.to_dict(),
+                "attributes": {"duration_ns": 2},
+            }
+        )
+        windows = build_stage_windows([near_limit])
+        self.assertEqual(windows[0].end_ns, ((2**63) - 2) + 2)
+
 
 class AssociationTest(unittest.TestCase):
     def test_report_cli_associates_normalized_jsonl(self) -> None:

@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <functional>
 #include <iostream>
+#include <limits>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -158,6 +159,15 @@ void test_stage_windows() {
 
     auto ignored = event("not-runtime", "ebpf", 1, 0, 0);
     CHECK(diagnosis::build_stage_windows({ignored}).empty());
+
+    auto overflow = event(
+        "overflow", "runtime_event",
+        std::numeric_limits<std::int64_t>::max() - 1,
+        10, 11, "trace-a", 1, "planner_end");
+    overflow.attributes.emplace("duration_ns", std::int64_t{2});
+    check_invalid_argument(
+        [&] { (void)diagnosis::build_stage_windows({overflow}); },
+        "duration_ns overflows");
 }
 
 std::vector<diagnosis::StageWindow> overlapping_windows() {
