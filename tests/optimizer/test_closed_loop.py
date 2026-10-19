@@ -54,6 +54,12 @@ class ClosedLoopScheduleTest(unittest.TestCase):
                 },
                 {
                     "trial_index": 3,
+                    "action_id": "executor_threads",
+                    "candidate_config": {"executor_threads": 2},
+                    "applicable_to_diagnosis": True,
+                },
+                {
+                    "trial_index": 4,
                     "action_id": "frame_qos_depth",
                     "candidate_config": {"frame_qos_depth": 4},
                     "applicable_to_diagnosis": False,
@@ -63,7 +69,12 @@ class ClosedLoopScheduleTest(unittest.TestCase):
         )
         self.assertEqual(
             [row["status"] for row in result["trials"]],
-            ["baseline_duplicate", "scheduled", "not_applicable"],
+            [
+                "baseline_duplicate",
+                "scheduled",
+                "duplicate_candidate",
+                "not_applicable",
+            ],
         )
 
     def test_rejects_denied_gate_or_mismatched_baseline(self) -> None:

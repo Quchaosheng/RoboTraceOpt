@@ -69,20 +69,23 @@ std::vector<StageWindow> build_stage_windows(const std::vector<NormalizedEvent>&
     for (auto& [key, grouped] : groups) {
         (void)key;
         std::stable_sort(grouped.begin(), grouped.end(), [](const auto* left, const auto* right) {
-            return left->timestamp_ns < right->timestamp_ns;
+            return std::tie(left->timestamp_ns, left->event_id) <
+                   std::tie(right->timestamp_ns, right->event_id);
         });
-        for (std::size_t index = 0; index < grouped.size(); ++index) {
-            const auto& start = *grouped[index];
-            const auto* next = index + 1 < grouped.size() ? grouped[index + 1] : nullptr;
-            const auto duration = duration_for(start);
-            std::int64_t end_ns = next == nullptr ? start.timestamp_ns : next->timestamp_ns;
-            if (next == nullptr) {
-                if (duration > 0 &&
-                    start.timestamp_ns > std::numeric_limits<std::int64_t>::max() - duration) {
-                    throw std::invalid_argument("duration_ns overflows timestamp: " + start.event_id);
-                }
-                end_ns += duration;
+        for (std::size_t index = 1; index < grouped.size(); ++index) {
+            if (grouped[index]->timestamp_ns < grouped[index - 1]->timestamp_ns) {
+                throw std::invalid_argument(
+                    "non-monotonic stage events: " + grouped[index]->trace_id);
             }
+        }
+        for (const auto* grouped_event : grouped) {
+            const auto& start = *grouped_event;
+            const auto duration = duration_for(start);
+            if (duration > 0 &&
+                start.timestamp_ns > std::numeric_limits<std::int64_t>::max() - duration) {
+                throw std::invalid_argument("duration_ns overflows timestamp: " + start.event_id);
+            }
+            const std::int64_t end_ns = start.timestamp_ns + duration;
             if (end_ns < start.timestamp_ns) {
                 throw std::invalid_argument("non-monotonic stage events: " + start.trace_id);
             }
@@ -104,7 +107,7 @@ std::vector<StageWindow> build_stage_windows(const std::vector<NormalizedEvent>&
                 start.timestamp_ns,
                 end_ns,
                 start.event_id,
-                next == nullptr ? start.event_id : next->event_id,
+                start.event_id,
             });
         }
     }

@@ -30,8 +30,12 @@ def build_trial_plan(
     rng = random.Random(seed)
 
     if strategy == "guided":
-        configs = sample_candidates(cause_id, limit=budget, seed=seed)
-        configs = [configs[index % len(configs)] for index in range(budget)]
+        available = sample_candidates(cause_id, limit=budget, seed=seed)
+        if budget > len(available):
+            raise ValueError(
+                f"budget {budget} exceeds {len(available)} unique guided candidates"
+            )
+        configs = available
         selected = [(next(iter(config)), config) for config in configs]
     elif strategy == "random":
         action = relevant[0]

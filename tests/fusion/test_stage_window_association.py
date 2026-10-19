@@ -9,7 +9,7 @@ from diagnosis.evidence_graph.association import (
     associate_system_event,
 )
 from diagnosis.evidence_graph.association_report import build_association_report
-from diagnosis.evidence_graph.stage_window import build_stage_windows
+from diagnosis.evidence_graph.stage_window import StageWindow, build_stage_windows
 from diagnosis.schema import NormalizedEvent
 
 
@@ -47,7 +47,7 @@ def event(
 
 
 class StageWindowTest(unittest.TestCase):
-    def test_builds_process_local_windows_from_adjacent_runtime_events(self) -> None:
+    def test_builds_measured_windows_from_self_contained_runtime_events(self) -> None:
         runtime_events = [
             event(
                 "a-start",
@@ -70,15 +70,52 @@ class StageWindowTest(unittest.TestCase):
                 stage="planner_process_end",
             ),
         ]
+        runtime_events[1] = NormalizedEvent(
+            **{
+                **runtime_events[1].to_dict(),
+                "attributes": {"duration_ns": 50},
+            }
+        )
 
         windows = build_stage_windows(runtime_events)
 
         self.assertEqual(len(windows), 2)
         self.assertEqual(windows[0].trace_id, "trace-a")
         self.assertEqual(windows[0].stage, "planner_process_start")
-        self.assertEqual((windows[0].start_ns, windows[0].end_ns), (100, 200))
+        self.assertEqual((windows[0].start_ns, windows[0].end_ns), (100, 100))
         self.assertEqual(windows[0].tids, (11,))
-        self.assertEqual((windows[1].start_ns, windows[1].end_ns), (200, 200))
+        self.assertEqual(windows[0].end_event_id, "a-start")
+        self.assertEqual((windows[1].start_ns, windows[1].end_ns), (200, 250))
+        self.assertEqual(windows[1].end_event_id, "a-end")
+
+    def test_does_not_extend_a_window_to_an_unrelated_following_event(self) -> None:
+        runtime_events = [
+            event(
+                "a-start",
+                source="runtime_event",
+                timestamp_ns=100,
+                pid=10,
+                tid=11,
+                trace_id="trace-a",
+                sequence_id=1,
+                stage="planner_process_start",
+            ),
+            event(
+                "a-unrelated",
+                source="runtime_event",
+                timestamp_ns=50_000_000,
+                pid=10,
+                tid=11,
+                trace_id="trace-a",
+                sequence_id=1,
+                stage="action_execute_end",
+            ),
+        ]
+
+        windows = build_stage_windows(runtime_events)
+
+        self.assertEqual((windows[0].start_ns, windows[0].end_ns), (100, 100))
+        self.assertEqual((windows[1].start_ns, windows[1].end_ns), (50_000_000, 50_000_000))
 
     def test_rejects_runtime_event_without_trace_identity(self) -> None:
         incomplete = event(
@@ -93,30 +130,64 @@ class StageWindowTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             build_stage_windows([incomplete])
 
+    def test_rejects_invalid_or_overflowing_duration(self) -> None:
+        invalid = event(
+            "invalid-duration",
+            source="runtime_event",
+            timestamp_ns=100,
+            pid=10,
+            tid=11,
+            trace_id="trace-a",
+            sequence_id=1,
+            stage="planner",
+        )
+        invalid = NormalizedEvent(
+            **{
+                **invalid.to_dict(),
+                "attributes": {"duration_ns": True},
+            }
+        )
+        with self.assertRaisesRegex(ValueError, "duration_ns"):
+            build_stage_windows([invalid])
+
+        near_limit = event(
+            "overflow",
+            source="runtime_event",
+            timestamp_ns=2**63 - 2,
+            pid=10,
+            tid=11,
+            trace_id="trace-a",
+            sequence_id=1,
+            stage="planner",
+        )
+        near_limit = NormalizedEvent(
+            **{
+                **near_limit.to_dict(),
+                "attributes": {"duration_ns": 2},
+            }
+        )
+        windows = build_stage_windows([near_limit])
+        self.assertEqual(windows[0].end_ns, ((2**63) - 2) + 2)
+
 
 class AssociationTest(unittest.TestCase):
     def test_report_cli_associates_normalized_jsonl(self) -> None:
         runtime = [
-            event(
-                "start",
-                source="runtime_event",
-                timestamp_ns=100,
-                pid=10,
-                tid=11,
-                trace_id="trace-a",
-                sequence_id=1,
-                stage="planner_start",
-            ),
-            event(
-                "end",
-                source="runtime_event",
-                timestamp_ns=200,
-                pid=10,
-                tid=11,
-                trace_id="trace-a",
-                sequence_id=1,
-                stage="planner_end",
-            ),
+            NormalizedEvent(
+                **{
+                    **event(
+                        "start",
+                        source="runtime_event",
+                        timestamp_ns=100,
+                        pid=10,
+                        tid=11,
+                        trace_id="trace-a",
+                        sequence_id=1,
+                        stage="planner_start",
+                    ).to_dict(),
+                    "attributes": {"duration_ns": 100},
+                }
+            )
         ]
         system = event(
             "callback",
@@ -159,50 +230,38 @@ class AssociationTest(unittest.TestCase):
         self.assertEqual(report["decisions"][0]["trace_id"], "trace-a")
 
     def setUp(self) -> None:
-        self.windows = build_stage_windows(
-            [
-                event(
-                    "a-start",
-                    source="runtime_event",
-                    timestamp_ns=100,
-                    pid=10,
-                    tid=11,
-                    trace_id="trace-a",
-                    sequence_id=1,
-                    stage="planner_start",
-                ),
-                event(
-                    "a-end",
-                    source="runtime_event",
-                    timestamp_ns=200,
-                    pid=10,
-                    tid=11,
-                    trace_id="trace-a",
-                    sequence_id=1,
-                    stage="planner_end",
-                ),
-                event(
-                    "b-start",
-                    source="runtime_event",
-                    timestamp_ns=120,
-                    pid=10,
-                    tid=12,
-                    trace_id="trace-b",
-                    sequence_id=2,
-                    stage="planner_start",
-                ),
-                event(
-                    "b-end",
-                    source="runtime_event",
-                    timestamp_ns=220,
-                    pid=10,
-                    tid=12,
-                    trace_id="trace-b",
-                    sequence_id=2,
-                    stage="planner_end",
-                ),
-            ]
-        )
+        self.windows = [
+            StageWindow(
+                "window:a",
+                "trace-a",
+                1,
+                "planner_start",
+                "planner",
+                10,
+                (11,),
+                "host-a",
+                "monotonic",
+                100,
+                200,
+                "a-start",
+                "a-end",
+            ),
+            StageWindow(
+                "window:b",
+                "trace-b",
+                2,
+                "planner_start",
+                "planner",
+                10,
+                (12,),
+                "host-a",
+                "monotonic",
+                120,
+                220,
+                "b-start",
+                "b-end",
+            ),
+        ]
 
     def test_exact_tid_breaks_overlapping_trace_tie(self) -> None:
         system = event(
