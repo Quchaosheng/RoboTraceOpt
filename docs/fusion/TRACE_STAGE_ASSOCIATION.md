@@ -3,8 +3,11 @@
 ## Current method
 
 RuntimeEvent records are grouped by trace, sequence, process, host, and clock.
-Within each group, adjacent semantic events define process-local StageWindows.
-The final event is a point window unless it carries a non-zero duration.
+Each RuntimeEvent defines a point StageWindow at its own timestamp unless it
+carries a measured `duration_ns > 0`. StageWindows are never extended to the
+next arbitrary event: a future event may belong to a different stage, and a
+missing closing event must remain visibly incomplete rather than becoming a
+valid long interval. `duration_ns = 0` means the duration was not supplied.
 
 System evidence is admitted in this order:
 
@@ -12,7 +15,7 @@ System evidence is admitted in this order:
 2. clock domain must match;
 3. callback registration events resolve subscription, timer, or service identity;
 4. topology metadata and ROS infrastructure callbacks remain background;
-5. timestamp must fall inside a StageWindow for the same PID;
+5. timestamp must fall inside a measured StageWindow for the same PID;
 6. an exact TID match outranks a PID-only match;
 7. equal best candidates from different trace/stage targets are `ambiguous`;
 8. no candidate is `unmatched` background evidence.

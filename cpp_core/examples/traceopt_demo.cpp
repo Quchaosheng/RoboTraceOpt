@@ -38,7 +38,7 @@ diagnosis::NormalizedEvent runtime_event(
 }  // namespace
 
 int main() {
-    const std::vector<diagnosis::NormalizedEvent> runtime_events{
+    std::vector<diagnosis::NormalizedEvent> runtime_events{
         runtime_event("event-1", "query_sent", 100),
         runtime_event("event-2", "service_receive", 200),
         runtime_event("event-3", "service_process_start", 300),
@@ -46,6 +46,9 @@ int main() {
         runtime_event("event-5", "service_response", 500),
         runtime_event("event-6", "response_received", 600),
     };
+    for (std::size_t index = 0; index + 1 < runtime_events.size(); ++index) {
+        runtime_events[index].attributes.emplace("duration_ns", std::int64_t{100});
+    }
     const auto windows = diagnosis::build_stage_windows(runtime_events);
 
     diagnosis::NormalizedEvent callback;

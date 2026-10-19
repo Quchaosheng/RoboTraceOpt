@@ -123,12 +123,20 @@ void test_stage_windows() {
     const auto windows = diagnosis::build_stage_windows({start, end});
     CHECK(windows.size() == 2);
     CHECK(windows[0].start_ns == 100);
-    CHECK(windows[0].end_ns == 200);
+    CHECK(windows[0].end_ns == 100);
     CHECK(windows[0].source_node == "planner");
-    CHECK(windows[0].end_event_id == "a-end");
+    CHECK(windows[0].end_event_id == "a-start");
     CHECK(windows[1].end_ns == 225);
+    CHECK(windows[1].end_event_id == "a-end");
     CHECK(windows[0].contains(100));
-    CHECK(windows[0].contains(200));
+    CHECK(!windows[0].contains(101));
+    CHECK(windows[1].contains(225));
+
+    auto unrelated = event(
+        "unrelated", "runtime_event", 50'000'000, 10, 11, "trace-a", 1, "action_end");
+    const auto unrelated_windows = diagnosis::build_stage_windows({start, unrelated});
+    CHECK(unrelated_windows[0].end_ns == 100);
+    CHECK(!unrelated_windows[0].contains(200));
 
     auto incomplete = event("missing", "runtime_event", 100, 10, 11, "", 0, "planner");
     check_invalid_argument(
@@ -155,14 +163,11 @@ void test_stage_windows() {
 std::vector<diagnosis::StageWindow> overlapping_windows() {
     auto runtime_a_start = event(
         "a-start", "runtime_event", 100, 10, 11, "trace-a", 1, "planner_start");
-    auto runtime_a_end = event(
-        "a-end", "runtime_event", 200, 10, 11, "trace-a", 1, "planner_end");
+    runtime_a_start.attributes.emplace("duration_ns", std::int64_t{100});
     auto runtime_b_start = event(
         "b-start", "runtime_event", 120, 10, 12, "trace-b", 2, "planner_start");
-    auto runtime_b_end = event(
-        "b-end", "runtime_event", 220, 10, 12, "trace-b", 2, "planner_end");
-    return diagnosis::build_stage_windows(
-        {runtime_a_start, runtime_a_end, runtime_b_start, runtime_b_end});
+    runtime_b_start.attributes.emplace("duration_ns", std::int64_t{100});
+    return diagnosis::build_stage_windows({runtime_a_start, runtime_b_start});
 }
 
 void test_association() {
