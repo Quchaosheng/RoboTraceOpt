@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from typing import Any
 
 from optimizer.integration.runtime_profiles import (
@@ -44,6 +45,7 @@ def build_execution_schedule(
         raise ValueError("trial plan requires trials")
 
     trials = []
+    scheduled_configs = set()
     for row in rows:
         if not isinstance(row, dict):
             raise ValueError("trial record must be an object")
@@ -56,9 +58,13 @@ def build_execution_schedule(
             if config == baseline_config:
                 status = "baseline_duplicate"
                 reason = "candidate_matches_baseline"
+            elif _config_key(config) in scheduled_configs:
+                status = "duplicate_candidate"
+                reason = "candidate_already_scheduled"
             else:
                 status = "scheduled"
                 reason = ""
+                scheduled_configs.add(_config_key(config))
         trials.append({**dict(row), "status": status, "reason_code": reason})
 
     return {
@@ -71,6 +77,12 @@ def build_execution_schedule(
         "budget": plan["budget"],
         "trials": trials,
     }
+
+
+def _config_key(config: object) -> str:
+    if not isinstance(config, dict):
+        raise ValueError("candidate configuration must be an object")
+    return json.dumps(config, sort_keys=True, separators=(",", ":"))
 
 
 def evaluate_candidate(

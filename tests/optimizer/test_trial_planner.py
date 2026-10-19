@@ -31,15 +31,18 @@ class TrialPlannerTest(unittest.TestCase):
             )
         )
 
-    def test_guided_small_domain_plan_preserves_requested_budget(self) -> None:
+    def test_guided_small_domain_rejects_duplicate_budget(self) -> None:
         plan = build_trial_plan(
-            "executor_queueing", strategy="guided", budget=5, seed=9
+            "executor_queueing", strategy="guided", budget=4, seed=9
         )
-        self.assertEqual(len(plan["trials"]), 5)
         self.assertEqual(
-            {trial["candidate_config"]["executor_threads"] for trial in plan["trials"]},
-            {1, 2, 3, 4},
+            [trial["candidate_config"]["executor_threads"] for trial in plan["trials"]],
+            [1, 2, 3, 4],
         )
+        with self.assertRaisesRegex(ValueError, "unique guided candidates"):
+            build_trial_plan(
+                "executor_queueing", strategy="guided", budget=5, seed=9
+            )
 
     def test_unguided_plan_exposes_global_action_search(self) -> None:
         plan = build_trial_plan(

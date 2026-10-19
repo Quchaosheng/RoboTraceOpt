@@ -69,7 +69,8 @@ std::vector<StageWindow> build_stage_windows(const std::vector<NormalizedEvent>&
     for (auto& [key, grouped] : groups) {
         (void)key;
         std::stable_sort(grouped.begin(), grouped.end(), [](const auto* left, const auto* right) {
-            return left->timestamp_ns < right->timestamp_ns;
+            return std::tie(left->timestamp_ns, left->event_id) <
+                   std::tie(right->timestamp_ns, right->event_id);
         });
         for (const auto* grouped_event : grouped) {
             const auto& start = *grouped_event;

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from itertools import groupby
+from itertools import groupby, pairwise
 from typing import Iterable
 
 from diagnosis.schema import NormalizedEvent
@@ -45,11 +45,20 @@ def build_stage_windows(events: Iterable[NormalizedEvent]) -> list[StageWindow]:
         )
 
     windows: list[StageWindow] = []
-    for _, grouped in groupby(
+    grouped_events = groupby(
         sorted(runtime_events, key=lambda item: (*event_key(item), item.timestamp_ns)),
         key=event_key,
-    ):
-        for event in grouped:
+    )
+    for _, grouped in grouped_events:
+        ordered = list(grouped)
+        for previous, event in pairwise(ordered):
+            if event.timestamp_ns < previous.timestamp_ns:
+                raise ValueError(
+                    f"non-monotonic stage events: {event.trace_id}"
+                )
+            if event.timestamp_ns == previous.timestamp_ns and event.event_id < previous.event_id:
+                raise ValueError(f"unstable same-timestamp events: {event.trace_id}")
+        for event in ordered:
             duration_ns = event.attributes.get("duration_ns", 0)
             if (
                 isinstance(duration_ns, bool)
