@@ -303,12 +303,16 @@ def _valid_exhausted(waits, timeouts, retries, terminal, max_retries: int) -> bo
 
 
 def _valid_success(waits, timeouts, retries, terminal) -> bool:
+    # A recovered trace is still a success: an earlier attempt may time out and a
+    # later attempt may be the one acknowledged (the ``drop_first`` policy). What
+    # must hold is a monotone retry prefix with no gaps, so an edited, duplicated
+    # or reordered trace is still refused.
+    succeeded = int(terminal[2]["retry_count"])
     return (
-        len(waits) == 1
-        and _retry_counts(waits) == [0]
-        and not timeouts
-        and not retries
-        and int(terminal[2]["retry_count"]) == 0
+        succeeded >= 0
+        and _retry_counts(waits) == list(range(succeeded + 1))
+        and _retry_counts(timeouts) == list(range(succeeded))
+        and _retry_counts(retries) == list(range(1, succeeded + 1))
     )
 
 
