@@ -353,5 +353,71 @@ class SocketCanAckLifecycleAdapterTest(unittest.TestCase):
         )
 
 
+def sparse_runtime_events(extra_override=None) -> list[dict]:
+    """The shape a producer that reports only command_id/retry_count emits."""
+    extra = {"command_id": 1, "retry_count": 0}
+    extra.update(extra_override or {})
+    return [
+        {
+            "trace_id": "trace-1",
+            "sequence_id": 1,
+            "event_name": name,
+            "timestamp_ns": timestamp_ns,
+            "pid": 10,
+            "tid": 11,
+            "host_id": "host-a",
+            "clock_id": "monotonic",
+            "extra_json": json.dumps(extra),
+        }
+        for name, timestamp_ns in (
+            ("can_frame_sent", 2_000_000_000),
+            ("can_ack_wait_start", 2_000_100_000),
+            ("can_ack_received", 2_006_000_000),
+        )
+    ]
+
+
+def derive_control(runtime: list[dict]):
+    run, oracle, capture = manifests("control")
+    _, responder, candump = control_sources()
+    return derive_socketcan_ack_lifecycle_evidence(
+        runtime,
+        responder,
+        candump,
+        run,
+        oracle,
+        capture,
+        runtime_source_file="runtime.jsonl",
+        responder_source_file="responder.jsonl",
+        candump_source_file="candump.log",
+        run_manifest_source_file="run.json",
+        oracle_manifest_source_file="oracle.json",
+        capture_manifest_source_file="capture.json",
+    )
+
+
+class SparseProducerTest(unittest.TestCase):
+    def test_accepts_a_producer_that_omits_the_run_profile(self) -> None:
+        # Not restating the manifest is not contradicting it. Requiring the five
+        # profile keys made every capture from such a producer unusable even though
+        # the manifest already fixes ack_mode, interface, timeouts and retries.
+        _, report = derive_control(sparse_runtime_events())
+
+        self.assertNotIn(
+            "event_profile_mismatch", report.get("invalid_pair_reason_counts", {})
+        )
+
+    def test_rejects_a_producer_that_contradicts_the_manifest(self) -> None:
+        # The relaxation is about absence, never about disagreement.
+        events, report = derive_control(sparse_runtime_events({"ack_timeout_ms": 999}))
+
+        self.assertEqual(events, [])
+        self.assertEqual(
+            report["invalid_pair_reason_counts"], {"event_profile_mismatch": 1}
+        )
+        # A profile rejection must not read like an empty capture.
+        self.assertEqual(report["reason_code"], "runtime_event_profile_rejected")
+
+
 if __name__ == "__main__":
     unittest.main()
