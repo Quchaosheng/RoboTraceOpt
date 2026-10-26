@@ -105,6 +105,12 @@
   "formal_experiment_allowed": true,
   "paired_repetitions": 10,
   "raw_data_included": false,
+  "recompute": {
+    "command": "python3 docs/evidence/build_formal_evidence_package.py --source-archive <ctf-and-runtime-events>",
+    "inputs": "raw CTF, ROS 2, RuntimeEvent and bpftrace captures, which the public projection omits",
+    "reason": "the package is an archived candidate projection; the README already rejects it as formal evidence",
+    "recomputable_from_public_checkout": false
+  },
   "sanitization": "Local paths, usernames, and host identifiers are replaced.",
   "sanitization_version": "v2-root-home-redaction",
   "schema_version": "robotraceopt-public-evidence-package/v1",

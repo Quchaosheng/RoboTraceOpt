@@ -31,3 +31,21 @@ qualify those inputs or promote them to formal evidence.
 packages from explicitly supplied source roots. Neither script contains
 private default paths; the limited-package builder resamples whole runs for
 bootstrap intervals.
+
+## Can a reader recompute a published number?
+
+Each package manifest carries a `recompute` record: the command, the inputs, and an
+explicit `recomputable_from_public_checkout`. Three of the four packages answer `false`
+because the rows behind their aggregates are private; saying so in the manifest is the
+point, because the README prose and the claim can otherwise be read apart.
+
+| Package | Recomputable from this checkout | What is missing |
+| --- | --- | --- |
+| `native-f3f4-formal-v3` | no | raw CTF, ROS 2, RuntimeEvent and bpftrace captures |
+| `wsl-heldout-association-20260731` | no | row-level per-run predictions |
+| `wsl-runtimeevent-overhead-20260712` | no | the per-run summaries the builder resamples |
+| `x5-physical-can-smoke-20260727` | no | the physical capture; its hash is public |
+
+`tests/evidence_capture/test_evidence_recompute.py` enforces the field, refuses a `true`
+answer whose inputs are not tracked, and refuses a `false` answer with no reason.
+

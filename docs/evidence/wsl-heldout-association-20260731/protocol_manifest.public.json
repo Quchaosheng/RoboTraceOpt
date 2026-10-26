@@ -57,6 +57,12 @@
     ]
   },
   "protocol_id": "association_run_heldout_v2_standard_metrics",
+  "recompute": {
+    "command": "python3 docs/evidence/wsl-heldout-association-20260731/evaluate_heldout_association.py --predictions <row-level-jsonl>",
+    "inputs": "row-level predictions, retained in the private audit copy",
+    "reason": "aggregates, split manifest and input hashes are public; the rows that produce them are not",
+    "recomputable_from_public_checkout": false
+  },
   "scenarios": [
     "overlap_dual_10hz",
     "overlap_dual_mixed"
