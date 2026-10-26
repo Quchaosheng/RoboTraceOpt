@@ -26,6 +26,12 @@
     "payload_match_rate": 1.0
   },
   "qualification": "limited-hardware-smoke-only",
+  "recompute": {
+    "command": "python3 docs/evidence/build_limited_evidence_packages.py --x5-source <capture-root>",
+    "inputs": "the 40-second arm64 PREEMPT_RT capture referenced by source_artifact_hashes.json",
+    "reason": "the capture is a physical-hardware artifact held outside the repository; its hash is public",
+    "recomputable_from_public_checkout": false
+  },
   "schema_version": "limited-evidence-protocol/v1",
   "session": {
     "camera_frames_retained": 34,

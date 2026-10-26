@@ -28,6 +28,12 @@
     "disabled mode has no internal event latency or completeness outputs"
   ],
   "qualification": "limited-paper-support-only",
+  "recompute": {
+    "command": "python3 docs/evidence/build_limited_evidence_packages.py --overhead-source <source-root>",
+    "inputs": "the private WSL2 run summaries the builder resamples; not tracked in this checkout",
+    "reason": "the per-run summaries stay local because they name a private host and worktree",
+    "recomputable_from_public_checkout": false
+  },
   "schema_version": "limited-evidence-protocol/v1",
   "source_git_commit": "65273ead83545d89f1f6bb8daeeded68cc926337",
   "source_git_dirty": true,
