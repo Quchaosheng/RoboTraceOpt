@@ -136,6 +136,7 @@ def make_model_request(
     now_ns: int | None = None,
     prompt_version: str = PROMPT_VERSION,
     output_schema_version: str = OUTPUT_SCHEMA_VERSION,
+    vision_mode: str = "",
 ) -> ModelRequest:
     """Create a request without persisting camera paths or image payloads."""
 
@@ -155,7 +156,7 @@ def make_model_request(
         observation_timestamp_ns=observation_ns,
         created_timestamp_ns=created_ns,
         deadline_ns=observation_ns + ttl_ns if ttl_ns else 0,
-        input_fingerprint=frame_fingerprint(frame),
+        input_fingerprint=frame_fingerprint(frame, vision_mode=vision_mode),
         prompt_version=prompt_version,
         output_schema_version=output_schema_version,
     )
@@ -165,15 +166,23 @@ def make_session_id() -> str:
     return f"{socket.gethostname()}-{uuid.uuid4().hex[:16]}"
 
 
-def frame_fingerprint(frame: Any) -> str:
-    """Return a canonical digest; raw paths and image bytes never enter records."""
+def frame_fingerprint(frame: Any, *, vision_mode: str = "") -> str:
+    """Return a canonical digest of the model input; raw paths never enter records.
+
+    The prompt names `image_path` and the vision mode decides whether the
+    payload is sent at all, so both are part of the input identity even though
+    neither is stored verbatim.
+    """
 
     payload = bytes(getattr(frame, "payload", b""))
+    image_path = str(getattr(frame, "image_path", ""))
     canonical = {
         "encoding": str(getattr(frame, "encoding", "")),
         "frame_id": int(getattr(frame, "frame_id", 0)),
         "height": int(getattr(frame, "height", 0)),
+        "image_path_sha256": hashlib.sha256(image_path.encode("utf-8")).hexdigest(),
         "payload_sha256": hashlib.sha256(payload).hexdigest(),
+        "vision_mode": str(vision_mode).strip().lower(),
         "width": int(getattr(frame, "width", 0)),
     }
     return _canonical_hash(canonical)

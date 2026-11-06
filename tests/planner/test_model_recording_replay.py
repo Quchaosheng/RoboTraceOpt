@@ -43,6 +43,11 @@ class Frame:
     payload = b"private-image-bytes"
 
 
+class FrameWithPath(Frame):
+    def __init__(self, image_path: str) -> None:
+        self.image_path = image_path
+
+
 class FixedClient(BasePlannerClient):
     def plan(self, _frame):
         return PlannerDecision("turn_left", "door", 0.3, 0.8, "clear route")
@@ -88,6 +93,65 @@ class ModelRecordingReplayTest(unittest.TestCase):
         self.assertEqual(replay.backend, "replay")
         self.assertEqual(replay.decision, result.decision)
         self.assertEqual(replay.response_fingerprint, result.response_fingerprint)
+
+    def test_replay_key_covers_the_prompt_image_path(self) -> None:
+        other_frame = FrameWithPath("/private/robot/obstacle-frame.jpg")
+
+        other_request = make_model_request(
+            other_frame,
+            session_id="session-1",
+            observation_timestamp_ns=1_000_000_000,
+            ttl_ms=250,
+            now_ns=1_010_000_000,
+        )
+
+        self.assertNotEqual(
+            self.request.input_fingerprint, other_request.input_fingerprint
+        )
+        self.assertNotIn("secret-frame", str(other_request.public_dict()))
+        self.assertNotIn("obstacle-frame", str(other_request.public_dict()))
+
+    def test_replay_key_covers_the_vision_mode(self) -> None:
+        metadata = make_model_request(
+            self.frame,
+            session_id="session-1",
+            observation_timestamp_ns=1_000_000_000,
+            ttl_ms=250,
+            now_ns=1_010_000_000,
+            vision_mode="metadata",
+        )
+        payload = make_model_request(
+            self.frame,
+            session_id="session-1",
+            observation_timestamp_ns=1_000_000_000,
+            ttl_ms=250,
+            now_ns=1_010_000_000,
+            vision_mode="payload_base64",
+        )
+
+        self.assertNotEqual(metadata.input_fingerprint, payload.input_fingerprint)
+
+    def test_a_frame_that_differs_only_by_image_path_does_not_replay(self) -> None:
+        result = FixedClient().plan_with_request(self.frame, self.request)
+        other_frame = FrameWithPath("/private/robot/obstacle-frame.jpg")
+        other_request = make_model_request(
+            other_frame,
+            session_id="session-1",
+            observation_timestamp_ns=1_000_000_000,
+            ttl_ms=250,
+            now_ns=1_010_000_000,
+        )
+
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "decisions.jsonl"
+            PlannerDecisionRecorder(path).record(self.request, result)
+            replay = ReplayPlannerClient(path).plan_with_request(
+                other_frame, other_request
+            )
+
+        self.assertTrue(replay.replayed)
+        self.assertIsNone(replay.decision)
+        self.assertEqual(replay.error_code, PlannerErrorCode.REPLAY_MISS)
 
     def test_replay_fails_closed_when_multiple_records_match(self) -> None:
         result = FixedClient().plan_with_request(self.frame, self.request)
