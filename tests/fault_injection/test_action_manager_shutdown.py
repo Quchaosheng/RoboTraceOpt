@@ -44,16 +44,17 @@ class ActionManagerShutdownTest(unittest.TestCase):
         ).read_text(encoding="utf-8")
 
         self.assertNotIn(".detach()", source)
-        self.assertIn("goal_threads_.emplace_back", source)
-        self.assertIn("thread.join()", source)
+        self.assertIn("goal_threads_.spawn(", source)
         destructor = source.split("ActionManagerNode::~ActionManagerNode()", 1)[
             1
         ].split("void ActionManagerNode::on_planner_command", 1)[0]
         self.assertLess(
             destructor.index("action_server_.reset()"),
-            destructor.index("thread.join()"),
+            destructor.index("goal_threads_.close()"),
         )
-        self.assertIn("std::vector<std::thread> goal_threads_", header)
+        self.assertIn(
+            "ai_robot_runtime_interfaces::ReapingThreadGroup goal_threads_", header
+        )
         self.assertIn("std::atomic_bool shutting_down_", header)
 
 

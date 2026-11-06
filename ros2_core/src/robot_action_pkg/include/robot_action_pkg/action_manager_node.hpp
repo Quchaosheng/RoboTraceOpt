@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "ai_robot_runtime_interfaces/action/robot_command.hpp"
+#include "ai_robot_runtime_interfaces/reaping_thread_group.hpp"
 #include "ai_robot_runtime_interfaces/msg/planner_command.hpp"
 #include "ai_robot_runtime_interfaces/msg/runtime_event.hpp"
 #include "rclcpp/rclcpp.hpp"
@@ -73,8 +74,7 @@ private:
   int64_t goal_timeout_ms_{0};
   bool runtime_event_enabled_{true};
   std::atomic_bool shutting_down_{false};
-  std::mutex goal_threads_mutex_;
-  std::vector<std::thread> goal_threads_;
+  ai_robot_runtime_interfaces::ReapingThreadGroup goal_threads_;
 };
 
 }  // namespace robot_action_pkg

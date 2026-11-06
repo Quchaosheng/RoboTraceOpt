@@ -167,12 +167,25 @@ CanBridgeNode::CanBridgeNode()
 CanBridgeNode::~CanBridgeNode()
 {
   shutting_down_.store(true);
-  std::lock_guard<std::mutex> lock(ack_threads_mutex_);
-  for (auto & thread : ack_threads_) {
-    if (thread.joinable()) {
-      thread.join();
-    }
-  }
+  ack_threads_.close();
+  std::lock_guard<std::mutex> lock(ack_timers_mutex_);
+  ack_timers_.clear();
+}
+
+void CanBridgeNode::retain_ack_timer(rclcpp::TimerBase::SharedPtr timer)
+{
+  std::lock_guard<std::mutex> lock(ack_timers_mutex_);
+  // A finished timer is only kept alive by this vector (rclcpp's callback group
+  // stores a weak pointer), so drop the ones that already fired.
+  ack_timers_.erase(
+    std::remove_if(
+      ack_timers_.begin(),
+      ack_timers_.end(),
+      [](const rclcpp::TimerBase::SharedPtr & entry) {
+        return !entry || entry->is_canceled();
+      }),
+    ack_timers_.end());
+  ack_timers_.push_back(std::move(timer));
 }
 
 void CanBridgeNode::on_planner_command(const PlannerCommand::SharedPtr command)
@@ -320,8 +333,7 @@ void CanBridgeNode::schedule_socketcan_ack_or_timeout(
   const uint32_t retry_count,
   const int ack_socket_fd)
 {
-  std::lock_guard<std::mutex> lock(ack_threads_mutex_);
-  ack_threads_.emplace_back([this, command, frame, retry_count, ack_socket_fd]() {
+  ack_threads_.spawn([this, command, frame, retry_count, ack_socket_fd]() {
     std::string ack_detail;
     const bool ack_received =
       ack_socket_fd >= 0 && wait_for_socketcan_ack(frame, ack_socket_fd, &ack_detail);
@@ -498,7 +510,7 @@ void CanBridgeNode::schedule_mock_ack(
         }
       });
     *timer_reference = timer;
-    ack_timers_.push_back(std::move(timer));
+    retain_ack_timer(std::move(timer));
   } catch (const rclcpp::exceptions::RCLError & error) {
     if (rclcpp::ok() && !shutting_down_.load()) {
       throw;
@@ -550,7 +562,7 @@ void CanBridgeNode::schedule_ack_timeout(
         }
       });
     *timer_reference = timer;
-    ack_timers_.push_back(std::move(timer));
+    retain_ack_timer(std::move(timer));
   } catch (const rclcpp::exceptions::RCLError & error) {
     if (rclcpp::ok() && !shutting_down_.load()) {
       throw;
