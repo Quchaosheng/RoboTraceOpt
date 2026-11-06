@@ -342,7 +342,40 @@ def adapt_ebpf_jsonl(
             raise AdapterReject(
                 error.reason_code, f"line {line_number}: {error}"
             ) from error
-    return events
+    return derive_scheduling_intervals(events)
+
+
+def derive_scheduling_intervals(
+    events: Iterable[NormalizedEvent],
+) -> list[NormalizedEvent]:
+    """Attach the intervals the scheduling rule needs to the interval nodes.
+
+    A wakeup and the switch-in it causes are only adjacent as raw records, so
+    the pairing has to happen here; the evidence graph cannot recover it later.
+    """
+    ordered = list(events)
+    off_cpu_since: dict[tuple[str, int], int] = {}
+    pending_wakeup: dict[tuple[str, int], int] = {}
+    for event in ordered:
+        key = (event.host_id, event.tid)
+        if event.event_type == "sched_switch_out":
+            off_cpu_since[key] = event.timestamp_ns
+            continue
+        if event.event_type == "sched_wakeup":
+            pending_wakeup[key] = event.timestamp_ns
+            continue
+        if event.event_type != "sched_switch_in":
+            continue
+        derived: dict[str, int] = {}
+        woken_at = pending_wakeup.pop(key, None)
+        if woken_at is not None and event.timestamp_ns >= woken_at:
+            derived["wakeup_to_run_ns"] = event.timestamp_ns - woken_at
+        off_cpu_at = off_cpu_since.pop(key, None)
+        if off_cpu_at is not None and event.timestamp_ns >= off_cpu_at:
+            derived["off_cpu_ns"] = event.timestamp_ns - off_cpu_at
+        if derived:
+            event.attributes.update(derived)
+    return ordered
 
 
 def parse_args() -> argparse.Namespace:

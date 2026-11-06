@@ -11,6 +11,8 @@ from diagnosis.adapters.ebpf_adapter import (
     load_process_identities,
 )
 from diagnosis.adapters.errors import AdapterReject
+from diagnosis.evidence_graph.inference import _metric_value, load_root_cause_catalog
+from diagnosis.evidence_graph.model import EvidenceNode, NodeType
 
 
 IDENTITIES = {
@@ -164,6 +166,118 @@ class EbpfAdapterTest(unittest.TestCase):
         self.assertEqual(events[0].attributes["counterpart_tid"], 202)
         self.assertEqual(events[1].attributes["counterpart_tid"], 101)
         self.assertEqual(events[0].provenance["record_index"], 7)
+
+    def test_derives_wakeup_and_off_cpu_intervals_from_adjacent_events(self) -> None:
+        def record(event_source: str, timestamp_ns: int, **fields) -> dict:
+            value = common_record(event_source)
+            value["timestamp_ns"] = timestamp_ns
+            value.update(fields)
+            return value
+
+        records = [
+            record("sched_wakeup", 1_000, tid=102, comm="planner_node", target_cpu=2),
+            record(
+                "sched_switch",
+                1_500,
+                prev_tid=101,
+                prev_comm="camera_node",
+                prev_state=0,
+                next_tid=102,
+                next_comm="planner_node",
+                cpu_id=2,
+            ),
+            record(
+                "sched_switch",
+                9_000,
+                prev_tid=102,
+                prev_comm="planner_node",
+                prev_state=0,
+                next_tid=101,
+                next_comm="camera_node",
+                cpu_id=2,
+            ),
+            record("sched_wakeup", 20_000, tid=102, comm="planner_node", target_cpu=2),
+            record(
+                "sched_switch",
+                26_000,
+                prev_tid=101,
+                prev_comm="camera_node",
+                prev_state=0,
+                next_tid=102,
+                next_comm="planner_node",
+                cpu_id=2,
+            ),
+        ]
+
+        events = adapt_ebpf_jsonl(
+            [json.dumps(row) for row in records],
+            tid_to_pid=IDENTITIES,
+            source_file="ebpf.jsonl",
+        )
+        planner_switch_ins = [
+            event
+            for event in events
+            if event.event_type == "sched_switch_in" and event.tid == 102
+        ]
+
+        self.assertEqual(
+            [event.attributes["wakeup_to_run_ns"] for event in planner_switch_ins],
+            [500, 6_000],
+        )
+        self.assertEqual(
+            [event.attributes.get("off_cpu_ns") for event in planner_switch_ins],
+            [None, 17_000],
+        )
+
+    def test_scheduling_intervals_reach_the_diagnosis_metrics(self) -> None:
+        record = {
+            "schema_version": "ebpf-runtime/v1",
+            "event_source": "sched_switch",
+            "timestamp_ns": 2_000,
+            "clock_id": "monotonic",
+            "host_id": "host-a",
+            "collector": "bpftrace",
+            "collector_version": "0.14.0",
+            "prev_tid": 101,
+            "prev_comm": "camera_node",
+            "prev_state": 0,
+            "next_tid": 102,
+            "next_comm": "planner_node",
+            "cpu_id": 2,
+        }
+        wakeup = {**record, "event_source": "sched_wakeup", "timestamp_ns": 1_000}
+        wakeup.pop("prev_tid")
+        wakeup.pop("prev_comm")
+        wakeup.pop("prev_state")
+        wakeup.pop("next_tid")
+        wakeup.pop("next_comm")
+        wakeup["tid"] = 102
+        wakeup["comm"] = "planner_node"
+        wakeup["target_cpu"] = 2
+
+        events = adapt_ebpf_jsonl(
+            [json.dumps(wakeup), json.dumps(record)],
+            tid_to_pid=IDENTITIES,
+            source_file="ebpf.jsonl",
+        )
+        switch_in = next(
+            event for event in events if event.event_type == "sched_switch_in"
+        )
+        node = EvidenceNode(
+            "evidence:switch",
+            NodeType.SCHEDULING_INTERVAL,
+            trace_id="trace-1",
+            attributes={"source_attributes": dict(switch_in.attributes)},
+        )
+        catalog = {cause.cause_id: cause for cause in load_root_cause_catalog()}
+
+        values = {
+            metric.metric_id: _metric_value(node, metric)
+            for metric in catalog["scheduling_delay"].metrics
+        }
+
+        self.assertEqual(values["wakeup_to_run_ns"], 1_000.0)
+        self.assertIsNone(values["off_cpu_ns"])
 
     def test_ignores_non_target_side_of_scheduler_switch(self) -> None:
         record = common_record("sched_switch")
