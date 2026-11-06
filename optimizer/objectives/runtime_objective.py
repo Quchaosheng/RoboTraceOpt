@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from typing import Any
 
 
@@ -13,7 +14,12 @@ def runtime_objective(
     if not isinstance(values, dict) or quantile not in values:
         raise ValueError(f"missing {metric} {quantile}")
     value = values[quantile]
-    if isinstance(value, bool) or not isinstance(value, (int, float)) or value < 0:
+    if (
+        isinstance(value, bool)
+        or not isinstance(value, (int, float))
+        or not math.isfinite(value)
+        or value < 0
+    ):
         raise ValueError(f"invalid {metric} {quantile}")
     rate = report.get("complete_trace_rate")
     if rate is None:
@@ -31,6 +37,7 @@ def runtime_objective(
     if (
         isinstance(rate, bool)
         or not isinstance(rate, (int, float))
+        or not math.isfinite(rate)
         or not 0 <= rate <= 1
     ):
         raise ValueError("invalid complete_trace_rate")

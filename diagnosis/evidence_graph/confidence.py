@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 from string import hexdigits
 from typing import Any
@@ -82,8 +83,12 @@ class ScoringProfile:
 
 def _number(record: dict[str, Any], key: str) -> float:
     value = record.get(key)
-    if isinstance(value, bool) or not isinstance(value, (int, float)):
-        raise ValueError(f"{key} must be numeric")
+    if (
+        isinstance(value, bool)
+        or not isinstance(value, (int, float))
+        or not math.isfinite(value)
+    ):
+        raise ValueError(f"{key} must be a finite number")
     return float(value)
 
 
@@ -94,7 +99,11 @@ def _numeric_mapping(value: object, label: str) -> dict[str, float]:
     for key, item in value.items():
         if not isinstance(key, str) or not key:
             raise ValueError(f"{label} keys must be non-empty strings")
-        if isinstance(item, bool) or not isinstance(item, (int, float)):
-            raise ValueError(f"{label}.{key} must be numeric")
+        if (
+            isinstance(item, bool)
+            or not isinstance(item, (int, float))
+            or not math.isfinite(item)
+        ):
+            raise ValueError(f"{label}.{key} must be a finite number")
         result[key] = float(item)
     return result

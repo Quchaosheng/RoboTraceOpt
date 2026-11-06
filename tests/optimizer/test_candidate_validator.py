@@ -67,6 +67,39 @@ class CandidateValidatorTest(unittest.TestCase):
         self.assertEqual(result["baseline_objective"]["objective_value_ns"], 100.0)
         self.assertEqual(result["candidate_objective"]["objective_value_ns"], 70.0)
 
+    def test_rejects_non_finite_objective_values(self) -> None:
+        for value in (float("nan"), float("inf"), float("-inf")):
+            with self.subTest(value=value):
+                with self.assertRaisesRegex(ValueError, "candidate objective value"):
+                    validate_candidate(
+                        objective(100), objective(value), minimum_improvement_ratio=0.1
+                    )
+                with self.assertRaisesRegex(ValueError, "baseline objective value"):
+                    validate_candidate(
+                        objective(value), objective(100), minimum_improvement_ratio=0.1
+                    )
+
+    def test_rejects_non_finite_complete_trace_rate(self) -> None:
+        for value in (float("nan"), float("inf")):
+            with self.subTest(value=value):
+                with self.assertRaisesRegex(ValueError, "complete_trace_rate"):
+                    validate_candidate(
+                        objective(100), objective(80, rate=value), formal=False
+                    )
+
+    def test_rejects_non_finite_metric_in_report(self) -> None:
+        report = {
+            "schema_version": "evidence/v1",
+            "development_only": True,
+            "formal_inference_allowed": False,
+            "complete_trace_rate": 1.0,
+            "metrics_ns": {"latency": {"p95": float("nan")}},
+        }
+        with self.assertRaisesRegex(ValueError, "p95"):
+            validate_reports(
+                report, report, metric="latency", quantile="p95"
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

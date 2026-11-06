@@ -163,6 +163,33 @@ class ScoringProfileTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "minimum_completeness"):
             ScoringProfile.from_dict({**base, "minimum_completeness": 1.1})
 
+    def test_rejects_non_finite_profile_numbers(self) -> None:
+        base = {
+            "schema_version": "diagnosis-scoring/v1",
+            "profile_id": "synthetic-calibration-v1",
+            "calibration_manifest_sha256": "a" * 64,
+            "dataset_role": "calibration",
+            "frozen_before_test": True,
+            "thresholds": {"metric": 1},
+            "weights": {"metric": 1},
+            "conflict_penalty": 0,
+            "missing_penalty": 0,
+            "minimum_score": 1,
+            "minimum_margin": 0,
+            "minimum_completeness": 1,
+        }
+        for value in (float("nan"), float("inf"), float("-inf")):
+            for field, replacement in (
+                ("minimum_score", value),
+                ("minimum_margin", value),
+                ("conflict_penalty", value),
+                ("thresholds", {"metric": value}),
+                ("weights", {"metric": value}),
+            ):
+                with self.subTest(field=field, value=value):
+                    with self.assertRaisesRegex(ValueError, "finite"):
+                        ScoringProfile.from_dict({**base, field: replacement})
+
     def test_requires_calibration_manifest_provenance(self) -> None:
         record = {
             "schema_version": "diagnosis-scoring/v1",
