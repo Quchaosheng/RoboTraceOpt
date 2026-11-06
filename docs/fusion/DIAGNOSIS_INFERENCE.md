@@ -54,6 +54,25 @@ result. Candidate rankings, support/conflict/missing evidence, source
 availability, calibration-manifest identity, stable reason codes, and original
 evidence provenance remain available for audit even after abstention.
 
+## Running the chain
+
+`scripts/run_diagnosis.py` executes capture -> association -> evidence graph ->
+inference -> report in one command, so `--diagnosis-report` no longer has to be
+written by hand:
+
+```bash
+python3 scripts/run_diagnosis.py \
+  --runtime data/processed/runtime.jsonl \
+  --system data/processed/system.jsonl \
+  --profile data/processed/diagnosis-scoring.json \
+  --workload w1 \
+  --output data/reports/diagnosis.json
+```
+
+The output is a `diagnosis-report/v1` record with an `inputs.association`
+summary, and it feeds `optimizer/integration/diagnosis_gate.py` directly.
+`--trace-id` selects one trace when a capture contains several.
+
 ## Check
 
 ```bash
