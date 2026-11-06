@@ -80,6 +80,147 @@ class StageWindowTest(unittest.TestCase):
         self.assertEqual(windows[0].tids, (11,))
         self.assertEqual((windows[1].start_ns, windows[1].end_ns), (200, 200))
 
+    def test_pairs_explicit_start_and_end_across_intermediate_events(self) -> None:
+        runtime_events = [
+            event(
+                "execute-start",
+                source="runtime_event",
+                timestamp_ns=100_000_000,
+                pid=10,
+                tid=11,
+                trace_id="trace-a",
+                sequence_id=1,
+                stage="action_execute_start",
+            ),
+            event(
+                "feedback-1",
+                source="runtime_event",
+                timestamp_ns=100_001_000,
+                pid=10,
+                tid=11,
+                trace_id="trace-a",
+                sequence_id=1,
+                stage="action_feedback",
+            ),
+            event(
+                "feedback-2",
+                source="runtime_event",
+                timestamp_ns=150_000_000,
+                pid=10,
+                tid=11,
+                trace_id="trace-a",
+                sequence_id=1,
+                stage="action_feedback",
+            ),
+            event(
+                "execute-end",
+                source="runtime_event",
+                timestamp_ns=200_000_000,
+                pid=10,
+                tid=11,
+                trace_id="trace-a",
+                sequence_id=1,
+                stage="action_execute_end",
+            ),
+        ]
+
+        windows = build_stage_windows(runtime_events)
+        execute = next(
+            window for window in windows if window.stage == "action_execute_start"
+        )
+
+        self.assertEqual(execute.start_ns, 100_000_000)
+        self.assertEqual(execute.end_ns, 200_000_000)
+        self.assertEqual(execute.end_event_id, "execute-end")
+
+    def test_pairs_each_execution_with_its_own_end_event(self) -> None:
+        runtime_events = [
+            event(
+                "start-1",
+                source="runtime_event",
+                timestamp_ns=0,
+                pid=10,
+                tid=11,
+                trace_id="trace-a",
+                sequence_id=1,
+                stage="action_execute_start",
+            ),
+            event(
+                "end-1",
+                source="runtime_event",
+                timestamp_ns=10,
+                pid=10,
+                tid=11,
+                trace_id="trace-a",
+                sequence_id=1,
+                stage="action_execute_end",
+            ),
+            event(
+                "start-2",
+                source="runtime_event",
+                timestamp_ns=20,
+                pid=10,
+                tid=11,
+                trace_id="trace-a",
+                sequence_id=1,
+                stage="action_execute_start",
+            ),
+            event(
+                "end-2",
+                source="runtime_event",
+                timestamp_ns=40,
+                pid=10,
+                tid=11,
+                trace_id="trace-a",
+                sequence_id=1,
+                stage="action_execute_end",
+            ),
+        ]
+
+        windows = build_stage_windows(runtime_events)
+        paired = [
+            (
+                window.start_event_id,
+                window.end_event_id,
+                window.end_ns - window.start_ns,
+            )
+            for window in windows
+            if window.stage == "action_execute_start"
+        ]
+
+        self.assertEqual(paired, [("start-1", "end-1", 10), ("start-2", "end-2", 20)])
+
+    def test_unpaired_stage_still_uses_the_following_event(self) -> None:
+        windows = build_stage_windows(
+            [
+                event(
+                    "start",
+                    source="runtime_event",
+                    timestamp_ns=0,
+                    pid=10,
+                    tid=11,
+                    trace_id="trace-a",
+                    sequence_id=1,
+                    stage="action_execute_start",
+                ),
+                event(
+                    "next",
+                    source="runtime_event",
+                    timestamp_ns=5,
+                    pid=10,
+                    tid=11,
+                    trace_id="trace-a",
+                    sequence_id=1,
+                    stage="planner_publish",
+                ),
+            ]
+        )
+
+        execute = next(
+            window for window in windows if window.stage == "action_execute_start"
+        )
+        self.assertEqual(execute.end_ns, 5)
+
     def test_rejects_runtime_event_without_trace_identity(self) -> None:
         incomplete = event(
             "missing-trace",
