@@ -1,5 +1,7 @@
 #include "robot_action_pkg/action_manager_node.hpp"
 
+#include "robot_action_pkg/goal_deadline.hpp"
+
 #include "ai_robot_runtime_interfaces/runtime_event_identity.hpp"
 
 #include <algorithm>
@@ -203,8 +205,11 @@ void ActionManagerNode::execute_goal(const std::shared_ptr<GoalHandleRobotComman
     const auto start_timestamp_ns = steady_now_ns();
     publish_event(command, "action_execute_start", "action_execute_start", "executing");
 
-    int64_t elapsed_ms = 0;
-    while (elapsed_ms < action_delay_ms_) {
+    GoalDeadline deadline;
+    deadline.start_ns = start_timestamp_ns;
+    deadline.timeout_ns = goal_timeout_ms_ * 1'000'000;
+    const auto work_end_ns = start_timestamp_ns + action_delay_ms_ * 1'000'000;
+    while (steady_now_ns() < work_end_ns) {
       if (!rclcpp::ok() || shutting_down_.load()) {
         return;
       }
@@ -219,7 +224,7 @@ void ActionManagerNode::execute_goal(const std::shared_ptr<GoalHandleRobotComman
         return;
       }
 
-      if (goal_timeout_ms_ > 0 && elapsed_ms >= goal_timeout_ms_) {
+      if (deadline.expired(steady_now_ns())) {
         auto result = std::make_shared<RobotCommand::Result>();
         result->success = false;
         result->message = "goal timeout";
@@ -235,13 +240,36 @@ void ActionManagerNode::execute_goal(const std::shared_ptr<GoalHandleRobotComman
       feedback->timestamp_ns = steady_now_ns();
       goal_handle->publish_feedback(feedback);
 
-      const auto sleep_ms =
-        std::min<int64_t>(feedback_period_ms_, action_delay_ms_ - elapsed_ms);
-      std::this_thread::sleep_for(std::chrono::milliseconds(sleep_ms));
-      elapsed_ms += sleep_ms;
+      const auto wait_ns = deadline.next_wait_ns(
+        steady_now_ns(),
+        work_end_ns - steady_now_ns(),
+        feedback_period_ms_ * 1'000'000);
+      if (wait_ns <= 0) {
+        continue;
+      }
+      std::this_thread::sleep_for(std::chrono::nanoseconds(wait_ns));
     }
 
     if (!rclcpp::ok() || shutting_down_.load()) {
+      return;
+    }
+    // The last wait can still cross the deadline, so re-check before success.
+    if (goal_handle->is_canceling() || deadline.expired(steady_now_ns())) {
+      auto result = std::make_shared<RobotCommand::Result>();
+      result->success = false;
+      result->message = goal_handle->is_canceling() ? "goal cancelled" : "goal timeout";
+      result->start_timestamp_ns = start_timestamp_ns;
+      result->end_timestamp_ns = steady_now_ns();
+      publish_event(
+        command,
+        goal_handle->is_canceling() ? "action_cancelled" : "action_goal_timeout",
+        goal_handle->is_canceling() ? "action_cancelled" : "action_goal_timeout",
+        result->message);
+      if (goal_handle->is_canceling()) {
+        goal_handle->canceled(result);
+      } else {
+        goal_handle->abort(result);
+      }
       return;
     }
     auto result = std::make_shared<RobotCommand::Result>();
