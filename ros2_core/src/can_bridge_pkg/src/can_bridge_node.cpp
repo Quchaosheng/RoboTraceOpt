@@ -221,6 +221,17 @@ void CanBridgeNode::send_attempt(
     return;
   }
 
+  // Open and bind the ACK receiver before the frame is sent: a peer that
+  // answers immediately must not lose its ACK to a bind that happens later.
+  int ack_socket_fd = -1;
+  std::string ack_setup_detail;
+  if (ack_enabled_ && ack_mode_ == "socketcan") {
+    ack_socket_fd = open_socketcan_ack_socket(&ack_setup_detail);
+    if (ack_socket_fd < 0) {
+      RCLCPP_ERROR(this->get_logger(), "%s", ack_setup_detail.c_str());
+    }
+  }
+
   std::string send_detail;
   const bool send_success = send_frame(frame, &send_detail);
   publish_event(
@@ -235,6 +246,9 @@ void CanBridgeNode::send_attempt(
   publish_probe_completion(command, send_success);
 
   if (!send_success) {
+    if (ack_socket_fd >= 0) {
+      ::close(ack_socket_fd);
+    }
     publish_event(
       command,
       frame,
@@ -249,10 +263,13 @@ void CanBridgeNode::send_attempt(
   }
 
   if (!ack_enabled_) {
+    if (ack_socket_fd >= 0) {
+      ::close(ack_socket_fd);
+    }
     return;
   }
 
-  start_ack_wait(command, frame, retry_count);
+  start_ack_wait(command, frame, retry_count, ack_socket_fd);
 }
 
 void CanBridgeNode::publish_probe_completion(
@@ -275,7 +292,8 @@ void CanBridgeNode::publish_probe_completion(
 void CanBridgeNode::start_ack_wait(
   const PlannerCommand & command,
   const EncodedCanFrame & frame,
-  const uint32_t retry_count)
+  const uint32_t retry_count,
+  const int ack_socket_fd)
 {
   publish_event(
     command,
@@ -288,7 +306,7 @@ void CanBridgeNode::start_ack_wait(
     retry_count);
 
   if (ack_mode_ == "socketcan") {
-    schedule_socketcan_ack_or_timeout(command, frame, retry_count);
+    schedule_socketcan_ack_or_timeout(command, frame, retry_count, ack_socket_fd);
     return;
   }
 
@@ -299,12 +317,17 @@ void CanBridgeNode::start_ack_wait(
 void CanBridgeNode::schedule_socketcan_ack_or_timeout(
   const PlannerCommand & command,
   const EncodedCanFrame & frame,
-  const uint32_t retry_count)
+  const uint32_t retry_count,
+  const int ack_socket_fd)
 {
   std::lock_guard<std::mutex> lock(ack_threads_mutex_);
-  ack_threads_.emplace_back([this, command, frame, retry_count]() {
+  ack_threads_.emplace_back([this, command, frame, retry_count, ack_socket_fd]() {
     std::string ack_detail;
-    const bool ack_received = wait_for_socketcan_ack(frame, &ack_detail);
+    const bool ack_received =
+      ack_socket_fd >= 0 && wait_for_socketcan_ack(frame, ack_socket_fd, &ack_detail);
+    if (ack_socket_fd >= 0) {
+      ::close(ack_socket_fd);
+    }
     if (shutting_down_.load()) {
       return;
     }
@@ -325,16 +348,13 @@ void CanBridgeNode::schedule_socketcan_ack_or_timeout(
   });
 }
 
-bool CanBridgeNode::wait_for_socketcan_ack(
-  const EncodedCanFrame & frame,
-  std::string * detail) const
+int CanBridgeNode::open_socketcan_ack_socket(std::string * detail) const
 {
 #ifdef __linux__
   const int socket_fd = ::socket(PF_CAN, SOCK_RAW, CAN_RAW);
   if (socket_fd < 0) {
     *detail = std::string("ack socket failed: ") + std::strerror(errno);
-    RCLCPP_ERROR(this->get_logger(), "%s", detail->c_str());
-    return false;
+    return -1;
   }
 
   ifreq interface_request {};
@@ -343,9 +363,8 @@ bool CanBridgeNode::wait_for_socketcan_ack(
 
   if (::ioctl(socket_fd, SIOCGIFINDEX, &interface_request) < 0) {
     *detail = std::string("ack ioctl SIOCGIFINDEX failed: ") + std::strerror(errno);
-    RCLCPP_ERROR(this->get_logger(), "%s", detail->c_str());
     ::close(socket_fd);
-    return false;
+    return -1;
   }
 
   sockaddr_can address {};
@@ -354,11 +373,22 @@ bool CanBridgeNode::wait_for_socketcan_ack(
 
   if (::bind(socket_fd, reinterpret_cast<sockaddr *>(&address), sizeof(address)) < 0) {
     *detail = std::string("ack bind failed: ") + std::strerror(errno);
-    RCLCPP_ERROR(this->get_logger(), "%s", detail->c_str());
     ::close(socket_fd);
-    return false;
+    return -1;
   }
+  return socket_fd;
+#else
+  *detail = "SocketCAN ACK is only available on Linux";
+  return -1;
+#endif
+}
 
+bool CanBridgeNode::wait_for_socketcan_ack(
+  const EncodedCanFrame & frame,
+  const int socket_fd,
+  std::string * detail) const
+{
+#ifdef __linux__
   const auto expected_ack_id = static_cast<uint32_t>(frame.can_id + ack_can_id_offset_);
   const auto deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(ack_timeout_ms_);
 
@@ -381,7 +411,6 @@ bool CanBridgeNode::wait_for_socketcan_ack(
       }
       *detail = std::string("ack select failed: ") + std::strerror(errno);
       RCLCPP_ERROR(this->get_logger(), "%s", detail->c_str());
-      ::close(socket_fd);
       return false;
     }
     if (ready == 0) {
@@ -404,18 +433,16 @@ bool CanBridgeNode::wait_for_socketcan_ack(
       continue;
     }
 
-    ::close(socket_fd);
     *detail = "socketcan ack received";
     return true;
   }
 
-  ::close(socket_fd);
   *detail = "socketcan ack timeout";
   return false;
 #else
   (void)frame;
+  (void)socket_fd;
   *detail = "SocketCAN ACK is only available on Linux";
-  RCLCPP_ERROR(this->get_logger(), "%s", detail->c_str());
   return false;
 #endif
 }
