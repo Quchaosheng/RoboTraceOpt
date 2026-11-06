@@ -66,6 +66,20 @@ class DiagnosisOptimizationGateTest(unittest.TestCase):
         )
         self.assertEqual(unknown["reason_code"], "no_registered_action")
 
+    def test_denies_a_cause_without_a_runtime_trial_profile(self) -> None:
+        for cause in ("scheduling_delay", "can_ack_failure"):
+            with self.subTest(cause=cause):
+                result = plan_from_diagnosis(
+                    diagnosis(top_1=cause, top_k=[cause]),
+                    strategy="guided",
+                    budget=4,
+                    seed=1,
+                    minimum_confidence=0.6,
+                )
+
+                self.assertEqual(result["decision"], "deny")
+                self.assertEqual(result["reason_code"], "no_runtime_trial_profile")
+
     def test_rejects_malformed_or_oracle_tainted_report(self) -> None:
         with self.assertRaisesRegex(ValueError, "schema"):
             plan_from_diagnosis(

@@ -26,8 +26,10 @@ class RuntimeProfileTest(unittest.TestCase):
         )
 
     def test_rejects_unknown_or_mismatched_actions(self) -> None:
-        with self.assertRaisesRegex(ValueError, "unsupported runtime cause"):
-            runtime_profile("scheduling_delay")
+        for cause in ("scheduling_delay", "can_ack_failure", "unknown_cause"):
+            with self.subTest(cause=cause):
+                with self.assertRaisesRegex(ValueError, "unsupported runtime cause"):
+                    runtime_profile(cause)
         with self.assertRaisesRegex(ValueError, "expected action"):
             candidate_cli_arguments("executor_queueing", {"frame_qos_depth": 2})
 

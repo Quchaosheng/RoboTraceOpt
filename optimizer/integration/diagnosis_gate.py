@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from optimizer.action_registry.registry import actions_for_cause
+from optimizer.integration.runtime_profiles import runtime_profile
 from optimizer.search.trial_planner import build_trial_plan
 
 
@@ -42,6 +43,13 @@ def plan_from_diagnosis(
             actions_for_cause(str(cause_id))
         except ValueError:
             reason = "no_registered_action"
+        else:
+            try:
+                runtime_profile(str(cause_id))
+            except ValueError:
+                # A registered action is not enough: the cause also needs a
+                # runtime trial profile, or the trial layer cannot execute it.
+                reason = "no_runtime_trial_profile"
 
     plan = None
     if not reason:
