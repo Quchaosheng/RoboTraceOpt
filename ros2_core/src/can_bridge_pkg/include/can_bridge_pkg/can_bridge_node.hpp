@@ -12,6 +12,7 @@
 #include <string>
 
 #include "ai_robot_runtime_interfaces/msg/planner_command.hpp"
+#include "ai_robot_runtime_interfaces/reaping_thread_group.hpp"
 #include "ai_robot_runtime_interfaces/msg/runtime_event.hpp"
 #include "rclcpp/rclcpp.hpp"
 
@@ -139,10 +140,11 @@ private:
   int64_t command_dedup_window_ms_{10000};
   double max_command_speed_{1.0};
   uint32_t max_retries_{2};
+  void retain_ack_timer(rclcpp::TimerBase::SharedPtr timer);
+  std::mutex ack_timers_mutex_;
   std::vector<rclcpp::TimerBase::SharedPtr> ack_timers_;
-  std::vector<std::thread> ack_threads_;
+  ai_robot_runtime_interfaces::ReapingThreadGroup ack_threads_;
   std::atomic_bool shutting_down_{false};
-  std::mutex ack_threads_mutex_;
   std::mutex command_dedup_mutex_;
   std::unordered_map<std::string, int64_t> admitted_request_ns_;
 };

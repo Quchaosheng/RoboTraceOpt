@@ -89,12 +89,7 @@ ActionManagerNode::~ActionManagerNode()
   shutting_down_.store(true);
   action_client_.reset();
   action_server_.reset();
-  std::lock_guard<std::mutex> lock(goal_threads_mutex_);
-  for (auto & thread : goal_threads_) {
-    if (thread.joinable()) {
-      thread.join();
-    }
-  }
+  goal_threads_.close();
 }
 
 void ActionManagerNode::on_planner_command(const PlannerCommand::SharedPtr command)
@@ -190,8 +185,7 @@ void ActionManagerNode::handle_accepted(
   if (!rclcpp::ok() || shutting_down_.load()) {
     return;
   }
-  std::lock_guard<std::mutex> lock(goal_threads_mutex_);
-  goal_threads_.emplace_back([this, goal_handle]() { execute_goal(goal_handle); });
+  goal_threads_.spawn([this, goal_handle]() { execute_goal(goal_handle); });
 }
 
 void ActionManagerNode::execute_goal(const std::shared_ptr<GoalHandleRobotCommand> goal_handle)
