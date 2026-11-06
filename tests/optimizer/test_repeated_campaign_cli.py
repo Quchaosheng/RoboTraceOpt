@@ -361,7 +361,7 @@ class RepeatedCampaignCliTest(unittest.TestCase):
 
         self.assertEqual(calls, [])
         self.assertEqual(denied["status"], "denied")
-        self.assertEqual(unsupported["reason_code"], "unsupported_runtime_action")
+        self.assertEqual(unsupported["reason_code"], "no_runtime_trial_profile")
 
     def test_existing_output_is_rejected_before_execution(self):
         calls = []

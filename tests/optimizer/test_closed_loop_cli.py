@@ -112,7 +112,7 @@ class ClosedLoopCliTest(unittest.TestCase):
                 )
         self.assertEqual(calls, [])
 
-    def test_unsupported_runtime_cause_writes_denial_without_execution(self) -> None:
+    def test_cause_without_runtime_trial_profile_is_denied_up_front(self) -> None:
         calls = []
         with tempfile.TemporaryDirectory() as directory:
             summary = run_closed_loop(
@@ -122,7 +122,7 @@ class ClosedLoopCliTest(unittest.TestCase):
                 execute_trial=lambda command: calls.append(command) or 0,
             )
         self.assertEqual(summary["status"], "denied")
-        self.assertEqual(summary["reason_code"], "unsupported_runtime_action")
+        self.assertEqual(summary["reason_code"], "no_runtime_trial_profile")
         self.assertEqual(calls, [])
 
     def test_baseline_failure_aborts_candidates(self) -> None:

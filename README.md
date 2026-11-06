@@ -24,6 +24,11 @@ optimization trials whose actions match the diagnosed cause.
 - A bounded action registry and reproducible guided, random, and unguided
   search protocols.
 - Candidate validation and offline rollback decisions.
+- Diagnosis-guided optimization for the four causes with executable runtime
+  trial profiles: `application_compute_delay`, `executor_queueing`,
+  `dds_communication_delay`, and `blocking_syscall_io`. `scheduling_delay` and
+  `can_ack_failure` are diagnosed but denied at the optimization gate
+  (`no_runtime_trial_profile`) until their runtime knobs exist.
 - Balanced repeated campaigns with paired bootstrap confidence bounds.
 - Development experiment runners for F1-F6 fault characterization.
 

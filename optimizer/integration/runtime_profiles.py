@@ -1,4 +1,12 @@
-"""Runtime trial contracts for diagnosis-supported optimization actions."""
+"""Runtime trial contracts for diagnosis-supported optimization actions.
+
+Only the causes with an executable trial profile are listed. The other two
+catalog causes stay unlisted until a runtime knob exists for them:
+`scheduling_delay` would need CPU-affinity control for the target process and
+`can_ack_failure` needs the ACK lifecycle manifests that a trial does not
+produce. `plan_from_diagnosis` denies them with `no_runtime_trial_profile`
+instead of approving a trial the runtime layer cannot run.
+"""
 
 from __future__ import annotations
 
