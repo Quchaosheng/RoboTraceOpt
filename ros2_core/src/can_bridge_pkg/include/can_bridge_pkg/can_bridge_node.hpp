@@ -3,6 +3,7 @@
 
 #include <array>
 #include <atomic>
+#include <chrono>
 #include <cstdint>
 #include <mutex>
 #include <thread>
@@ -61,7 +62,8 @@ private:
   void start_ack_wait(
     const PlannerCommand & command,
     const EncodedCanFrame & frame,
-    uint32_t retry_count);
+    uint32_t retry_count,
+    int ack_socket_fd);
   void schedule_mock_ack(
     const PlannerCommand & command,
     const EncodedCanFrame & frame,
@@ -73,9 +75,12 @@ private:
   void schedule_socketcan_ack_or_timeout(
     const PlannerCommand & command,
     const EncodedCanFrame & frame,
-    uint32_t retry_count);
+    uint32_t retry_count,
+    int ack_socket_fd);
+  int open_socketcan_ack_socket(std::string * detail) const;
   bool wait_for_socketcan_ack(
     const EncodedCanFrame & frame,
+    int socket_fd,
     std::string * detail) const;
   void on_ack_timeout(
     const PlannerCommand & command,
