@@ -377,6 +377,22 @@ class EvidenceGraphBuilderTest(unittest.TestCase):
         )
 
 
+_W1_PREFIX_STAGES = (
+    "camera_publish",
+    "planner_receive",
+    "planner_process_start",
+    "planner_process_end",
+    "planner_publish",
+    "action_receive",
+    "action_execute_start",
+    "action_execute_end",
+    "can_receive",
+    "can_encode_start",
+    "can_encode_end",
+    "can_frame_sent",
+)
+
+
 class TopologyContractTest(unittest.TestCase):
     def test_accepts_complete_w1_ack_path(self) -> None:
         contract = get_topology_contract("w1")
@@ -404,6 +420,51 @@ class TopologyContractTest(unittest.TestCase):
         self.assertEqual(result.matched_path, "ack_received")
         self.assertEqual(result.missing_expected, ())
         self.assertEqual(result.reason_codes, ())
+
+    def test_accepts_a_retry_that_eventually_receives_the_ack(self) -> None:
+        result = get_topology_contract("w1").validate(
+            [
+                *_W1_PREFIX_STAGES,
+                "can_ack_wait_start",
+                "can_ack_timeout",
+                "can_retry_scheduled",
+                "can_frame_sent",
+                "can_ack_wait_start",
+                "can_ack_received",
+            ]
+        )
+
+        self.assertEqual(result.status, "valid")
+        self.assertEqual(result.matched_path, "ack_received")
+        self.assertEqual(result.conflicting_stages, ())
+        self.assertEqual(result.reason_codes, ())
+
+    def test_accepts_repeated_retries_that_end_exhausted(self) -> None:
+        retry = [
+            "can_ack_wait_start",
+            "can_ack_timeout",
+            "can_retry_scheduled",
+            "can_frame_sent",
+        ]
+        result = get_topology_contract("w1").validate(
+            [*_W1_PREFIX_STAGES, *retry, *retry, "can_ack_wait_start", "can_retry_exhausted"]
+        )
+
+        self.assertEqual(result.status, "valid")
+        self.assertEqual(result.matched_path, "retry_exhausted")
+
+    def test_still_rejects_a_backwards_step_that_is_not_a_retry(self) -> None:
+        result = get_topology_contract("w1").validate(
+            [
+                *_W1_PREFIX_STAGES,
+                "can_ack_wait_start",
+                "can_frame_sent",
+                "can_ack_received",
+            ]
+        )
+
+        self.assertEqual(result.status, "invalid")
+        self.assertIn("topology_order_violation", result.reason_codes)
 
     def test_accepts_complete_w2_service_path(self) -> None:
         result = get_topology_contract("w2").validate(

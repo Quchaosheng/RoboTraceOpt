@@ -10,6 +10,16 @@ from typing import Iterable
 class TopologyPath:
     name: str
     required_stages: tuple[str, ...]
+    # Stages a retry repeats: (retry marker, repeated subsequence). A retried
+    # attempt replays the subsequence after the marker, so the strict stage
+    # ordering restarts there instead of reporting a backwards step.
+    retry_marker: str = ""
+    retry_repeat: tuple[str, ...] = ()
+
+    @property
+    def retry_repeat_first(self) -> str:
+        """Stage that begins the repeated retry subsequence."""
+        return self.retry_repeat[0] if self.retry_repeat else ""
 
 
 @dataclass(frozen=True)
@@ -67,9 +77,23 @@ class TopologyContract:
         observed: tuple[str, ...], path: TopologyPath
     ) -> TopologyValidation:
         stage_index = {stage: index for index, stage in enumerate(path.required_stages)}
-        admitted = [stage for stage in observed if stage in stage_index]
+        admitted: list[str] = []
+        restarts: set[int] = set()
+        retry_pending = False
+        for stage in observed:
+            if path.retry_marker and stage == path.retry_marker:
+                retry_pending = True
+                continue
+            if stage not in stage_index:
+                continue
+            if retry_pending and stage == path.retry_repeat_first:
+                restarts.add(len(admitted))
+            retry_pending = False
+            admitted.append(stage)
         conflict: tuple[str, ...] = ()
-        for previous, current in zip(admitted, admitted[1:]):
+        for index, (previous, current) in enumerate(zip(admitted, admitted[1:]), start=1):
+            if index in restarts:
+                continue
             if stage_index[current] < stage_index[previous]:
                 conflict = (previous, current)
                 break
@@ -115,11 +139,16 @@ _CONTRACTS = {
         workload_id="w1",
         paths=(
             TopologyPath(
-                "ack_received", _W1_PREFIX + ("can_ack_wait_start", "can_ack_received")
+                "ack_received",
+                _W1_PREFIX + ("can_ack_wait_start", "can_ack_received"),
+                retry_marker="can_retry_scheduled",
+                retry_repeat=("can_frame_sent", "can_ack_wait_start"),
             ),
             TopologyPath(
                 "retry_exhausted",
                 _W1_PREFIX + ("can_ack_wait_start", "can_retry_exhausted"),
+                retry_marker="can_retry_scheduled",
+                retry_repeat=("can_frame_sent", "can_ack_wait_start"),
             ),
             TopologyPath("send_failed", _W1_PREFIX + ("can_frame_send_failed",)),
         ),
