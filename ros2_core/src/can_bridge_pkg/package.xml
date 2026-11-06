@@ -11,6 +11,8 @@
   <depend>rclcpp</depend>
   <depend>ai_robot_runtime_interfaces</depend>
 
+  <test_depend>ament_cmake_gtest</test_depend>
+
   <exec_depend>launch</exec_depend>
   <exec_depend>launch_ros</exec_depend>
 

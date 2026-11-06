@@ -1,5 +1,7 @@
 #include "can_bridge_pkg/can_bridge_node.hpp"
 
+#include "can_bridge_pkg/can_ack_terminal.hpp"
+
 #include "ai_robot_runtime_interfaces/runtime_event_identity.hpp"
 
 #include <algorithm>
@@ -426,13 +428,14 @@ void CanBridgeNode::schedule_mock_ack(
   if (!rclcpp::ok() || shutting_down_.load()) {
     return;
   }
-  int64_t ack_delay_ms = mock_ack_delay_ms_;
-  if (mock_ack_policy_ == "delayed") {
-    ack_delay_ms = std::max<int64_t>(mock_ack_delay_ms_, ack_timeout_ms_ + 10);
-  }
-  if (!mock_ack_will_arrive(retry_count) || ack_delay_ms >= ack_timeout_ms_) {
+  if (plan_ack_terminal(
+      ack_mode_, mock_ack_policy_, retry_count, mock_ack_delay_ms_, ack_timeout_ms_) !=
+    AckTerminal::kAck)
+  {
     return;
   }
+  const int64_t ack_delay_ms = effective_mock_ack_delay_ms(
+    mock_ack_policy_, mock_ack_delay_ms_, ack_timeout_ms_);
 
   auto fired = std::make_shared<std::atomic_bool>(false);
   auto timer_reference = std::make_shared<std::weak_ptr<rclcpp::TimerBase>>();
@@ -486,7 +489,12 @@ void CanBridgeNode::schedule_ack_timeout(
   if (!rclcpp::ok() || shutting_down_.load()) {
     return;
   }
-  if (ack_mode_ == "mock" && mock_ack_will_arrive(retry_count) && mock_ack_policy_ != "delayed") {
+  // One predicate decides which terminal runs: both guards declining would
+  // leave the command with neither an ACK nor a timeout.
+  if (plan_ack_terminal(
+      ack_mode_, mock_ack_policy_, retry_count, mock_ack_delay_ms_, ack_timeout_ms_) ==
+    AckTerminal::kAck)
+  {
     return;
   }
 
@@ -523,20 +531,6 @@ void CanBridgeNode::schedule_ack_timeout(
     RCLCPP_DEBUG(
       this->get_logger(), "ACK timeout timer skipped during ROS shutdown: %s", error.what());
   }
-}
-
-bool CanBridgeNode::mock_ack_will_arrive(const uint32_t retry_count) const
-{
-  if (ack_mode_ != "mock") {
-    return false;
-  }
-  if (mock_ack_policy_ == "drop") {
-    return false;
-  }
-  if (mock_ack_policy_ == "drop_first" && retry_count == 0) {
-    return false;
-  }
-  return true;
 }
 
 void CanBridgeNode::on_ack_timeout(

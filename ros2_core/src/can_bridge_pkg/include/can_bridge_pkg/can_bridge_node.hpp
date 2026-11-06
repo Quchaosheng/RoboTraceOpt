@@ -77,7 +77,6 @@ private:
   bool wait_for_socketcan_ack(
     const EncodedCanFrame & frame,
     std::string * detail) const;
-  bool mock_ack_will_arrive(uint32_t retry_count) const;
   void on_ack_timeout(
     const PlannerCommand & command,
     const EncodedCanFrame & frame,
