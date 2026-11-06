@@ -304,6 +304,7 @@ class VlmPlannerNode(Node):
             observation_timestamp_ns=int(frame.header.timestamp_ns),
             ttl_ms=self._observation_ttl_ms,
             now_ns=planning_started_ns,
+            vision_mode=self._llm_vision_mode,
         )
         self._publish_event(
             frame,
