@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 from pathlib import Path
 from typing import Any
 
@@ -84,12 +85,18 @@ def _validate_objective(objective: dict[str, Any], label: str) -> None:
     if objective.get("schema_version") != "runtime-objective/v1":
         raise ValueError(f"invalid {label} objective schema")
     value = objective.get("objective_value_ns")
-    if isinstance(value, bool) or not isinstance(value, (int, float)) or value <= 0:
+    if (
+        isinstance(value, bool)
+        or not isinstance(value, (int, float))
+        or not math.isfinite(value)
+        or value <= 0
+    ):
         raise ValueError(f"invalid {label} objective value")
     rate = objective.get("complete_trace_rate")
     if (
         isinstance(rate, bool)
         or not isinstance(rate, (int, float))
+        or not math.isfinite(rate)
         or not 0 <= rate <= 1
     ):
         raise ValueError(f"invalid {label} complete_trace_rate")
@@ -129,7 +136,8 @@ def main() -> int:
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(
-        json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+        json.dumps(result, indent=2, sort_keys=True, allow_nan=False) + "\n",
+        encoding="utf-8",
     )
     return 0 if result["decision"] == "accept" else 1
 
