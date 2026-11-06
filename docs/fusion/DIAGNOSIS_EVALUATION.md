@@ -36,5 +36,5 @@ frozen held-out manifest.
 
 ```bash
 python3 -m unittest tests.evidence_graph.test_diagnosis_evaluation -v
-python3 -m unittest discover -s tests -q
+python3 -m unittest discover -s tests -t . -q
 ```

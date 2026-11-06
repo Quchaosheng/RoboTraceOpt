@@ -44,6 +44,6 @@ node semantics, admission policy, topology contract, or diagnostic rules.
 
 ```bash
 python3 -m unittest tests.evidence_graph.test_evidence_graph -v
-python3 -m unittest discover -s tests -q
+python3 -m unittest discover -s tests -t . -q
 python3 -m compileall -q diagnosis tests
 ```

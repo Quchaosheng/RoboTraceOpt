@@ -58,6 +58,6 @@ evidence provenance remain available for audit even after abstention.
 
 ```bash
 python3 -m unittest tests.evidence_graph.test_inference -v
-python3 -m unittest discover -s tests -q
+python3 -m unittest discover -s tests -t . -q
 python3 -m compileall -q diagnosis tests
 ```

@@ -126,7 +126,7 @@ bash scripts/run_smoke_workload.sh all 8
 Run the Python test suite:
 
 ```bash
-python3 -m unittest discover -s tests -q
+python3 -m unittest discover -s tests -t . -q
 python3 -m unittest \
   tests.optimizer.test_action_registry \
   tests.optimizer.test_diagnosis_guided_sampler \

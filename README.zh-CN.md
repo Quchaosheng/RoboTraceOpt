@@ -100,7 +100,7 @@ bash scripts/run_smoke_workload.sh all 8
 运行 Python 测试：
 
 ~~~bash
-python3 -m unittest discover -s tests -q
+python3 -m unittest discover -s tests -t . -q
 ~~~
 
 完整的优化器回归命令保留在英文 README 中，CI 还会执行 Ruff、Python 编译检查和 ROS 2 Humble 工作区构建测试。
