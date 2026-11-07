@@ -70,6 +70,15 @@ jobs:
           python3 -m compileall -q
           diagnosis experiments optimizer reporting scripts
 
+      - name: Verify public evidence checksums
+        run: |
+          set -euo pipefail
+          for package in docs/evidence/*/; do
+            manifest="$package/SHA256SUMS.txt"
+            [ -f "$manifest" ] || continue
+            ( cd "$package" && sha256sum -c --strict SHA256SUMS.txt )
+          done
+
   ros2-humble:
     runs-on: ubuntu-22.04
     timeout-minutes: 30
