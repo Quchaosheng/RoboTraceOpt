@@ -53,9 +53,6 @@ def build_stage_windows(events: Iterable[NormalizedEvent]) -> list[StageWindow]:
         end_by_start = _pair_explicit_end_events(process_events)
         for index, start_event in enumerate(process_events):
             paired_end = end_by_start.get(index)
-            next_event = (
-                process_events[index + 1] if index + 1 < len(process_events) else None
-            )
             duration_ns = start_event.attributes.get("duration_ns", 0)
             if (
                 isinstance(duration_ns, bool)
@@ -63,10 +60,12 @@ def build_stage_windows(events: Iterable[NormalizedEvent]) -> list[StageWindow]:
                 or duration_ns < 0
             ):
                 raise ValueError(f"invalid duration_ns: {start_event.event_id}")
+            # A stage ends at its own end event or its declared duration. Using
+            # "whatever was emitted next" made a duration depend on unrelated
+            # instrumentation, and duration_ns=0 means "not measured", not a
+            # real zero-width interval.
             if paired_end is not None:
                 end_ns = paired_end.timestamp_ns
-            elif next_event is not None:
-                end_ns = next_event.timestamp_ns
             else:
                 end_ns = start_event.timestamp_ns + duration_ns
             if end_ns < start_event.timestamp_ns:
@@ -88,11 +87,7 @@ def build_stage_windows(events: Iterable[NormalizedEvent]) -> list[StageWindow]:
                     end_event_id=(
                         paired_end.event_id
                         if paired_end is not None
-                        else (
-                            next_event.event_id
-                            if next_event is not None
-                            else start_event.event_id
-                        )
+                        else start_event.event_id
                     ),
                 )
             )
@@ -113,14 +108,15 @@ def _pair_explicit_end_events(
         if event.stage.endswith("_end"):
             end_index.setdefault(event.stage[: -len("_end")], []).append(index)
     paired: dict[int, NormalizedEvent] = {}
+    # Walk the ends in order and give each one to the nearest preceding start
+    # that is still open. A repeated start therefore cannot claim an end that
+    # already belongs to the attempt it opened.
+    open_starts: dict[str, list[int]] = {}
     for index, event in enumerate(process_events):
-        if not event.stage.endswith("_start"):
-            continue
-        body = event.stage[: -len("_start")]
-        candidates = end_index.get(body)
-        if not candidates:
-            continue
-        later = [position for position in candidates if position > index]
-        if later:
-            paired[index] = process_events[later[0]]
+        if event.stage.endswith("_start"):
+            open_starts.setdefault(event.stage[: -len("_start")], []).append(index)
+        elif event.stage.endswith("_end"):
+            pending = open_starts.get(event.stage[: -len("_end")])
+            if pending:
+                paired[pending.pop()] = event
     return paired
