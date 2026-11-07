@@ -346,6 +346,61 @@ class StageWindowTest(unittest.TestCase):
         self.assertEqual(decision.status, "accepted")
         self.assertEqual(decision.reason_code, "pid_tid_time_match")
 
+    def test_duration_zero_is_never_a_measured_zero_interval(self) -> None:
+        """Pin docs/schema/RUNTIME_EVENT_V2.md: point, unmeasured and measured
+        zero all arrive as duration_ns=0 and must none of them produce a
+        measured interval."""
+        cases = {
+            # A point event: no interval by nature.
+            "point": event(
+                "point",
+                source="runtime_event",
+                timestamp_ns=100,
+                pid=10,
+                tid=11,
+                trace_id="trace-a",
+                sequence_id=1,
+                stage="can_frame_sent",
+            ),
+            # An interval whose length was not captured.
+            "unmeasured": event(
+                "unmeasured",
+                source="runtime_event",
+                timestamp_ns=100,
+                pid=10,
+                tid=11,
+                trace_id="trace-a",
+                sequence_id=1,
+                stage="action_execute_start",
+            ),
+        }
+        for label, runtime_event in cases.items():
+            with self.subTest(case=label):
+                window = build_stage_windows([runtime_event])[0]
+
+                self.assertEqual(window.end_ns, window.start_ns)
+                self.assertFalse(window.measured())
+                self.assertFalse(window.contains(window.start_ns))
+
+    def test_terminal_event_duration_is_the_measurement(self) -> None:
+        terminal = event(
+            "stale",
+            source="runtime_event",
+            timestamp_ns=1_000,
+            pid=10,
+            tid=11,
+            trace_id="trace-a",
+            sequence_id=1,
+            stage="planner_output_stale",
+        )
+        object.__setattr__(terminal, "attributes", {"duration_ns": 7_500})
+
+        window = build_stage_windows([terminal])[0]
+
+        self.assertTrue(window.measured())
+        self.assertEqual(window.end_ns - window.start_ns, 7_500)
+        self.assertTrue(window.contains(1_000 + 7_500))
+
     def test_rejects_runtime_event_without_trace_identity(self) -> None:
         incomplete = event(
             "missing-trace",

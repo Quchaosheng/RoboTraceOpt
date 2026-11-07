@@ -27,7 +27,7 @@ JSONL 行使用**平铺**字段，不嵌套 `header` 对象。ROS 2 消息
 | `pid`、`tid` | 事件发生时的 Linux 进程/线程 | 新运行必须为正整数 |
 | `host_id` | 事件发生主机 | 当前取 `gethostname()`/`socket.gethostname()` |
 | `clock_id` | 时间戳域 | 当前运行节点统一为 `monotonic` |
-| `duration_ns` | 已知事件区间长度 | `0` 表示未提供，不表示真实耗时为零 |
+| `duration_ns` | 已知事件区间长度 | `0` 表示未提供，不表示真实耗时为零（见下节） |
 | `status` | 事件状态 | 默认 `observed`，Action/CAN 可提供更具体状态 |
 | `reason_code` | 机器可读原因码 | 空字符串表示未提供；后续由故障分类冻结取值 |
 | `extra_json` | 非关联必需扩展属性 | 不再存放 PID/TID/host/clock 等关键身份 |
@@ -105,3 +105,41 @@ python3 -m diagnosis.adapters.legacy_runtime_event_adapter \
 - process manifest 与节点/PID/TID 生命周期记录；
 - 同机时钟偏差实测和跨主机 offset 报告；
 - Trace-Stage 关联及 oracle 隔离评测。
+
+## `duration_ns` 的三态语义
+
+`duration_ns` 只有这一个字段，却要表达三种不同的事实。当前实现把它们当作同一
+个值，这是已知限制；区分方式写在下面，正式实验前必须落成显式字段（见
+"未完成部分"）。
+
+| 情况 | 当前的记录方式 | 诊断层如何理解 |
+|---|---|---|
+| **点事件**：本来就没有区间，例如 `camera_frame_published`、`can_frame_sent` | `duration_ns = 0`，且该 stage 没有对应的 `_end` 事件 | 零宽窗口，不参与区间度量 |
+| **未提供**：这是一个区间，但采集时没有测量 | `duration_ns = 0`，且存在配对 `_end` 或本应有 | 优先用配对 `_end`；没有则视为未测量 |
+| **测量为零**：确实测到了 0 | 与上两者无法区分 | 与"未提供"同样处理，即视为未测量 |
+
+因此 `duration_ns = 0` **永远不等于**"测得 0 ns"。窗口构造据此工作：
+
+- 一个 stage 的区间只来自两处：配对的 `<body>_end` 事件，或该事件自己声明的
+  `duration_ns`；
+- 两者都没有时，窗口是零宽的，且 `StageWindow.contains()` 对任何时间戳都返回
+  `False`，因此它不会吸收时间戳相同的系统事件；
+- 只有 `end_ns > start_ns` 的窗口才被视为"已测量"。
+
+`planner_process_start` / `planner_process_end` 这类成对阶段按配对计算区间；
+`planner_output_stale`、`planner_backend_failure`、`planner_fallback_storm`
+等终止事件是单条事件，它们声明的 `duration_ns` 才是测量值。
+
+### 未完成部分
+
+以下属于 schema 变更，已刻意留到正式实验之前，而不是现在改：
+
+- 在 `RuntimeEvent`（或 normalized attributes）中冻结机器可读的
+  `duration_semantics`，取值如 `point` / `unmeasured` / `measured`；
+- 让每个 emitter 为携带非零 duration 的事件声明语义；
+- 保持 StageWindow、root-cause catalog、trial 报告与优化报告使用同一语义；
+- 增加跨语言 fixture，使同一批记录在 Python 与 C++ 下产生相同的窗口语义；
+- 旧日志中的 `duration_ns = 0` 必须继续被解释为"未提供"，不得被重新解释为
+  测量到的零。
+
+在这之前，不要基于窗口时长做新的诊断准确率或优化收益声明。
