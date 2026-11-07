@@ -396,7 +396,16 @@ def derive_socketcan_ack_lifecycle_evidence(
     )
     if not output:
         report["status"] = "invalid"
-        report["reason_code"] = "no_valid_socketcan_ack_terminals"
+        # A rejected producer profile and an empty capture both leave no output but
+        # need different fixes, so the top-level reason names the difference.
+        rejected_profile = (
+            invalid.get("event_profile_mismatch", 0) == len(by_trace) and len(by_trace) > 0
+        )
+        report["reason_code"] = (
+            "runtime_event_profile_rejected"
+            if rejected_profile
+            else "no_valid_socketcan_ack_terminals"
+        )
     elif incomplete or invalid:
         report["status"] = "partial"
         report["reason_code"] = "incomplete_or_invalid_socketcan_ack_lifecycles"
@@ -522,8 +531,11 @@ def _validate_runtime_rows(
     if len(sequence_ids) != 1 or not _integer(next(iter(sequence_ids))):
         return "trace_identity_mismatch"
     for _, _, extra in rows:
+        # A producer that does not repeat the run profile is accepted: the manifest
+        # is the authority for those values. A producer that does repeat one must
+        # agree with the manifest, so a contradicting capture is still refused.
         if any(
-            extra.get(key) != injection[key]
+            key in extra and extra[key] != injection[key]
             for key in (
                 "ack_mode",
                 "mock_mode",
@@ -533,11 +545,15 @@ def _validate_runtime_rows(
             )
         ) or not _integer(extra.get("retry_count")):
             return "event_profile_mismatch"
-        if (
-            _parse_can_id(extra.get("ack_can_id")) - _parse_can_id(extra.get("can_id"))
-            != injection["ack_can_id_offset"]
-        ):
-            return "event_frame_identity_mismatch"
+        # Frame identity is checked only when the producer reports it; absence is a
+        # sparse producer, not a contradiction.
+        if "can_id" in extra or "ack_can_id" in extra:
+            if (
+                _parse_can_id(extra.get("ack_can_id"))
+                - _parse_can_id(extra.get("can_id"))
+                != injection["ack_can_id_offset"]
+            ):
+                return "event_frame_identity_mismatch"
     return ""
 
 
