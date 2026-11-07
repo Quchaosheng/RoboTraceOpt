@@ -137,6 +137,29 @@ class CaptureEbpfRuntimeTest(unittest.TestCase):
         self.assertNotIn("args->prev_pid ==", program)
         self.assertNotIn("str(args->", program)
 
+    def test_program_filters_scheduler_probes_by_kernel_tid(self) -> None:
+        program = build_bpftrace_program([9000], [9000, 9004])
+
+        # sched_switch args are kernel TIDs, so a multi-threaded node must be
+        # matched on every one of its threads.
+        self.assertIn(
+            "tracepoint:sched:sched_switch /(args->prev_pid == 9000 || "
+            "args->prev_pid == 9004) || (args->next_pid == 9000 || "
+            "args->next_pid == 9004)/",
+            program,
+        )
+        self.assertIn(
+            "tracepoint:sched:sched_wakeup /args->pid == 9000 || args->pid == 9004/",
+            program,
+        )
+
+    def test_program_keeps_scheduler_probes_unfiltered_without_tids(self) -> None:
+        program = build_bpftrace_program([10, 20])
+
+        self.assertIn("tracepoint:sched:sched_switch\n", program)
+        self.assertIn("tracepoint:sched:sched_wakeup\n", program)
+        self.assertNotIn("args->prev_pid ==", program)
+
     def test_userspace_filter_keeps_only_manifest_tasks(self) -> None:
         identities = {
             9101: TaskIdentity(pid=10, tid=101, kernel_pid=9000, kernel_tid=9101),
