@@ -209,6 +209,65 @@ class ScoringProfileTest(unittest.TestCase):
             ScoringProfile.from_dict(record)
 
 
+class ScoringBoundaryTest(unittest.TestCase):
+    """Pin the documented boundary: scores come from nodes, not from edges."""
+
+    def _diagnose(self, with_edges: bool):
+        graph = graph_with_trace()
+        graph.add_node(
+            EvidenceNode(
+                "window:planner",
+                NodeType.STAGE_WINDOW,
+                trace_id="trace-1",
+                stage="planner_process_start",
+                attributes={"start_ns": 100, "end_ns": 300},
+                provenance={"start_event_id": "a", "end_event_id": "b"},
+            )
+        )
+        if with_edges:
+            # A violating PRECEDES chain and a CONTRADICTS edge: if scoring
+            # consulted edges, this graph would score differently.
+            graph.add_node(
+                EvidenceNode(
+                    "window:other",
+                    NodeType.STAGE_WINDOW,
+                    trace_id="trace-1",
+                    stage="can_frame_sent",
+                    attributes={"start_ns": 1, "end_ns": 2},
+                )
+            )
+            graph.add_edge(EvidenceEdge("window:planner", "window:other", EdgeType.PRECEDES))
+            graph.add_edge(
+                EvidenceEdge(
+                    "window:other",
+                    "window:planner",
+                    EdgeType.CONTRADICTS,
+                    reason_code="topology_order_violation",
+                )
+            )
+        return infer_trace(
+            graph,
+            "trace-1",
+            profile(("planner_compute_ns",)),
+            {NodeType.STAGE_WINDOW: EvidenceAvailability("valid", "runtime_complete")},
+        )
+
+    def test_edge_structure_does_not_change_the_score(self) -> None:
+        without_edges = self._diagnose(with_edges=False)
+        with_edges = self._diagnose(with_edges=True)
+
+        self.assertEqual(without_edges.status, "diagnosed")
+        self.assertEqual(with_edges.status, "diagnosed")
+        self.assertEqual(
+            [c.score for c in without_edges.candidates],
+            [c.score for c in with_edges.candidates],
+        )
+        self.assertEqual(
+            [c.cause_id for c in without_edges.candidates],
+            [c.cause_id for c in with_edges.candidates],
+        )
+
+
 class InferenceTest(unittest.TestCase):
     def test_diagnoses_supported_application_delay_and_materializes_audit_edge(
         self,

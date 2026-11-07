@@ -9,6 +9,8 @@ RoboTraceOpt 用于分析 ROS 2 在应用层、中间件和 Linux 层的运行�
 
 显式适配器统一应用层 RuntimeEvent、ROS 2 trace 与 Linux 运行时证据。诊断层构建带类型的证据图；证据不足或互相冲突时，系统会保留不确定性并拒绝强行输出根因。只有与已诊断原因匹配的动作，才允许进入优化试验。
 
+评分的实际做法是：在通过拓扑校验和证据可用性门槛之后，对图中带类型的节点按阈值扫描。图上的 `PRECEDES`、`OVERLAPS`、`EXECUTED_BY`、`BELONGS_TO` 边，以及评分之后才添加的 `SUPPORTS` / `CONTRADICTS` 边，属于审计与溯源结构：它们记录某个节点为何被采纳、某个候选依据了哪些证据，但不参与打分。完整边界见 [`docs/fusion/DIAGNOSIS_INFERENCE.md`](docs/fusion/DIAGNOSIS_INFERENCE.md)。
+
 ## 仓库内容
 
 - 三种 ROS 2 工作负载的 RuntimeEvent v2 埋点。

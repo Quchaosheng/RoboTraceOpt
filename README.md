@@ -14,13 +14,22 @@ and Linux runtime evidence. The diagnosis layer builds typed evidence graphs,
 reports uncertainty instead of forcing a root-cause label, and only allows
 optimization trials whose actions match the diagnosed cause.
 
+Scoring is a per-trace threshold scan over the graph's typed nodes, gated by
+topology validation and evidence availability. The graph's `PRECEDES`,
+`OVERLAPS`, `EXECUTED_BY`, and `BELONGS_TO` edges, and the `SUPPORTS` /
+`CONTRADICTS` edges added after scoring, are an audit and provenance structure:
+they record why a node was admitted and what a candidate rested on, but they do
+not change a score. See [`docs/fusion/DIAGNOSIS_INFERENCE.md`](docs/fusion/DIAGNOSIS_INFERENCE.md)
+for the exact boundary.
+
 ## What is included
 
 - RuntimeEvent v2 instrumentation for three ROS 2 workloads.
 - Adapters for RuntimeEvent, `ros2_tracing`, eBPF scheduling records, and
   SocketCAN/vcan ACK lifecycles.
 - Topology-constrained trace-stage association and typed evidence graphs.
-- Auditable root-cause inference with conflict handling and abstention.
+- Auditable root-cause inference with conflict handling and abstention, scored
+  from node attributes rather than from graph edges (see the note above).
 - A bounded action registry and reproducible guided, random, and unguided
   search protocols.
 - Candidate validation and offline rollback decisions.
