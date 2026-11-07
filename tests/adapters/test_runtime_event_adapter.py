@@ -116,6 +116,49 @@ class RuntimeEventAdapterTest(unittest.TestCase):
 
         self.assertEqual(context.exception.reason_code, "invalid_extra_json")
 
+    def test_documented_jsonl_shape_is_accepted(self) -> None:
+        # The exact line printed in docs/schema/RUNTIME_EVENT_V2.md. If the doc and
+        # the adapter disagree again, this is the test that fails.
+        record = json.loads(
+            '{"trace_id":"task-1","oracle_id":"","sequence_id":42,'
+            '"source_node":"device_bridge","stage":"can_frame_sent",'
+            '"timestamp_ns":1000,"event_name":"can_frame_sent",'
+            '"event_type":"can_bridge","pid":10,"tid":11,"host_id":"x5",'
+            '"clock_id":"monotonic","duration_ns":0,"status":"observed",'
+            '"reason_code":"","extra_json":"{\\"command_id\\":1,\\"retry_count\\":0}"}'
+        )
+
+        event = adapt_runtime_event(record, source_file="events.jsonl", record_index=1)
+
+        self.assertEqual(event.stage, "can_frame_sent")
+        self.assertEqual(event.trace_id, "task-1")
+        self.assertEqual(event.attributes["duration_ns"], 0)
+
+    def test_rejects_the_nested_message_header_shape(self) -> None:
+        # The ROS 2 message nests these under ``TraceHeader header``; the JSONL
+        # contract is flat, so a record in message shape must be refused rather than
+        # adapted with a guessed field.
+        record = runtime_record()
+        nested = {
+            "header": {
+                key: record.pop(key)
+                for key in (
+                    "trace_id",
+                    "oracle_id",
+                    "sequence_id",
+                    "source_node",
+                    "stage",
+                    "timestamp_ns",
+                )
+            }
+        }
+        nested.update(record)
+
+        with self.assertRaises(AdapterReject) as context:
+            adapt_runtime_event(nested, source_file="events.jsonl", record_index=1)
+
+        self.assertEqual(context.exception.reason_code, "missing_required_field")
+
 
 if __name__ == "__main__":
     unittest.main()
