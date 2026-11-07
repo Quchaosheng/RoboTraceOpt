@@ -66,6 +66,33 @@ class ClosedLoopScheduleTest(unittest.TestCase):
             ["baseline_duplicate", "scheduled", "not_applicable"],
         )
 
+    def test_marks_repeated_candidates_so_the_budget_is_not_wasted(self) -> None:
+        result = build_execution_schedule(
+            gate(
+                {
+                    "trial_index": 1,
+                    "action_id": "executor_threads",
+                    "candidate_config": {"executor_threads": 2},
+                    "applicable_to_diagnosis": True,
+                },
+                {
+                    "trial_index": 2,
+                    "action_id": "executor_threads",
+                    "candidate_config": {"executor_threads": 2},
+                    "applicable_to_diagnosis": True,
+                },
+            ),
+            {"executor_threads": 1},
+        )
+
+        self.assertEqual(
+            [row["status"] for row in result["trials"]],
+            ["scheduled", "duplicate_candidate"],
+        )
+        self.assertEqual(
+            result["trials"][1]["reason_code"], "candidate_already_scheduled"
+        )
+
     def test_rejects_denied_gate_or_mismatched_baseline(self) -> None:
         denied = gate()
         denied["decision"] = "deny"
