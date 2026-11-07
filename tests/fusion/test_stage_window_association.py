@@ -190,7 +190,7 @@ class StageWindowTest(unittest.TestCase):
 
         self.assertEqual(paired, [("start-1", "end-1", 10), ("start-2", "end-2", 20)])
 
-    def test_unpaired_stage_still_uses_the_following_event(self) -> None:
+    def test_unpaired_stage_does_not_borrow_an_unrelated_following_event(self) -> None:
         windows = build_stage_windows(
             [
                 event(
@@ -219,7 +219,64 @@ class StageWindowTest(unittest.TestCase):
         execute = next(
             window for window in windows if window.stage == "action_execute_start"
         )
-        self.assertEqual(execute.end_ns, 5)
+        # duration_ns=0 means "not measured"; the window stays a point rather
+        # than stretching to an event that belongs to a different stage.
+        self.assertEqual(execute.end_ns, 0)
+
+    def test_terminal_event_uses_its_declared_duration(self) -> None:
+        with_duration = event(
+            "process-end",
+            source="runtime_event",
+            timestamp_ns=1_000,
+            pid=10,
+            tid=11,
+            trace_id="trace-a",
+            sequence_id=1,
+            stage="planner_process_end",
+        )
+        object.__setattr__(with_duration, "attributes", {"duration_ns": 50_380_282})
+
+        windows = build_stage_windows([with_duration])
+
+        self.assertEqual(windows[0].end_ns - windows[0].start_ns, 50_380_282)
+        self.assertEqual(windows[0].end_event_id, "process-end")
+
+    def test_rejects_negative_or_non_integer_duration(self) -> None:
+        for bad in (-1, 1.5, True):
+            with self.subTest(duration_ns=bad):
+                broken = event(
+                    "broken",
+                    source="runtime_event",
+                    timestamp_ns=0,
+                    pid=10,
+                    tid=11,
+                    trace_id="trace-a",
+                    sequence_id=1,
+                    stage="planner_process_end",
+                )
+                object.__setattr__(broken, "attributes", {"duration_ns": bad})
+                with self.assertRaisesRegex(ValueError, "duration_ns"):
+                    build_stage_windows([broken])
+
+    def test_duplicate_start_events_pair_with_separate_ends(self) -> None:
+        runtime = [
+            event("start-1", source="runtime_event", timestamp_ns=0, pid=10, tid=11,
+                  trace_id="trace-a", sequence_id=1, stage="planner_process_start"),
+            event("start-2", source="runtime_event", timestamp_ns=10, pid=10, tid=11,
+                  trace_id="trace-a", sequence_id=1, stage="planner_process_start"),
+            event("end-2", source="runtime_event", timestamp_ns=40, pid=10, tid=11,
+                  trace_id="trace-a", sequence_id=1, stage="planner_process_end"),
+        ]
+
+        windows = build_stage_windows(runtime)
+        starts = [w for w in windows if w.stage == "planner_process_start"]
+
+        # The first start has no end of its own, so it stays a point window; the
+        # second pairs with the end that follows it.
+        self.assertEqual(
+            [(w.start_event_id, w.end_event_id) for w in starts],
+            [("start-1", "start-1"), ("start-2", "end-2")],
+        )
 
     def test_rejects_runtime_event_without_trace_identity(self) -> None:
         incomplete = event(
