@@ -25,7 +25,18 @@ class StageWindow:
     start_event_id: str
     end_event_id: str
 
+    def measured(self) -> bool:
+        """True when the stage has a real interval, not an unmeasured point.
+
+        `duration_ns=0` means "not measured" per the RuntimeEvent schema, so a
+        zero-width window must not absorb system events that merely share its
+        timestamp.
+        """
+        return self.end_ns > self.start_ns
+
     def contains(self, timestamp_ns: int) -> bool:
+        if not self.measured():
+            return False
         return self.start_ns <= timestamp_ns <= self.end_ns
 
 

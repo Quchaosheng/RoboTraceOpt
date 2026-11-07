@@ -278,6 +278,74 @@ class StageWindowTest(unittest.TestCase):
             [("start-1", "start-1"), ("start-2", "end-2")],
         )
 
+    def test_unmeasured_stage_does_not_absorb_a_system_event(self) -> None:
+        # duration_ns=0 means "not measured", so a system event at the same
+        # timestamp must not be reported as an association hit.
+        windows = build_stage_windows(
+            [
+                event(
+                    "start",
+                    source="runtime_event",
+                    timestamp_ns=1_000,
+                    pid=10,
+                    tid=11,
+                    trace_id="trace-a",
+                    sequence_id=1,
+                    stage="planner_process_start",
+                )
+            ]
+        )
+        system = event(
+            "callback",
+            source="ros2_tracing",
+            timestamp_ns=1_000,
+            pid=10,
+            tid=11,
+        )
+
+        decision = associate_system_event(system, windows)
+
+        self.assertEqual(decision.status, "unmatched")
+        self.assertEqual(decision.reason_code, "no_process_time_candidate")
+
+    def test_measured_stage_still_accepts_a_contained_system_event(self) -> None:
+        windows = build_stage_windows(
+            [
+                event(
+                    "start",
+                    source="runtime_event",
+                    timestamp_ns=1_000,
+                    pid=10,
+                    tid=11,
+                    trace_id="trace-a",
+                    sequence_id=1,
+                    stage="planner_process_start",
+                ),
+                event(
+                    "end",
+                    source="runtime_event",
+                    timestamp_ns=2_000,
+                    pid=10,
+                    tid=11,
+                    trace_id="trace-a",
+                    sequence_id=1,
+                    stage="planner_process_end",
+                ),
+            ]
+        )
+        system = event(
+            "callback",
+            source="ros2_tracing",
+            timestamp_ns=1_500,
+            pid=10,
+            tid=11,
+        )
+
+        decision = associate_system_event(system, windows)
+
+        self.assertEqual(decision.status, "accepted")
+        self.assertEqual(decision.reason_code, "pid_tid_time_match")
+
     def test_rejects_runtime_event_without_trace_identity(self) -> None:
         incomplete = event(
             "missing-trace",
