@@ -26,7 +26,24 @@ def _predicate(expression: str, tids: Sequence[int]) -> str:
     return " || ".join(f"{expression} == {tid}" for tid in tids)
 
 
-def build_bpftrace_program(pids: Sequence[int]) -> str:
+def _sched_predicate(tids: Sequence[int]) -> str:
+    """Keep a switch only when one side is a target thread.
+
+    `prev_pid`/`next_pid` on `sched_switch` and `pid` on `sched_wakeup` are
+    kernel TIDs, so the filter has to use kernel TIDs, not process ids: a
+    multi-threaded node runs under several of them.
+    """
+    if not tids:
+        return "0"
+    # `tid` here is the thread running the probe, not a switch participant, so
+    # only the two scheduler arguments may be tested.
+    return (
+        f"({_predicate('args->prev_pid', tids)}) || "
+        f"({_predicate('args->next_pid', tids)})"
+    )
+
+
+def build_bpftrace_program(pids: Sequence[int], tids: Sequence[int] = ()) -> str:
     unique_pids = sorted(set(pids))
     if not unique_pids or any(
         isinstance(pid, bool) or not isinstance(pid, int) or pid <= 0
@@ -34,15 +51,24 @@ def build_bpftrace_program(pids: Sequence[int]) -> str:
     ):
         raise ValueError("at least one positive target PID is required")
     process_filter = _predicate("pid", unique_pids)
+    # Filtering inside the probe keeps a busy host from writing host-sized
+    # output for every switch, which the userspace filter could only discard
+    # after buffering it. An empty tid list keeps the unfiltered form.
+    unique_tids = sorted(set(tids))
+    sched_switch = "tracepoint:sched:sched_switch"
+    sched_wakeup = "tracepoint:sched:sched_wakeup"
+    if unique_tids:
+        sched_switch += f" /{_sched_predicate(unique_tids)}/"
+        sched_wakeup += f" /{_predicate('args->pid', unique_tids)}/"
     return f"""
-tracepoint:sched:sched_switch
+{sched_switch}
 {{
   printf("E\\tS\\t%llu\\t%d\\t%s\\t%lld\\t%d\\t%s\\t%d\\n",
          nsecs, args->prev_pid, args->prev_comm, args->prev_state,
          args->next_pid, args->next_comm, cpu);
 }}
 
-tracepoint:sched:sched_wakeup
+{sched_wakeup}
 {{
   printf("E\\tW\\t%llu\\t%d\\t%s\\t%d\\n",
          nsecs, args->pid, args->comm, args->target_cpu);
@@ -265,7 +291,8 @@ def main() -> int:
     )
     collector_version = version_result.stdout.strip().removeprefix("bpftrace v")
     target_pids = sorted({identity.kernel_pid for identity in identities.values()})
-    program = build_bpftrace_program(target_pids)
+    target_tids = sorted({identity.kernel_tid for identity in identities.values()})
+    program = build_bpftrace_program(target_pids, target_tids)
 
     command = ["bpftrace"]
     if args.verbose:
