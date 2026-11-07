@@ -96,6 +96,21 @@ def success_trace(trace_id: str = "trace-1") -> list[dict]:
     ]
 
 
+def recovered_trace(trace_id: str = "trace-1", succeeded: int = 1) -> list[dict]:
+    """Attempts 0..succeeded-1 time out, attempt ``succeeded`` is acknowledged."""
+    names_and_retries: list[tuple[str, int]] = []
+    for attempt in range(succeeded):
+        names_and_retries.append(("can_ack_wait_start", attempt))
+        names_and_retries.append(("can_ack_timeout", attempt))
+        names_and_retries.append(("can_retry_scheduled", attempt + 1))
+    names_and_retries.append(("can_ack_wait_start", succeeded))
+    names_and_retries.append(("can_ack_received", succeeded))
+    return [
+        event(trace_id, name, 1000 + index * 20_000_000, retry)
+        for index, (name, retry) in enumerate(names_and_retries)
+    ]
+
+
 def derive(records: list[dict], variant: str = "injected"):
     return derive_mock_ack_lifecycle_evidence(
         records,
@@ -142,6 +157,36 @@ class MockAckLifecycleAdapterTest(unittest.TestCase):
         self.assertEqual(report["ack_success_rate"], 1.0)
         self.assertEqual(report["incomplete_trace_count"], 1)
         self.assertIsNone(report["terminal_latency_ns"]["retry_exhausted"])
+
+    def test_accepts_success_after_a_timed_out_attempt(self) -> None:
+        # The ``drop_first`` policy: attempt 0 times out, attempt 1 is acknowledged.
+        # This used to be dropped as retry_sequence_mismatch, which deleted the
+        # recovering case from the F6 distribution entirely.
+        events, report = derive(recovered_trace(succeeded=1))
+
+        self.assertEqual(len(events), 1)
+        self.assertEqual(events[0].attributes["terminal_state"], "ack_received")
+        self.assertEqual(events[0].attributes["attempt_count"], 2)
+        self.assertEqual(events[0].attributes["timeout_count"], 1)
+        self.assertEqual(events[0].attributes["retry_scheduled_count"], 1)
+        self.assertEqual(report["ack_success_rate"], 1.0)
+        self.assertEqual(report["retry_exhausted_rate"], 0.0)
+
+    def test_rejects_a_success_sequence_with_a_gap(self) -> None:
+        # The relaxation must not accept a non-monotone or gapped prefix.
+        records = recovered_trace(succeeded=1)
+        for record in records:
+            if record["event_name"] == "can_ack_received":
+                record["extra_json"] = record["extra_json"].replace(
+                    '"retry_count": 1', '"retry_count": 2'
+                )
+
+        events, report = derive(records)
+
+        self.assertEqual(events, [])
+        self.assertEqual(
+            report["invalid_pair_reason_counts"], {"retry_sequence_mismatch": 1}
+        )
 
     def test_rejects_conflicting_terminal_and_event_after_terminal(self) -> None:
         conflict = success_trace("conflict")
